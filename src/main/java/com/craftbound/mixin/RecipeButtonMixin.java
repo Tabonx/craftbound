@@ -1,5 +1,6 @@
 package com.craftbound.mixin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -10,13 +11,13 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import com.craftbound.Craftbound;
 import com.craftbound.CraftboundAttachments;
+import com.craftbound.CraftedItems;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeButton;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // For recipes the player has never crafted, swap the slot-background sprite vanilla is about
@@ -55,14 +56,14 @@ public abstract class RecipeButtonMixin
         if (player == null || mc.level == null)
             return false;
 
-        Set<ResourceLocation> crafted = player.getData(CraftboundAttachments.CRAFTED_ITEMS);
+        List<ResourceLocation> resultIds = new ArrayList<>();
         for (RecipeHolder<?> holder : getOrderedRecipes())
         {
-            ItemStack result = holder.value().getResultItem(mc.level.registryAccess());
-            ResourceLocation id = BuiltInRegistries.ITEM.getKey(result.getItem());
-            if (!crafted.contains(id))
-                return true;
+            var result = holder.value().getResultItem(mc.level.registryAccess());
+            resultIds.add(BuiltInRegistries.ITEM.getKey(result.getItem()));
         }
-        return false;
+
+        Set<ResourceLocation> crafted = player.getData(CraftboundAttachments.CRAFTED_ITEMS);
+        return CraftedItems.hasUncrafted(crafted, resultIds);
     }
 }
