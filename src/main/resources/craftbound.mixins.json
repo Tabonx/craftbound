@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8.5",
-  "package": "com.craftbound.mixin",
+  "package": "com.craftbound.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "RecipeButtonMixin"

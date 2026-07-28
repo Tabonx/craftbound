@@ -6,9 +6,14 @@ Use fewer comments. Only add a comment when the code would be genuinely unclear 
 ## Code Style
 - Always strive for concise, simple and elegant solutions
 - If a problem can be solved in a simpler way, propose it.
+- Strive to create code using SOLID and DRY principles
 
 ## Testing
 - Write code to be testable where possible: keep pure logic separate from Minecraft/engine code so it can be unit-tested without launching the game.
 - Prefer extracting core logic into plain methods/classes and keeping engine-touching code (Mixins, event handlers, rendering) as thin shells over it.
 - Add tests where they carry signal (logic, serialization/persistence); don't try to test rendering.
+
+## Project layout
+- Organize code by feature/domain, not by technical layer.
+- Keep client-only code (rendering, client Mixins) under a `client` package, separate from common code that also runs on the dedicated server.
 

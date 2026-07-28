@@ -1,4 +1,4 @@
-package com.craftbound.mixin;
+package com.craftbound.client.mixin;
 
 import java.util.ArrayList;
 import java.util.List;
