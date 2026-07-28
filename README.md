@@ -1,27 +1,40 @@
+# Craftbound
 
-Installation information
-=======
+A [Create](https://modrinth.com/mod/create)-focused Minecraft mod that reworks the
+recipe book: a restyled UI, extra options, and a custom recipe-unlock/progression
+system that surfaces Create's machine recipes.
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions at [github](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+- **Minecraft:** 1.21.1
+- **Mod loader:** NeoForge 21.1.176
+- **Requires:** Create 6.x
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+## Development
 
-> **Note**: For Eclipse, use tasks in `Launch Group` instead of ones founds in `Java Application`. A preparation task must run before launching the game. NeoGradle uses launch groups to do these subsequently.
+Prerequisites: JDK 21 and IntelliJ IDEA.
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+1. Open the project folder in IntelliJ (it imports the Gradle build automatically).
+   Set the Project SDK to Java 21 if prompted.
+2. Run the **client** run configuration to launch a dev Minecraft instance with
+   Craftbound (and Create) loaded.
+3. Build a distributable jar with:
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+   ```sh
+   ./gradlew build
+   ```
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+   The jar is written to `build/libs/`.
+
+Useful Gradle commands:
+
+- `./gradlew --refresh-dependencies` — refresh the local dependency cache.
+- `./gradlew clean` — clear build outputs (does not touch your source).
+
+## License
+
+Craftbound is licensed under the [MIT License](LICENSE).
+
+## Resources
+
+- Create developer docs: https://wiki.createmod.net/developers/
+- NeoForge documentation: https://docs.neoforged.net/
+- NeoForged Discord: https://discord.neoforged.net/
