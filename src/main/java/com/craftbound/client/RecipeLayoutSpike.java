@@ -30,6 +30,9 @@ public final class RecipeLayoutSpike
         if (!(event.getScreen() instanceof InventoryScreen inventory))
             return;
 
+        if (!RecipeBookState.isOpen())
+            return;
+
         if (!CraftboundJeiPlugin.hasRuntime())
         {
             layout = null;
@@ -44,13 +47,13 @@ public final class RecipeLayoutSpike
             layout = built.get();
         }
 
-        // Measure the layout's bordered bounds at origin, then place it so that bordered box
-        // sits with its top-left at (boxX, boxY) — aligned to the inventory's top edge.
+        // Measure the layout's bordered bounds at origin, then right-align the box to the book
+        // area (just left of the shifted inventory) and align its top to the inventory top.
         layout.setPosition(0, 0);
         Rect2i border = layout.getRectWithBorder();
         int boxW = border.getWidth();
         int boxH = border.getHeight();
-        int boxX = Math.max(4, inventory.getGuiLeft() - boxW - 12);
+        int boxX = Math.max(2, RecipeBookLayout.bookRight(inventory.getGuiLeft()) - boxW);
         int boxY = inventory.getGuiTop();
         layout.setPosition(boxX - border.getX(), boxY - border.getY());
 

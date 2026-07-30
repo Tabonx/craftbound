@@ -1,6 +1,5 @@
 package com.craftbound.client.jei;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,9 +10,10 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
-import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.resources.ResourceLocation;
 
 @JeiPlugin
@@ -28,6 +28,15 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public ResourceLocation getPluginUid()
     {
         return ID;
+    }
+
+    // Report "no GUI here" for the inventory so JEI does not draw its ingredient-list overlay
+    // next to it. Craftbound's own book takes over that role. Scoped to the inventory for now;
+    // other screens keep JEI's overlay until our book covers them.
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration)
+    {
+        registration.addGuiScreenHandler(InventoryScreen.class, screen -> null);
     }
 
     @Override
@@ -45,25 +54,6 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public static boolean hasRuntime()
     {
         return runtime != null;
-    }
-
-    public static void showCreateRecipes()
-    {
-        if (runtime == null)
-            return;
-
-        List<RecipeType<?>> createTypes = new ArrayList<>();
-        runtime.getRecipeManager()
-                .createRecipeCategoryLookup()
-                .get()
-                .map(category -> category.getRecipeType())
-                .filter(type -> type.getUid().getNamespace().equals("create"))
-                .forEach(type -> {
-                    if (!createTypes.contains(type))
-                        createTypes.add(type);
-                });
-
-        runtime.getRecipesGui().showTypes(createTypes);
     }
 
     // Spike: build a drawable layout for one Create recipe so we can render it inside our own
