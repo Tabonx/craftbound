@@ -25,3 +25,5 @@ run-data
 logs
 
 repo
+# macOS
+.DS_Store
