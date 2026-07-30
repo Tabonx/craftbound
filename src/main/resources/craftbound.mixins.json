@@ -4,7 +4,8 @@
   "package": "com.craftbound.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "RecipeButtonMixin"
+    "RecipeButtonMixin",
+    "RecipeBookVisibilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
