@@ -1,21 +1,28 @@
 package com.craftbound.client.jei;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import com.craftbound.Craftbound;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.ingredients.IIngredientType;
+import mezz.jei.api.ingredients.ITypedIngredient;
+import mezz.jei.api.neoforge.NeoForgeTypes;
+import mezz.jei.api.recipe.IFocus;
+import mezz.jei.api.recipe.IFocusFactory;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 
 @JeiPlugin
 public final class CraftboundJeiPlugin implements IModPlugin
@@ -57,46 +64,73 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return runtime != null;
     }
 
-    public static List<ItemStack> getAllItemStacks()
+    // The ingredient types a player browses as craftable results. Deliberately not "all registered
+    // types": mods register exotic types (tag-like pseudo-ingredients, etc.) that are noise here.
+    private static final List<IIngredientType<?>> BROWSABLE_TYPES =
+            List.of(VanillaTypes.ITEM_STACK, NeoForgeTypes.FLUID_STACK);
+
+    public static List<BookIngredient> getAllIngredients()
     {
         if (runtime == null)
             return List.of();
-        return List.copyOf(runtime.getIngredientManager().getAllItemStacks());
+
+        IIngredientManager manager = runtime.getIngredientManager();
+        List<BookIngredient> result = new ArrayList<>();
+        for (IIngredientType<?> type : BROWSABLE_TYPES)
+            collect(manager, type, result);
+        return result;
     }
 
-    // Spike: build a drawable layout for one Create recipe so we can render it inside our own
-    // rectangle (proving we can reuse JEI's category renderers without its full-screen GUI).
-    // Prefers the mixing category, falls back to any Create category that has a recipe.
-    public static Optional<IRecipeLayoutDrawable<?>> createCreateRecipeLayout()
+    private static <V> void collect(IIngredientManager manager, IIngredientType<V> type,
+            List<BookIngredient> out)
+    {
+        var renderer = manager.getIngredientRenderer(type);
+        var helper = manager.getIngredientHelper(type);
+        for (V ingredient : manager.getAllIngredients(type))
+            manager.createTypedIngredient(type, ingredient)
+                    .ifPresent(typed -> out.add(BookIngredient.of(typed, renderer, helper)));
+    }
+
+    // JEI's internal "Tag Info" categories (on by default in dev) list an item's tag memberships
+    // as pseudo-recipes. They are always registered under a "tag_recipes/" type path; the book
+    // shows how to make things, not what tags they belong to, so drop them.
+    private static final String TAG_RECIPE_PATH_PREFIX = "tag_recipes/";
+
+    // Every recipe that produces the given ingredient, each as a drawable ready to render inside
+    // the book's body rect.
+    public static List<IRecipeLayoutDrawable<?>> recipesFor(BookIngredient ingredient)
     {
         if (runtime == null)
-            return Optional.empty();
+            return List.of();
 
         IRecipeManager recipes = runtime.getRecipeManager();
-        IFocusGroup noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
+        IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
+        IFocus<?> output = outputFocus(focusFactory, ingredient.typed());
+        List<IFocus<?>> focuses = List.of(output);
+        IFocusGroup group = focusFactory.createFocusGroup(focuses);
 
-        List<IRecipeCategory<?>> createCategories = recipes.createRecipeCategoryLookup()
+        List<IRecipeLayoutDrawable<?>> result = new ArrayList<>();
+        recipes.createRecipeCategoryLookup()
+                .limitFocus(focuses)
                 .get()
-                .filter(category -> category.getRecipeType().getUid().getNamespace().equals("create"))
-                .toList();
-
-        IRecipeCategory<?> category = createCategories.stream()
-                .filter(c -> c.getRecipeType().getUid().getPath().equals("mixing"))
-                .findFirst()
-                .orElse(createCategories.isEmpty() ? null : createCategories.get(0));
-
-        if (category == null)
-            return Optional.empty();
-
-        return firstLayout(recipes, category, noFocus);
+                .filter(category -> !category.getRecipeType().getUid().getPath()
+                        .startsWith(TAG_RECIPE_PATH_PREFIX))
+                .forEach(category -> addLayouts(recipes, category, focuses, group, result));
+        return result;
     }
 
-    private static <T> Optional<IRecipeLayoutDrawable<?>> firstLayout(
-            IRecipeManager recipes, IRecipeCategory<T> category, IFocusGroup focus)
+    private static <V> IFocus<V> outputFocus(IFocusFactory focusFactory, ITypedIngredient<V> typed)
     {
-        return recipes.createRecipeLookup(category.getRecipeType())
+        return focusFactory.createFocus(RecipeIngredientRole.OUTPUT, typed);
+    }
+
+    private static <T> void addLayouts(IRecipeManager recipes, IRecipeCategory<T> category,
+            List<IFocus<?>> focuses, IFocusGroup group, List<IRecipeLayoutDrawable<?>> out)
+    {
+        recipes.createRecipeLookup(category.getRecipeType())
+                .limitFocus(focuses)
                 .get()
-                .findFirst()
-                .map(recipe -> recipes.createRecipeLayoutDrawableOrShowError(category, recipe, focus));
+                .forEach(recipe -> out.add(
+                        recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group)));
     }
 }

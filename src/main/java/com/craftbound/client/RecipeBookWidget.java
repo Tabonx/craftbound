@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.mojang.blaze3d.vertex.PoseStack;
+
+import mezz.jei.api.gui.IRecipeLayoutDrawable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,9 +17,10 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
 // typed characters. Hosts a vanilla EditBox for search and ImageButtons for page arrows so it
@@ -52,11 +57,24 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BACKWARD_X = 38;
     private static final int ARROW_Y = 137;
 
-    private final List<ItemStack> allItems = new ArrayList<>();
-    private List<ItemStack> filtered = List.of();
+    // Recipe state: a "‹ items" back control at the top and the recipe drawn into a body rect.
+    private static final int BACK_X = 8;
+    private static final int BACK_Y = 12;
+    private static final int BACK_W = 60;
+    private static final int BACK_H = 12;
+    private static final int BODY_X = 8;
+    private static final int BODY_Y = 30;
+    private static final int BODY_W = WIDTH - 2 * BODY_X;
+    private static final int BODY_H = ARROW_Y - BODY_Y - 4;
+
+    private final List<BookIngredient> allItems = new ArrayList<>();
+    private List<BookIngredient> filtered = List.of();
     private int page = 0;
     private boolean loaded = false;
-    private ItemStack hovered = ItemStack.EMPTY;
+    private BookIngredient hovered = null;
+
+    private List<IRecipeLayoutDrawable<?>> recipeLayouts = List.of();
+    private int recipeIndex = 0;
 
     private final EditBox search;
     private final ImageButton backButton;
@@ -72,8 +90,52 @@ public final class RecipeBookWidget extends AbstractWidget
         this.search.setHint(Component.translatable("gui.recipebook.search_hint"));
         this.search.setResponder(this::onSearchChanged);
 
-        this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> setPage(page - 1));
-        this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> setPage(page + 1));
+        this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
+        this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> stepForward());
+    }
+
+    private boolean inRecipeMode()
+    {
+        return !recipeLayouts.isEmpty();
+    }
+
+    // Browse and Recipe share the two page arrows; each step means "previous/next" in the active state.
+    private void stepBack()
+    {
+        if (inRecipeMode())
+            setRecipe(recipeIndex - 1);
+        else
+            setPage(page - 1);
+    }
+
+    private void stepForward()
+    {
+        if (inRecipeMode())
+            setRecipe(recipeIndex + 1);
+        else
+            setPage(page + 1);
+    }
+
+    private void openRecipe(BookIngredient ingredient)
+    {
+        List<IRecipeLayoutDrawable<?>> layouts = CraftboundJeiPlugin.recipesFor(ingredient);
+        if (layouts.isEmpty())
+            return;
+        recipeLayouts = layouts;
+        recipeIndex = 0;
+        hovered = null;
+        search.setFocused(false);
+    }
+
+    private void closeRecipe()
+    {
+        recipeLayouts = List.of();
+        recipeIndex = 0;
+    }
+
+    private void setRecipe(int target)
+    {
+        recipeIndex = Math.max(0, Math.min(recipeLayouts.size() - 1, target));
     }
 
     private void ensureLoaded()
@@ -81,7 +143,7 @@ public final class RecipeBookWidget extends AbstractWidget
         if (loaded || !CraftboundJeiPlugin.hasRuntime())
             return;
         allItems.clear();
-        allItems.addAll(CraftboundJeiPlugin.getAllItemStacks());
+        allItems.addAll(CraftboundJeiPlugin.getAllIngredients());
         applyFilter();
         loaded = true;
     }
@@ -98,7 +160,7 @@ public final class RecipeBookWidget extends AbstractWidget
             filtered = allItems;
         else
             filtered = allItems.stream()
-                    .filter(stack -> stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(needle))
+                    .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle))
                     .toList();
         setPage(page);
     }
@@ -131,46 +193,92 @@ public final class RecipeBookWidget extends AbstractWidget
         int y = getY();
         graphics.blit(BACKGROUND, x, y, 1, 1, WIDTH, HEIGHT);
 
+        if (inRecipeMode())
+            renderRecipe(graphics, x, y, mouseX, mouseY);
+        else
+            renderBrowse(graphics, x, y, mouseX, mouseY, partialTick);
+
+        renderPager(graphics, x, y, mouseX, mouseY, partialTick);
+    }
+
+    private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
+    {
         search.render(graphics, mouseX, mouseY, partialTick);
 
         int start = page * PER_PAGE;
-        hovered = ItemStack.EMPTY;
+        hovered = null;
         for (int i = 0; i < PER_PAGE && start + i < filtered.size(); i++)
         {
             int cellX = x + GRID_X + CELL * (i % COLS);
             int cellY = y + GRID_Y + CELL * (i / COLS);
             graphics.blitSprite(SLOT, cellX, cellY, CELL, CELL);
 
-            ItemStack stack = filtered.get(start + i);
-            graphics.renderItem(stack, cellX + ITEM_INSET, cellY + ITEM_INSET);
+            BookIngredient item = filtered.get(start + i);
+            item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
 
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
-                hovered = stack;
+                hovered = item;
         }
+    }
 
-        renderPager(graphics, x, y, mouseX, mouseY, partialTick);
+    private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
+    {
+        var font = Minecraft.getInstance().font;
+        boolean overBack = inRect(mouseX, mouseY, x + BACK_X, y + BACK_Y, BACK_W, BACK_H);
+        graphics.drawString(font, "‹ items", x + BACK_X, y + BACK_Y + 2, overBack ? 0xFFFFA0 : 0xE0E0E0, false);
+
+        IRecipeLayoutDrawable<?> layout = recipeLayouts.get(recipeIndex);
+        layout.setPosition(0, 0);
+        Rect2i bounds = layout.getRectWithBorder();
+        int bw = Math.max(1, bounds.getWidth());
+        int bh = Math.max(1, bounds.getHeight());
+
+        float scale = Math.min(1f, Math.min((float) BODY_W / bw, (float) BODY_H / bh));
+        int drawW = Math.round(bw * scale);
+        int drawH = Math.round(bh * scale);
+        int originX = x + BODY_X + (BODY_W - drawW) / 2;
+        int originY = y + BODY_Y + (BODY_H - drawH) / 2;
+
+        double localX = (mouseX - originX) / scale + bounds.getX();
+        double localY = (mouseY - originY) / scale + bounds.getY();
+
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(originX, originY, 0);
+        pose.scale(scale, scale, 1f);
+        pose.translate(-bounds.getX(), -bounds.getY(), 0);
+        layout.drawRecipe(graphics, (int) localX, (int) localY);
+        layout.drawOverlays(graphics, (int) localX, (int) localY);
+        pose.popPose();
     }
 
     // Drawn after the whole screen (slots and their placeholder sprites) so the tooltip layers
     // don't interleave with the inventory's empty-slot icons.
     public void renderDeferredTooltip(GuiGraphics graphics, int mouseX, int mouseY)
     {
-        if (visible && !hovered.isEmpty())
-            graphics.renderTooltip(Minecraft.getInstance().font, hovered, mouseX, mouseY);
+        if (!visible || hovered == null)
+            return;
+
+        Minecraft minecraft = Minecraft.getInstance();
+        TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
+        graphics.renderComponentTooltip(minecraft.font, hovered.tooltip(flag), mouseX, mouseY);
     }
 
     private void renderPager(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
     {
-        boolean paged = pageCount() > 1;
-        backButton.visible = paged && page > 0;
-        forwardButton.visible = paged && page < pageCount() - 1;
+        int count = inRecipeMode() ? recipeLayouts.size() : pageCount();
+        int index = inRecipeMode() ? recipeIndex : page;
+        boolean paged = count > 1;
+
+        backButton.visible = paged && index > 0;
+        forwardButton.visible = paged && index < count - 1;
         backButton.render(graphics, mouseX, mouseY, partialTick);
         forwardButton.render(graphics, mouseX, mouseY, partialTick);
 
         if (paged)
         {
             var font = Minecraft.getInstance().font;
-            String label = (page + 1) + "/" + pageCount();
+            String label = (index + 1) + "/" + count;
             graphics.drawString(font, label, x + WIDTH / 2 - font.width(label) / 2, y + ARROW_Y + 5, 0xFFFFFF, true);
         }
     }
@@ -180,6 +288,18 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         if (!visible)
             return false;
+
+        if (inRecipeMode())
+        {
+            if (inRect(mouseX, mouseY, getX() + BACK_X, getY() + BACK_Y, BACK_W, BACK_H))
+            {
+                closeRecipe();
+                return true;
+            }
+            if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
+                return true;
+            return isMouseOverBook(mouseX, mouseY);
+        }
 
         boolean onSearch = inRect(mouseX, mouseY, getX() + SEARCH_X, getY() + SEARCH_Y, SEARCH_W, SEARCH_H);
         search.setFocused(onSearch);
@@ -192,7 +312,27 @@ public final class RecipeBookWidget extends AbstractWidget
         if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
             return true;
 
+        BookIngredient clicked = ingredientAt(mouseX, mouseY);
+        if (clicked != null)
+        {
+            openRecipe(clicked);
+            return true;
+        }
+
         return isMouseOverBook(mouseX, mouseY);
+    }
+
+    private BookIngredient ingredientAt(double mouseX, double mouseY)
+    {
+        int start = page * PER_PAGE;
+        for (int i = 0; i < PER_PAGE && start + i < filtered.size(); i++)
+        {
+            int cellX = getX() + GRID_X + CELL * (i % COLS);
+            int cellY = getY() + GRID_Y + CELL * (i / COLS);
+            if (inRect(mouseX, mouseY, cellX, cellY, CELL, CELL))
+                return filtered.get(start + i);
+        }
+        return null;
     }
 
     @Override
@@ -201,7 +341,10 @@ public final class RecipeBookWidget extends AbstractWidget
         if (!visible || !isMouseOverBook(mouseX, mouseY))
             return false;
 
-        setPage(scrollY < 0 ? page + 1 : page - 1);
+        if (inRecipeMode())
+            setRecipe(scrollY < 0 ? recipeIndex + 1 : recipeIndex - 1);
+        else
+            setPage(scrollY < 0 ? page + 1 : page - 1);
         return true;
     }
 
