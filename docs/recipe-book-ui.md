@@ -77,6 +77,17 @@ to the new browse grid unchanged.
 - **Recipe gathering** across vanilla + Create categories for a given output — mechanism TBD.
 - **Browse filtering/search** — category tabs vs. plain search in the browse state — not yet
   designed.
+- **Responsive positioning.** The panel docks left of the inventory; at small window sizes it
+  overlaps the inventory. Needs a fallback (shift/scale/collapse) — deferred.
+
+## Status
+- Vanilla recipe book **suppressed** globally via `client/mixin/RecipeBookVisibilityMixin`
+  (forces `RecipeBookComponent.isVisible()` false). Note: this also removes the vanilla book at
+  crafting tables / furnaces, which our unified book will need to cover.
+- JEI-render bet **validated**: a Create recipe renders inside our own rect via
+  `IRecipeManager.createRecipeLayoutDrawableOrShowError` + `IRecipeLayoutDrawable`. See the
+  throwaway spike (`client/RecipeLayoutSpike` + `CraftboundJeiPlugin.createCreateRecipeLayout`),
+  to be replaced by the real docked panel.
 
 ## Reference
 Interactive layout mock (throwaway, not in-repo) built during design, demonstrated on **brass**
