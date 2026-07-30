@@ -2,6 +2,8 @@ package com.craftbound.client.jei;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import com.craftbound.Craftbound;
 
@@ -69,6 +71,8 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static final List<IIngredientType<?>> BROWSABLE_TYPES =
             List.of(VanillaTypes.ITEM_STACK, NeoForgeTypes.FLUID_STACK);
 
+    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
+    // but has no recipe producing it, so it would just be dead weight in the browse grid.
     public static List<BookIngredient> getAllIngredients()
     {
         if (runtime == null)
@@ -78,6 +82,10 @@ public final class CraftboundJeiPlugin implements IModPlugin
         List<BookIngredient> result = new ArrayList<>();
         for (IIngredientType<?> type : BROWSABLE_TYPES)
             collect(manager, type, result);
+
+        IRecipeManager recipes = runtime.getRecipeManager();
+        IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
+        result.removeIf(item -> !isProducible(recipes, focusFactory, item));
         return result;
     }
 
@@ -91,10 +99,32 @@ public final class CraftboundJeiPlugin implements IModPlugin
                     .ifPresent(typed -> out.add(BookIngredient.of(typed, renderer, helper)));
     }
 
+    // Wrap an ingredient (e.g. one clicked inside a shown recipe) so its own recipe can be opened.
+    public static Optional<BookIngredient> toBookIngredient(ITypedIngredient<?> typed)
+    {
+        if (runtime == null)
+            return Optional.empty();
+        return Optional.of(build(runtime.getIngredientManager(), typed));
+    }
+
+    private static <V> BookIngredient build(IIngredientManager manager, ITypedIngredient<V> typed)
+    {
+        return BookIngredient.of(typed, manager.getIngredientRenderer(typed.getType()),
+                manager.getIngredientHelper(typed.getType()));
+    }
+
     // JEI's internal "Tag Info" categories (on by default in dev) list an item's tag memberships
     // as pseudo-recipes. They are always registered under a "tag_recipes/" type path; the book
     // shows how to make things, not what tags they belong to, so drop them.
     private static final String TAG_RECIPE_PATH_PREFIX = "tag_recipes/";
+
+    // Whether at least one real (non-tag) recipe produces this ingredient. JEI's category lookup
+    // respects the focus role, so an OUTPUT focus yields exactly the categories that output it.
+    private static boolean isProducible(IRecipeManager recipes, IFocusFactory focusFactory,
+            BookIngredient ingredient)
+    {
+        return outputCategories(recipes, focusFactory, ingredient).findAny().isPresent();
+    }
 
     // Every recipe that produces the given ingredient, each as a drawable ready to render inside
     // the book's body rect.
@@ -105,18 +135,25 @@ public final class CraftboundJeiPlugin implements IModPlugin
 
         IRecipeManager recipes = runtime.getRecipeManager();
         IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
-        IFocus<?> output = outputFocus(focusFactory, ingredient.typed());
-        List<IFocus<?>> focuses = List.of(output);
+        List<IFocus<?>> focuses = List.of(outputFocus(focusFactory, ingredient.typed()));
         IFocusGroup group = focusFactory.createFocusGroup(focuses);
 
         List<IRecipeLayoutDrawable<?>> result = new ArrayList<>();
-        recipes.createRecipeCategoryLookup()
+        outputCategories(recipes, focusFactory, ingredient)
+                .forEach(category -> addLayouts(recipes, category, focuses, group, result));
+        return result;
+    }
+
+    // The non-tag recipe categories that produce the ingredient as an output.
+    private static Stream<IRecipeCategory<?>> outputCategories(IRecipeManager recipes,
+            IFocusFactory focusFactory, BookIngredient ingredient)
+    {
+        List<IFocus<?>> focuses = List.of(outputFocus(focusFactory, ingredient.typed()));
+        return recipes.createRecipeCategoryLookup()
                 .limitFocus(focuses)
                 .get()
                 .filter(category -> !category.getRecipeType().getUid().getPath()
-                        .startsWith(TAG_RECIPE_PATH_PREFIX))
-                .forEach(category -> addLayouts(recipes, category, focuses, group, result));
-        return result;
+                        .startsWith(TAG_RECIPE_PATH_PREFIX));
     }
 
     private static <V> IFocus<V> outputFocus(IFocusFactory focusFactory, ITypedIngredient<V> typed)

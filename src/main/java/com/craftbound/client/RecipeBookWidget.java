@@ -3,12 +3,15 @@ package com.craftbound.client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,8 +21,10 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.TooltipFlag;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
@@ -57,11 +62,13 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BACKWARD_X = 38;
     private static final int ARROW_Y = 137;
 
-    // Recipe state: a "‹ items" back control at the top and the recipe drawn into a body rect.
+    // Recipe state: an arrow-sprite "items" back control at the top and the recipe drawn into a body
+    // rect. The control reuses the book's page-arrow sprite so it hovers and clicks like vanilla.
+    private static final String BACK_LABEL = "items";
     private static final int BACK_X = 8;
-    private static final int BACK_Y = 12;
-    private static final int BACK_W = 60;
-    private static final int BACK_H = 12;
+    private static final int BACK_Y = SEARCH_Y - 2;
+    private static final int BACK_W = 42;
+    private static final int BACK_H = ARROW_H;
     private static final int BODY_X = 8;
     private static final int BODY_Y = 30;
     private static final int BODY_W = WIDTH - 2 * BODY_X;
@@ -75,6 +82,13 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private List<IRecipeLayoutDrawable<?>> recipeLayouts = List.of();
     private int recipeIndex = 0;
+
+    // Placement of the recipe drawable from the last render, so clicks can be mapped into its space.
+    private int recipeOriginX;
+    private int recipeOriginY;
+    private float recipeScale = 1f;
+    private int recipeBoundsX;
+    private int recipeBoundsY;
 
     private final EditBox search;
     private final ImageButton backButton;
@@ -116,21 +130,45 @@ public final class RecipeBookWidget extends AbstractWidget
             setPage(page + 1);
     }
 
-    private void openRecipe(BookIngredient ingredient)
+    private boolean openRecipe(BookIngredient ingredient)
     {
         List<IRecipeLayoutDrawable<?>> layouts = CraftboundJeiPlugin.recipesFor(ingredient);
         if (layouts.isEmpty())
-            return;
+            return false;
         recipeLayouts = layouts;
         recipeIndex = 0;
         hovered = null;
         search.setFocused(false);
+        return true;
     }
 
     private void closeRecipe()
     {
         recipeLayouts = List.of();
         recipeIndex = 0;
+    }
+
+    // Clicking an ingredient inside the shown recipe drills into that ingredient's own recipe.
+    private boolean openRecipeUnderMouse(double mouseX, double mouseY)
+    {
+        if (recipeLayouts.isEmpty())
+            return false;
+
+        IRecipeLayoutDrawable<?> layout = recipeLayouts.get(recipeIndex);
+        double localX = (mouseX - recipeOriginX) / recipeScale + recipeBoundsX;
+        double localY = (mouseY - recipeOriginY) / recipeScale + recipeBoundsY;
+
+        Optional<BookIngredient> clicked = layout.getSlotUnderMouse(localX, localY)
+                .map(RecipeSlotUnderMouse::slot)
+                .flatMap(IRecipeSlotView::getDisplayedIngredient)
+                .flatMap(CraftboundJeiPlugin::toBookIngredient);
+
+        if (clicked.isPresent() && openRecipe(clicked.get()))
+        {
+            playClickSound();
+            return true;
+        }
+        return false;
     }
 
     private void setRecipe(int target)
@@ -223,9 +261,17 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
+        // The search bar and its magnifier are baked into the book texture. Cover that strip with a
+        // slice of the book's own plain interior (sourced from the grid area) so the back control
+        // sits on clean parchment instead of overlapping the magnifier.
+        graphics.blit(BACKGROUND, x + BACK_X, y + SEARCH_Y - 3, BACK_X + 1, GRID_Y + 1,
+                WIDTH - 2 * BACK_X, SEARCH_H + 6);
+
         var font = Minecraft.getInstance().font;
         boolean overBack = inRect(mouseX, mouseY, x + BACK_X, y + BACK_Y, BACK_W, BACK_H);
-        graphics.drawString(font, "‹ items", x + BACK_X, y + BACK_Y + 2, overBack ? 0xFFFFA0 : 0xE0E0E0, false);
+        graphics.blitSprite(BACKWARD_SPRITES.get(true, overBack), x + BACK_X, y + BACK_Y, ARROW_W, ARROW_H);
+        graphics.drawString(font, BACK_LABEL, x + BACK_X + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
+                0xFFFFFF, true);
 
         IRecipeLayoutDrawable<?> layout = recipeLayouts.get(recipeIndex);
         layout.setPosition(0, 0);
@@ -238,6 +284,12 @@ public final class RecipeBookWidget extends AbstractWidget
         int drawH = Math.round(bh * scale);
         int originX = x + BODY_X + (BODY_W - drawW) / 2;
         int originY = y + BODY_Y + (BODY_H - drawH) / 2;
+
+        recipeScale = scale;
+        recipeOriginX = originX;
+        recipeOriginY = originY;
+        recipeBoundsX = bounds.getX();
+        recipeBoundsY = bounds.getY();
 
         double localX = (mouseX - originX) / scale + bounds.getX();
         double localY = (mouseY - originY) / scale + bounds.getY();
@@ -293,10 +345,13 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             if (inRect(mouseX, mouseY, getX() + BACK_X, getY() + BACK_Y, BACK_W, BACK_H))
             {
+                playClickSound();
                 closeRecipe();
                 return true;
             }
             if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
+                return true;
+            if (openRecipeUnderMouse(mouseX, mouseY))
                 return true;
             return isMouseOverBook(mouseX, mouseY);
         }
@@ -374,6 +429,12 @@ public final class RecipeBookWidget extends AbstractWidget
     private static boolean inRect(double mx, double my, int x, int y, int w, int h)
     {
         return mx >= x && mx < x + w && my >= y && my < y + h;
+    }
+
+    private static void playClickSound()
+    {
+        Minecraft.getInstance().getSoundManager()
+                .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     @Override
