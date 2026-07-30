@@ -18,6 +18,7 @@ import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
@@ -90,7 +91,12 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int TAB_SELECTED_SHIFT = 2;
     private static final int TAB_ICON_DX = 9;
     private static final int TAB_ICON_DY = 6;
+    // Up to MAX_TABS fit the rail; beyond that, show PAGED_TABS with ▲/▼ pagers claiming the ends.
     private static final int MAX_TABS = 6;
+    private static final int PAGED_TABS = 5;
+    private static final int RAIL_ARROW_H = 11;
+    private static final String RAIL_UP = "▲";
+    private static final String RAIL_DOWN = "▼";
 
     private final List<BookIngredient> allItems = new ArrayList<>();
     private List<BookIngredient> filtered = List.of();
@@ -246,8 +252,9 @@ public final class RecipeBookWidget extends AbstractWidget
         groupIndex = Math.max(0, Math.min(recipeGroups.size() - 1, target));
         if (groupIndex < railOffset)
             railOffset = groupIndex;
-        else if (groupIndex >= railOffset + MAX_TABS)
-            railOffset = groupIndex - MAX_TABS + 1;
+        else if (groupIndex >= railOffset + visibleTabs())
+            railOffset = groupIndex - visibleTabs() + 1;
+        railOffset = Math.max(0, Math.min(railMax(), railOffset));
     }
 
     private void setBody(List<Supplier<IRecipeLayoutDrawable<?>>> recipes)
@@ -270,8 +277,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void scrollRail(int delta)
     {
-        int max = Math.max(0, recipeGroups.size() - MAX_TABS);
-        railOffset = Math.max(0, Math.min(max, railOffset + delta));
+        railOffset = Math.max(0, Math.min(railMax(), railOffset + delta));
     }
 
     private void ensureLoaded()
@@ -344,15 +350,36 @@ public final class RecipeBookWidget extends AbstractWidget
         renderPager(graphics, x, y, mouseX, mouseY, partialTick);
     }
 
+    private boolean railPaged()
+    {
+        return recipeGroups.size() > MAX_TABS;
+    }
+
+    private int visibleTabs()
+    {
+        return railPaged() ? PAGED_TABS : recipeGroups.size();
+    }
+
+    // Tabs sit below the ▲ pager when the rail is paged, otherwise flush with the top.
+    private int tabTop()
+    {
+        return TAB_TOP + (railPaged() ? RAIL_ARROW_H : 0);
+    }
+
+    private int railMax()
+    {
+        return Math.max(0, recipeGroups.size() - visibleTabs());
+    }
+
     private void renderRail(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
-        int visible = Math.min(recipeGroups.size(), MAX_TABS);
+        int visible = visibleTabs();
         for (int row = 0; row < visible; row++)
         {
             int gi = railOffset + row;
             boolean selected = gi == groupIndex;
             int tabX = x + TAB_X - (selected ? TAB_SELECTED_SHIFT : 0);
-            int tabY = y + TAB_TOP + row * TAB_H;
+            int tabY = y + tabTop() + row * TAB_H;
 
             graphics.blitSprite(TAB_SPRITES.get(true, selected), tabX, tabY, TAB_W, TAB_H);
             recipeGroups.get(gi).drawIcon(graphics, tabX + TAB_ICON_DX, tabY + TAB_ICON_DY);
@@ -360,30 +387,65 @@ public final class RecipeBookWidget extends AbstractWidget
             if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))
                 hoveredTab = recipeGroups.get(gi);
         }
+
+        if (railPaged())
+        {
+            var font = Minecraft.getInstance().font;
+            drawRailArrow(graphics, font, RAIL_UP, y + TAB_TOP, railOffset > 0, mouseX, mouseY);
+            drawRailArrow(graphics, font, RAIL_DOWN, downArrowY(), railOffset < railMax(), mouseX, mouseY);
+        }
     }
 
+    private void drawRailArrow(GuiGraphics graphics, Font font, String glyph,
+            int arrowY, boolean enabled, int mouseX, int mouseY)
+    {
+        int x = getX();
+        boolean hovered = enabled && inRect(mouseX, mouseY, x + TAB_X, arrowY, -TAB_X, RAIL_ARROW_H);
+        int color = !enabled ? 0x808080 : hovered ? 0xFFFFA0 : 0xFFFFFF;
+        int glyphX = x + TAB_X + (-TAB_X - font.width(glyph)) / 2;
+        graphics.drawString(font, glyph, glyphX, arrowY + 2, color, true);
+    }
+
+    private int downArrowY()
+    {
+        return getY() + tabTop() + visibleTabs() * TAB_H;
+    }
+
+    // The visible tab whose window position holds the mouse, or -1. Ignores the pager arrow rows.
     private int railTabAt(double mouseX, double mouseY)
     {
         int x = getX();
         int y = getY();
-        int visible = Math.min(recipeGroups.size(), MAX_TABS);
+        int visible = visibleTabs();
         for (int row = 0; row < visible; row++)
         {
             int gi = railOffset + row;
             int tabX = x + TAB_X - (gi == groupIndex ? TAB_SELECTED_SHIFT : 0);
-            int tabY = y + TAB_TOP + row * TAB_H;
+            int tabY = y + tabTop() + row * TAB_H;
             if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))
                 return gi;
         }
         return -1;
     }
 
+    // +1 for the down pager, -1 for the up pager, 0 if neither was clicked.
+    private int railArrowAt(double mouseX, double mouseY)
+    {
+        if (!railPaged())
+            return 0;
+        int x = getX();
+        if (inRect(mouseX, mouseY, x + TAB_X, getY() + TAB_TOP, -TAB_X, RAIL_ARROW_H) && railOffset > 0)
+            return -1;
+        if (inRect(mouseX, mouseY, x + TAB_X, downArrowY(), -TAB_X, RAIL_ARROW_H) && railOffset < railMax())
+            return 1;
+        return 0;
+    }
+
     private boolean isOverRail(double mouseX, double mouseY)
     {
         int x = getX();
-        int y = getY();
-        int visible = Math.min(recipeGroups.size(), MAX_TABS);
-        return inRect(mouseX, mouseY, x + TAB_X, y + TAB_TOP, -TAB_X, visible * TAB_H);
+        int height = tabTop() - TAB_TOP + visibleTabs() * TAB_H + (railPaged() ? RAIL_ARROW_H : 0);
+        return inRect(mouseX, mouseY, x + TAB_X, getY() + TAB_TOP, -TAB_X, height);
     }
 
     private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
@@ -498,6 +560,13 @@ public final class RecipeBookWidget extends AbstractWidget
 
         if (inRecipeMode())
         {
+            int arrow = railArrowAt(mouseX, mouseY);
+            if (arrow != 0)
+            {
+                playClickSound();
+                scrollRail(arrow);
+                return true;
+            }
             int tab = railTabAt(mouseX, mouseY);
             if (tab >= 0)
             {
