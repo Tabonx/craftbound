@@ -1,17 +1,21 @@
 package com.craftbound.client;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.RecipeGroup;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
+import mezz.jei.api.recipe.RecipeIngredientRole;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -45,6 +49,9 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final WidgetSprites BACKWARD_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/page_backward"),
             ResourceLocation.withDefaultNamespace("recipe_book/page_backward_highlighted"));
+    private static final WidgetSprites TAB_SPRITES = new WidgetSprites(
+            ResourceLocation.withDefaultNamespace("recipe_book/tab"),
+            ResourceLocation.withDefaultNamespace("recipe_book/tab_selected"));
 
     private static final int COLS = 5;
     private static final int PER_PAGE = COLS * 4;
@@ -74,13 +81,32 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BODY_W = WIDTH - 2 * BODY_X;
     private static final int BODY_H = ARROW_Y - BODY_Y - 4;
 
+    // Category tabs protrude to the left of the book, like vanilla's recipe-book category rail. The
+    // tab is 35 wide with its right edge tucked under the book's left border (drawn over it).
+    private static final int TAB_W = 35;
+    private static final int TAB_H = 27;
+    private static final int TAB_X = -30;
+    private static final int TAB_TOP = 4;
+    private static final int TAB_SELECTED_SHIFT = 2;
+    private static final int TAB_ICON_DX = 9;
+    private static final int TAB_ICON_DY = 6;
+    private static final int MAX_TABS = 6;
+
     private final List<BookIngredient> allItems = new ArrayList<>();
     private List<BookIngredient> filtered = List.of();
     private int page = 0;
     private boolean loaded = false;
     private BookIngredient hovered = null;
 
-    private List<IRecipeLayoutDrawable<?>> recipeLayouts = List.of();
+    private List<RecipeGroup> recipeGroups = List.of();
+    private int groupIndex = 0;
+    private int railOffset = 0;
+    private RecipeGroup hoveredTab = null;
+
+    // The recipes currently filling the body (one category's, focused or full), built lazily via
+    // suppliers; bodyCache holds the built drawable per index (null until first shown).
+    private List<Supplier<IRecipeLayoutDrawable<?>>> bodyRecipes = List.of();
+    private List<IRecipeLayoutDrawable<?>> bodyCache = new ArrayList<>();
     private int recipeIndex = 0;
 
     // Placement of the recipe drawable from the last render, so clicks can be mapped into its space.
@@ -110,10 +136,29 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private boolean inRecipeMode()
     {
-        return !recipeLayouts.isEmpty();
+        return !recipeGroups.isEmpty();
     }
 
-    // Browse and Recipe share the two page arrows; each step means "previous/next" in the active state.
+    private RecipeGroup currentGroup()
+    {
+        return recipeGroups.get(groupIndex);
+    }
+
+    // Recipes are built lazily so browsing a whole category (right-click) doesn't build thousands
+    // of drawables up front; each is created and cached the first time it is shown.
+    private IRecipeLayoutDrawable<?> currentRecipe()
+    {
+        IRecipeLayoutDrawable<?> drawable = bodyCache.get(recipeIndex);
+        if (drawable == null)
+        {
+            drawable = bodyRecipes.get(recipeIndex).get();
+            bodyCache.set(recipeIndex, drawable);
+        }
+        return drawable;
+    }
+
+    // Browse and Recipe share the two page arrows; each step means "previous/next" in the active
+    // state: another page of the grid, or another recipe within the shown category.
     private void stepBack()
     {
         if (inRecipeMode())
@@ -130,40 +175,46 @@ public final class RecipeBookWidget extends AbstractWidget
             setPage(page + 1);
     }
 
-    private boolean openRecipe(BookIngredient ingredient)
+    // OUTPUT shows how the ingredient is made; INPUT shows where it is used (right-click).
+    private boolean showRecipes(BookIngredient ingredient, RecipeIngredientRole role)
     {
-        List<IRecipeLayoutDrawable<?>> layouts = CraftboundJeiPlugin.recipesFor(ingredient);
-        if (layouts.isEmpty())
+        List<RecipeGroup> groups = CraftboundJeiPlugin.recipeGroupsFor(ingredient, role);
+        if (groups.isEmpty())
             return false;
-        recipeLayouts = layouts;
-        recipeIndex = 0;
+        recipeGroups = groups;
+        railOffset = 0;
         hovered = null;
         search.setFocused(false);
+        selectGroup(0);
         return true;
     }
 
     private void closeRecipe()
     {
-        recipeLayouts = List.of();
+        recipeGroups = List.of();
+        bodyRecipes = List.of();
+        bodyCache = new ArrayList<>();
+        groupIndex = 0;
         recipeIndex = 0;
+        railOffset = 0;
     }
 
-    // Clicking an ingredient inside the shown recipe drills into that ingredient's own recipe.
-    private boolean openRecipeUnderMouse(double mouseX, double mouseY)
+    // Clicking an ingredient inside the shown recipe drills into it: left shows its recipes, right
+    // shows where it is used.
+    private boolean drillUnderMouse(double mouseX, double mouseY, RecipeIngredientRole role)
     {
-        if (recipeLayouts.isEmpty())
+        if (!inRecipeMode())
             return false;
 
-        IRecipeLayoutDrawable<?> layout = recipeLayouts.get(recipeIndex);
         double localX = (mouseX - recipeOriginX) / recipeScale + recipeBoundsX;
         double localY = (mouseY - recipeOriginY) / recipeScale + recipeBoundsY;
 
-        Optional<BookIngredient> clicked = layout.getSlotUnderMouse(localX, localY)
+        Optional<BookIngredient> clicked = currentRecipe().getSlotUnderMouse(localX, localY)
                 .map(RecipeSlotUnderMouse::slot)
                 .flatMap(IRecipeSlotView::getDisplayedIngredient)
                 .flatMap(CraftboundJeiPlugin::toBookIngredient);
 
-        if (clicked.isPresent() && openRecipe(clicked.get()))
+        if (clicked.isPresent() && showRecipes(clicked.get(), role))
         {
             playClickSound();
             return true;
@@ -171,9 +222,56 @@ public final class RecipeBookWidget extends AbstractWidget
         return false;
     }
 
+    // Left-click a tab: the focused ingredient's recipes in that category.
+    private void selectGroup(int target)
+    {
+        setActiveTab(target);
+        setBody(constantSuppliers(currentGroup().recipes()));
+    }
+
+    // Right-click a tab: every recipe in that category, not just ones involving the focused item.
+    private void showAllRecipes(int target)
+    {
+        int previous = groupIndex;
+        setActiveTab(target);
+        List<Supplier<IRecipeLayoutDrawable<?>>> all = CraftboundJeiPlugin.allRecipesFor(currentGroup());
+        if (all.isEmpty())
+            setActiveTab(previous);
+        else
+            setBody(all);
+    }
+
+    private void setActiveTab(int target)
+    {
+        groupIndex = Math.max(0, Math.min(recipeGroups.size() - 1, target));
+        if (groupIndex < railOffset)
+            railOffset = groupIndex;
+        else if (groupIndex >= railOffset + MAX_TABS)
+            railOffset = groupIndex - MAX_TABS + 1;
+    }
+
+    private void setBody(List<Supplier<IRecipeLayoutDrawable<?>>> recipes)
+    {
+        bodyRecipes = recipes;
+        bodyCache = new ArrayList<>(Collections.nCopies(recipes.size(), null));
+        recipeIndex = 0;
+    }
+
     private void setRecipe(int target)
     {
-        recipeIndex = Math.max(0, Math.min(recipeLayouts.size() - 1, target));
+        recipeIndex = Math.max(0, Math.min(bodyRecipes.size() - 1, target));
+    }
+
+    private static List<Supplier<IRecipeLayoutDrawable<?>>> constantSuppliers(
+            List<IRecipeLayoutDrawable<?>> built)
+    {
+        return built.stream().<Supplier<IRecipeLayoutDrawable<?>>>map(drawable -> () -> drawable).toList();
+    }
+
+    private void scrollRail(int delta)
+    {
+        int max = Math.max(0, recipeGroups.size() - MAX_TABS);
+        railOffset = Math.max(0, Math.min(max, railOffset + delta));
     }
 
     private void ensureLoaded()
@@ -231,12 +329,61 @@ public final class RecipeBookWidget extends AbstractWidget
         int y = getY();
         graphics.blit(BACKGROUND, x, y, 1, 1, WIDTH, HEIGHT);
 
+        // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
+        hoveredTab = null;
         if (inRecipeMode())
+        {
+            renderRail(graphics, x, y, mouseX, mouseY);
             renderRecipe(graphics, x, y, mouseX, mouseY);
+        }
         else
+        {
             renderBrowse(graphics, x, y, mouseX, mouseY, partialTick);
+        }
 
         renderPager(graphics, x, y, mouseX, mouseY, partialTick);
+    }
+
+    private void renderRail(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
+    {
+        int visible = Math.min(recipeGroups.size(), MAX_TABS);
+        for (int row = 0; row < visible; row++)
+        {
+            int gi = railOffset + row;
+            boolean selected = gi == groupIndex;
+            int tabX = x + TAB_X - (selected ? TAB_SELECTED_SHIFT : 0);
+            int tabY = y + TAB_TOP + row * TAB_H;
+
+            graphics.blitSprite(TAB_SPRITES.get(true, selected), tabX, tabY, TAB_W, TAB_H);
+            recipeGroups.get(gi).drawIcon(graphics, tabX + TAB_ICON_DX, tabY + TAB_ICON_DY);
+
+            if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))
+                hoveredTab = recipeGroups.get(gi);
+        }
+    }
+
+    private int railTabAt(double mouseX, double mouseY)
+    {
+        int x = getX();
+        int y = getY();
+        int visible = Math.min(recipeGroups.size(), MAX_TABS);
+        for (int row = 0; row < visible; row++)
+        {
+            int gi = railOffset + row;
+            int tabX = x + TAB_X - (gi == groupIndex ? TAB_SELECTED_SHIFT : 0);
+            int tabY = y + TAB_TOP + row * TAB_H;
+            if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))
+                return gi;
+        }
+        return -1;
+    }
+
+    private boolean isOverRail(double mouseX, double mouseY)
+    {
+        int x = getX();
+        int y = getY();
+        int visible = Math.min(recipeGroups.size(), MAX_TABS);
+        return inRect(mouseX, mouseY, x + TAB_X, y + TAB_TOP, -TAB_X, visible * TAB_H);
     }
 
     private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
@@ -273,7 +420,7 @@ public final class RecipeBookWidget extends AbstractWidget
         graphics.drawString(font, BACK_LABEL, x + BACK_X + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
                 0xFFFFFF, true);
 
-        IRecipeLayoutDrawable<?> layout = recipeLayouts.get(recipeIndex);
+        IRecipeLayoutDrawable<?> layout = currentRecipe();
         layout.setPosition(0, 0);
         Rect2i bounds = layout.getRectWithBorder();
         int bw = Math.max(1, bounds.getWidth());
@@ -308,17 +455,25 @@ public final class RecipeBookWidget extends AbstractWidget
     // don't interleave with the inventory's empty-slot icons.
     public void renderDeferredTooltip(GuiGraphics graphics, int mouseX, int mouseY)
     {
-        if (!visible || hovered == null)
+        if (!visible)
             return;
 
         Minecraft minecraft = Minecraft.getInstance();
-        TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
-        graphics.renderComponentTooltip(minecraft.font, hovered.tooltip(flag), mouseX, mouseY);
+        if (hoveredTab != null)
+        {
+            graphics.renderTooltip(minecraft.font, hoveredTab.title(), mouseX, mouseY);
+            return;
+        }
+        if (hovered != null)
+        {
+            TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
+            graphics.renderComponentTooltip(minecraft.font, hovered.tooltip(flag), mouseX, mouseY);
+        }
     }
 
     private void renderPager(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
     {
-        int count = inRecipeMode() ? recipeLayouts.size() : pageCount();
+        int count = inRecipeMode() ? bodyRecipes.size() : pageCount();
         int index = inRecipeMode() ? recipeIndex : page;
         boolean paged = count > 1;
 
@@ -343,6 +498,17 @@ public final class RecipeBookWidget extends AbstractWidget
 
         if (inRecipeMode())
         {
+            int tab = railTabAt(mouseX, mouseY);
+            if (tab >= 0)
+            {
+                // Left-click a tab: the item's recipes in that category. Right-click: the whole category.
+                playClickSound();
+                if (isRightClick(button))
+                    showAllRecipes(tab);
+                else
+                    selectGroup(tab);
+                return true;
+            }
             if (inRect(mouseX, mouseY, getX() + BACK_X, getY() + BACK_Y, BACK_W, BACK_H))
             {
                 playClickSound();
@@ -351,7 +517,7 @@ public final class RecipeBookWidget extends AbstractWidget
             }
             if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
                 return true;
-            if (openRecipeUnderMouse(mouseX, mouseY))
+            if (drillUnderMouse(mouseX, mouseY, roleFor(button)))
                 return true;
             return isMouseOverBook(mouseX, mouseY);
         }
@@ -367,14 +533,25 @@ public final class RecipeBookWidget extends AbstractWidget
         if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
             return true;
 
+        // Left-click an item: how it is made. Right-click: where it is used.
         BookIngredient clicked = ingredientAt(mouseX, mouseY);
         if (clicked != null)
         {
-            openRecipe(clicked);
+            showRecipes(clicked, roleFor(button));
             return true;
         }
 
         return isMouseOverBook(mouseX, mouseY);
+    }
+
+    private static boolean isRightClick(int button)
+    {
+        return button == 1;
+    }
+
+    private static RecipeIngredientRole roleFor(int button)
+    {
+        return isRightClick(button) ? RecipeIngredientRole.INPUT : RecipeIngredientRole.OUTPUT;
     }
 
     private BookIngredient ingredientAt(double mouseX, double mouseY)
@@ -393,7 +570,15 @@ public final class RecipeBookWidget extends AbstractWidget
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
     {
-        if (!visible || !isMouseOverBook(mouseX, mouseY))
+        if (!visible)
+            return false;
+
+        if (inRecipeMode() && isOverRail(mouseX, mouseY))
+        {
+            scrollRail(scrollY < 0 ? 1 : -1);
+            return true;
+        }
+        if (!isMouseOverBook(mouseX, mouseY))
             return false;
 
         if (inRecipeMode())

@@ -3,6 +3,7 @@ package com.craftbound.client.jei;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.craftbound.Craftbound;
@@ -11,6 +12,7 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.neoforge.NeoForgeTypes;
@@ -123,32 +125,83 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static boolean isProducible(IRecipeManager recipes, IFocusFactory focusFactory,
             BookIngredient ingredient)
     {
-        return outputCategories(recipes, focusFactory, ingredient).findAny().isPresent();
+        List<IFocus<?>> focuses = List.of(focus(focusFactory, RecipeIngredientRole.OUTPUT, ingredient.typed()));
+        return categoriesFor(recipes, focuses).findAny().isPresent();
     }
 
-    // Every recipe that produces the given ingredient, each as a drawable ready to render inside
-    // the book's body rect.
-    public static List<IRecipeLayoutDrawable<?>> recipesFor(BookIngredient ingredient)
+    // Recipes involving the ingredient in the given role, grouped by category so each becomes a tab
+    // on the book's left rail. OUTPUT answers "how is this made?"; INPUT answers "where is it used?".
+    public static List<RecipeGroup> recipeGroupsFor(BookIngredient ingredient, RecipeIngredientRole role)
     {
         if (runtime == null)
             return List.of();
 
         IRecipeManager recipes = runtime.getRecipeManager();
         IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
-        List<IFocus<?>> focuses = List.of(outputFocus(focusFactory, ingredient.typed()));
+        IIngredientManager manager = runtime.getIngredientManager();
+        List<IFocus<?>> focuses = List.of(focus(focusFactory, role, ingredient.typed()));
         IFocusGroup group = focusFactory.createFocusGroup(focuses);
 
-        List<IRecipeLayoutDrawable<?>> result = new ArrayList<>();
-        outputCategories(recipes, focusFactory, ingredient)
-                .forEach(category -> addLayouts(recipes, category, focuses, group, result));
+        List<RecipeGroup> result = new ArrayList<>();
+        categoriesFor(recipes, focuses).forEach(category ->
+        {
+            List<IRecipeLayoutDrawable<?>> layouts = new ArrayList<>();
+            addLayouts(recipes, category, focuses, group, layouts);
+            if (!layouts.isEmpty())
+                result.add(new RecipeGroup(category, category.getTitle(), layouts,
+                        iconFor(recipes, manager, category)));
+        });
         return result;
     }
 
-    // The non-tag recipe categories that produce the ingredient as an output.
-    private static Stream<IRecipeCategory<?>> outputCategories(IRecipeManager recipes,
-            IFocusFactory focusFactory, BookIngredient ingredient)
+    // Every recipe in a category, built lazily: right-clicking a tab browses the whole category
+    // (thousands of entries for crafting), so drawables are only created for the one being viewed.
+    public static List<Supplier<IRecipeLayoutDrawable<?>>> allRecipesFor(RecipeGroup group)
     {
-        List<IFocus<?>> focuses = List.of(outputFocus(focusFactory, ingredient.typed()));
+        if (runtime == null)
+            return List.of();
+
+        IRecipeManager recipes = runtime.getRecipeManager();
+        IFocusGroup noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
+        return recipeSuppliers(recipes, group.category(), noFocus);
+    }
+
+    private static <T> List<Supplier<IRecipeLayoutDrawable<?>>> recipeSuppliers(IRecipeManager recipes,
+            IRecipeCategory<T> category, IFocusGroup noFocus)
+    {
+        return recipes.createRecipeLookup(category.getRecipeType())
+                .get()
+                .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe ->
+                        () -> recipes.createRecipeLayoutDrawableOrShowError(category, recipe, noFocus))
+                .toList();
+    }
+
+    // Prefer the category's own tab icon; fall back to its first catalyst (the workstation block,
+    // e.g. a furnace or a Create machine), matching how JEI itself icons a category.
+    private static RecipeGroup.Icon iconFor(IRecipeManager recipes, IIngredientManager manager,
+            IRecipeCategory<?> category)
+    {
+        IDrawable icon = category.getIcon();
+        if (icon != null)
+            return icon::draw;
+
+        return recipes.createRecipeCatalystLookup(category.getRecipeType())
+                .get()
+                .findFirst()
+                .map(catalyst -> catalystIcon(manager, catalyst))
+                .orElse((graphics, x, y) -> { });
+    }
+
+    private static <V> RecipeGroup.Icon catalystIcon(IIngredientManager manager, ITypedIngredient<V> catalyst)
+    {
+        var renderer = manager.getIngredientRenderer(catalyst.getType());
+        V ingredient = catalyst.getIngredient();
+        return (graphics, x, y) -> renderer.render(graphics, ingredient, x, y);
+    }
+
+    // The non-tag recipe categories matching the given focus (by role and ingredient).
+    private static Stream<IRecipeCategory<?>> categoriesFor(IRecipeManager recipes, List<IFocus<?>> focuses)
+    {
         return recipes.createRecipeCategoryLookup()
                 .limitFocus(focuses)
                 .get()
@@ -156,9 +209,10 @@ public final class CraftboundJeiPlugin implements IModPlugin
                         .startsWith(TAG_RECIPE_PATH_PREFIX));
     }
 
-    private static <V> IFocus<V> outputFocus(IFocusFactory focusFactory, ITypedIngredient<V> typed)
+    private static <V> IFocus<V> focus(IFocusFactory focusFactory, RecipeIngredientRole role,
+            ITypedIngredient<V> typed)
     {
-        return focusFactory.createFocus(RecipeIngredientRole.OUTPUT, typed);
+        return focusFactory.createFocus(role, typed);
     }
 
     private static <T> void addLayouts(IRecipeManager recipes, IRecipeCategory<T> category,
