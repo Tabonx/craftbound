@@ -13,9 +13,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
-// Swap the vanilla recipe-book toggle (which drives the now-suppressed vanilla book) for our own
-// button in the same spot, reusing the vanilla sprite. Ours toggles Craftbound's book and shifts
-// the inventory aside to make room when the book is open.
+// Swap the vanilla recipe-book toggle for our own (same sprite, same spot), add Craftbound's book
+// widget beside the inventory, and shift the inventory aside to make room while the book is open.
 @EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class InventoryScreenTweaks
 {
@@ -31,25 +30,51 @@ public final class InventoryScreenTweaks
 
         removeVanillaRecipeButton(event);
 
+        RecipeBookWidget book = new RecipeBookWidget();
+        event.addListener(book);
+
         ImageButton button = new ImageButton(
                 0, 0, 20, 18,
                 RecipeBookComponent.RECIPE_BUTTON_SPRITES,
                 b -> {
                     RecipeBookState.toggle();
-                    applyLayout(inventory, b);
+                    applyLayout(inventory, b, book);
                 });
         event.addListener(button);
-        applyLayout(inventory, button);
+
+        applyLayout(inventory, button, book);
     }
 
-    // Position the inventory (and our button) for the current open/closed state.
-    private static void applyLayout(InventoryScreen inventory, Button button)
+    // Draw the book's item tooltip last, so it sits above the inventory's slot placeholders.
+    @SubscribeEvent
+    public static void onRender(ScreenEvent.Render.Post event)
     {
+        if (!(event.getScreen() instanceof InventoryScreen inventory))
+            return;
+
+        for (GuiEventListener listener : inventory.children())
+        {
+            if (listener instanceof RecipeBookWidget book)
+            {
+                book.renderDeferredTooltip(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
+                return;
+            }
+        }
+    }
+
+    // Position the inventory, our button and the book for the current open/closed state.
+    private static void applyLayout(InventoryScreen inventory, Button button, RecipeBookWidget book)
+    {
+        boolean open = RecipeBookState.isOpen();
         ContainerScreenAccessor accessor = (ContainerScreenAccessor) inventory;
         int leftPos = RecipeBookLayout.inventoryLeftPos(
-                inventory.width, accessor.craftbound$getImageWidth(), RecipeBookState.isOpen());
+                inventory.width, accessor.craftbound$getImageWidth(), open);
         accessor.craftbound$setLeftPos(leftPos);
+
         button.setPosition(leftPos + 104, inventory.height / 2 - 22);
+
+        book.visible = open;
+        book.setPosition(RecipeBookLayout.bookRight(leftPos) - RecipeBookWidget.WIDTH, inventory.getGuiTop());
     }
 
     // The recipe-book toggle is the only 20x18 ImageButton the inventory adds.

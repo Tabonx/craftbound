@@ -6,7 +6,7 @@ package com.craftbound.client;
 // be unit-tested.
 public final class RecipeBookLayout
 {
-    public static final int BOOK_WIDTH = 176;
+    public static final int BOOK_WIDTH = 147;
     public static final int GAP = 8;
 
     private RecipeBookLayout()

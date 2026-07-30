@@ -15,6 +15,7 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 @JeiPlugin
 public final class CraftboundJeiPlugin implements IModPlugin
@@ -54,6 +55,13 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public static boolean hasRuntime()
     {
         return runtime != null;
+    }
+
+    public static List<ItemStack> getAllItemStacks()
+    {
+        if (runtime == null)
+            return List.of();
+        return List.copyOf(runtime.getIngredientManager().getAllItemStacks());
     }
 
     // Spike: build a drawable layout for one Create recipe so we can render it inside our own
