@@ -39,7 +39,16 @@ public final class InventoryScreenTweaks
                 b -> {
                     RecipeBookState.toggle();
                     applyLayout(inventory, b, book);
-                });
+                })
+        {
+            // A mouse click otherwise leaves the button focused, so it stays highlighted until
+            // focus moves elsewhere. Refuse focus so only a live hover highlights the toggle.
+            @Override
+            public void setFocused(boolean focused)
+            {
+                super.setFocused(false);
+            }
+        };
         event.addListener(button);
 
         applyLayout(inventory, button, book);
