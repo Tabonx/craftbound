@@ -141,11 +141,11 @@ public final class RecipeBookWidget extends AbstractWidget
     private List<IRecipeLayoutDrawable<?>> bodyCache = new ArrayList<>();
     private int recipeIndex = 0;
 
-    // The book keeps its right edge where the host placed it (baseX + WIDTH) and grows left in recipe
-    // mode to fit wide, multi-step recipes; panelWidth is the current width, WIDTH while browsing.
+    // The book keeps its right edge where the host placed it (baseX + WIDTH) and widens left to a
+    // single fixed width in recipe mode; browsing it stays WIDTH. The width never varies per recipe,
+    // so the panel's left edge (and the inventory beside it) stays put — recipes scale to fit.
     private int baseX;
     private int baseY;
-    private int panelWidth = WIDTH;
 
     // Placement of the recipe drawable from the last render, so clicks can be mapped into its space.
     private int recipeOriginX;
@@ -241,7 +241,7 @@ public final class RecipeBookWidget extends AbstractWidget
         groupIndex = 0;
         recipeIndex = 0;
         railOffset = 0;
-        updatePanelWidth();
+        relayout();
     }
 
     // Clicking an ingredient inside the shown recipe drills into it: left shows its recipes, right
@@ -301,13 +301,12 @@ public final class RecipeBookWidget extends AbstractWidget
         bodyRecipes = recipes;
         bodyCache = new ArrayList<>(Collections.nCopies(recipes.size(), null));
         recipeIndex = 0;
-        updatePanelWidth();
+        relayout();
     }
 
     private void setRecipe(int target)
     {
         recipeIndex = Math.max(0, Math.min(bodyRecipes.size() - 1, target));
-        updatePanelWidth();
     }
 
     private static List<Supplier<IRecipeLayoutDrawable<?>>> constantSuppliers(
@@ -405,10 +404,11 @@ public final class RecipeBookWidget extends AbstractWidget
         relayout();
     }
 
-    // Apply the current width and position: anchored right edge, grown left, sub-widgets re-placed.
+    // Apply the current width and position: anchored right edge, widened left in recipe mode to a
+    // fixed width (clamped to the screen), sub-widgets re-placed.
     private void relayout()
     {
-        int w = inRecipeMode() ? Math.min(panelWidth, maxPanelWidth()) : WIDTH;
+        int w = inRecipeMode() ? Math.min(RecipeBookLayout.RECIPE_WIDTH, maxPanelWidth()) : WIDTH;
         int px = baseX + WIDTH - w;
         super.setPosition(px, baseY);
         setWidth(w);
@@ -419,26 +419,11 @@ public final class RecipeBookWidget extends AbstractWidget
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
     }
 
-    // Widen to fit the shown recipe, but never past the screen: the left edge (with the tab rail that
-    // protrudes TAB_X further left) must stay on-screen.
+    // Cap the recipe-mode width so the left edge (with the tab rail that protrudes TAB_X further
+    // left) stays on-screen on very narrow windows.
     private int maxPanelWidth()
     {
         return Math.max(WIDTH, baseX + WIDTH + TAB_X - 2);
-    }
-
-    private void updatePanelWidth()
-    {
-        if (!inRecipeMode())
-        {
-            panelWidth = WIDTH;
-            relayout();
-            return;
-        }
-        IRecipeLayoutDrawable<?> recipe = currentRecipe();
-        recipe.setPosition(0, 0);
-        int natural = recipe.getRectWithBorder().getWidth();
-        panelWidth = Math.max(WIDTH, Math.min(maxPanelWidth(), natural + 2 * BODY_X));
-        relayout();
     }
 
     private int bodyWidth()

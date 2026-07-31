@@ -43,25 +43,33 @@ class RecipeBookLayoutTest
     }
 
     @Test
-    void wideWindowBiasesRightToGiveTheBookRoomToGrow()
+    void openReservesTheWidenedRecipeColumnAndCentersTheCluster()
     {
-        int reserved = RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP;
+        int reserved = RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP;
         int clusterLeft = (640 - (reserved + INVENTORY_WIDTH)) / 2;
-        int centeredOpen = clusterLeft + reserved;
 
         int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
-        assertTrue(leftPos > centeredOpen, "open layout should bias the inventory further right");
+        assertEquals(clusterLeft + reserved, leftPos, "inventory sits just right of the reserved column");
         assertTrue(leftPos + INVENTORY_WIDTH <= 640, "inventory must stay fully on screen");
 
-        int growthRoom = RecipeBookLayout.bookRight(leftPos) - RecipeBookLayout.BOOK_WIDTH;
-        assertTrue(growthRoom >= clusterLeft, "the book should gain left room beyond the centered layout");
+        int recipeLeft = RecipeBookLayout.bookRight(leftPos) - RecipeBookLayout.RECIPE_WIDTH;
+        assertTrue(recipeLeft >= 0, "the widened recipe panel fits in the reserved column");
     }
 
     @Test
-    void narrowWindowAddsNoBias()
+    void openReservationDoesNotDependOnRecipeState()
     {
-        int reserved = RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP;
+        int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
+        assertEquals(RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP,
+                leftPos - (640 - (RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP + INVENTORY_WIDTH)) / 2,
+                "the reserved column is a fixed constant, independent of the shown recipe");
+    }
+
+    @Test
+    void narrowWindowClampsToTheReservedColumn()
+    {
+        int reserved = RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP;
         assertEquals(reserved, RecipeBookLayout.inventoryLeftPos(200, INVENTORY_WIDTH, true),
-                "a window with no spare margin should not bias the inventory off-screen");
+                "a window with no spare margin still clears the reserved column, without going off-screen");
     }
 }
