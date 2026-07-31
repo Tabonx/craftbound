@@ -46,17 +46,6 @@ authors="${mod_authors}" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description='''${mod_description}'''
 
-[[mods]]
-modId="jei"
-version="${jei_source_version}"
-displayName="Just Enough Items (Craftbound vendored source)"
-displayURL="https://github.com/mezz/JustEnoughItems"
-logoFile="jei-icon.png"
-authors="mezz"
-description='''
-JEI's recipe and ingredient interface, built from vendored source as part of Craftbound.
-'''
-
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 [[mixins]]
 config="${mod_id}.mixins.json"
@@ -106,24 +95,10 @@ config="${mod_id}.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="jei"
-    type="required"
-    versionRange="[${jei_source_version}]"
-    ordering="AFTER"
+    type="incompatible"
+    reason="Craftbound embeds the recipe infrastructure it needs and cannot run alongside the full JEI mod."
+    ordering="NONE"
     side="CLIENT"
-
-[[dependencies.jei]]
-    modId="neoforge"
-    type="required"
-    versionRange="${neo_version_range}"
-    ordering="NONE"
-    side="BOTH"
-
-[[dependencies.jei]]
-    modId="minecraft"
-    type="required"
-    versionRange="${minecraft_version_range}"
-    ordering="NONE"
-    side="BOTH"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't

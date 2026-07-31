@@ -89,6 +89,9 @@ sourceSets {
     main {
         java {
             jeiModules.each { srcDir "vendor/jei/${it}/src/main/java" }
+            exclude 'mezz/jei/neoforge/JustEnoughItems.java'
+            exclude 'mezz/jei/neoforge/JustEnoughItemsClient.java'
+            exclude 'mezz/jei/neoforge/JustEnoughItemsClientSafeRunner.java'
         }
         resources {
             srcDir 'src/generated/resources'
