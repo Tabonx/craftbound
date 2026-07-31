@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.craftbound.Craftbound;
+import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
@@ -28,6 +30,7 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -44,8 +47,14 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private static final ResourceLocation BACKGROUND =
             ResourceLocation.withDefaultNamespace("textures/gui/recipe_book.png");
-    private static final ResourceLocation SLOT =
+    private static final ResourceLocation CRAFTABLE_SLOT =
             ResourceLocation.withDefaultNamespace("recipe_book/slot_craftable");
+    private static final ResourceLocation UNCRAFTABLE_SLOT =
+            ResourceLocation.withDefaultNamespace("recipe_book/slot_uncraftable");
+    private static final ResourceLocation UNDISCOVERED_CRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_craftable");
+    private static final ResourceLocation UNDISCOVERED_UNCRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_uncraftable");
     private static final WidgetSprites FORWARD_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward"),
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward_highlighted"));
@@ -356,18 +365,18 @@ public final class RecipeBookWidget extends AbstractWidget
         return player == null ? -1 : player.getInventory().getTimesChanged();
     }
 
-    // Rebuild the craftable set when the filter is on and the inventory has changed since the last
-    // build, then re-apply the filter so the grid reflects the new inventory.
+    // Rebuild the craftable set when the inventory changes, then update an active filter.
     private void refreshCraftableIfStale()
     {
-        if (!RecipeBookState.isFiltering() || craftableSource == null)
+        if (craftableSource == null)
             return;
         int changed = inventoryTimesChanged();
         if (changed != craftableTimesChanged)
         {
             craftable = craftableSource.get();
             craftableTimesChanged = changed;
-            applyFilter();
+            if (RecipeBookState.isFiltering())
+                applyFilter();
         }
     }
 
@@ -378,10 +387,6 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             craftable = craftableSource.get();
             craftableTimesChanged = inventoryTimesChanged();
-        }
-        else
-        {
-            craftable = Set.of();
         }
         applyFilter();
     }
@@ -567,14 +572,27 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             int cellX = x + GRID_X + CELL * (i % COLS);
             int cellY = y + GRID_Y + CELL * (i / COLS);
-            graphics.blitSprite(SLOT, cellX, cellY, CELL, CELL);
-
             BookIngredient item = filtered.get(start + i);
+            graphics.blitSprite(slotFor(item), cellX, cellY, CELL, CELL);
             item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
 
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
                 hovered = item;
         }
+    }
+
+    private ResourceLocation slotFor(BookIngredient ingredient)
+    {
+        Optional<Item> item = ingredient.item();
+        boolean canCraft = item.map(craftable::contains).orElse(false);
+        var player = Minecraft.getInstance().player;
+        boolean discovered = player == null || item.map(value ->
+                player.getData(CraftboundAttachments.CRAFTED_ITEMS)
+                        .contains(BuiltInRegistries.ITEM.getKey(value))).orElse(true);
+
+        if (discovered)
+            return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
+        return canCraft ? UNDISCOVERED_CRAFTABLE_SLOT : UNDISCOVERED_UNCRAFTABLE_SLOT;
     }
 
     private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
