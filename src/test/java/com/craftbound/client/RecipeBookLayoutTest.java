@@ -41,4 +41,27 @@ class RecipeBookLayoutTest
         assertTrue(leftPos >= RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP,
                 "inventory still clears the reserved column even when the window is too small");
     }
+
+    @Test
+    void wideWindowBiasesRightToGiveTheBookRoomToGrow()
+    {
+        int reserved = RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP;
+        int clusterLeft = (640 - (reserved + INVENTORY_WIDTH)) / 2;
+        int centeredOpen = clusterLeft + reserved;
+
+        int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
+        assertTrue(leftPos > centeredOpen, "open layout should bias the inventory further right");
+        assertTrue(leftPos + INVENTORY_WIDTH <= 640, "inventory must stay fully on screen");
+
+        int growthRoom = RecipeBookLayout.bookRight(leftPos) - RecipeBookLayout.BOOK_WIDTH;
+        assertTrue(growthRoom >= clusterLeft, "the book should gain left room beyond the centered layout");
+    }
+
+    @Test
+    void narrowWindowAddsNoBias()
+    {
+        int reserved = RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP;
+        assertEquals(reserved, RecipeBookLayout.inventoryLeftPos(200, INVENTORY_WIDTH, true),
+                "a window with no spare margin should not bias the inventory off-screen");
+    }
 }

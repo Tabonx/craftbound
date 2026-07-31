@@ -79,7 +79,6 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BACK_H = ARROW_H;
     private static final int BODY_X = 8;
     private static final int BODY_Y = 30;
-    private static final int BODY_W = WIDTH - 2 * BODY_X;
     private static final int BODY_H = ARROW_Y - BODY_Y - 4;
 
     // Category tabs protrude to the left of the book, like vanilla's recipe-book category rail. The
@@ -114,6 +113,12 @@ public final class RecipeBookWidget extends AbstractWidget
     private List<Supplier<IRecipeLayoutDrawable<?>>> bodyRecipes = List.of();
     private List<IRecipeLayoutDrawable<?>> bodyCache = new ArrayList<>();
     private int recipeIndex = 0;
+
+    // The book keeps its right edge where the host placed it (baseX + WIDTH) and grows left in recipe
+    // mode to fit wide, multi-step recipes; panelWidth is the current width, WIDTH while browsing.
+    private int baseX;
+    private int baseY;
+    private int panelWidth = WIDTH;
 
     // Placement of the recipe drawable from the last render, so clicks can be mapped into its space.
     private int recipeOriginX;
@@ -203,6 +208,7 @@ public final class RecipeBookWidget extends AbstractWidget
         groupIndex = 0;
         recipeIndex = 0;
         railOffset = 0;
+        updatePanelWidth();
     }
 
     // Clicking an ingredient inside the shown recipe drills into it: left shows its recipes, right
@@ -262,11 +268,13 @@ public final class RecipeBookWidget extends AbstractWidget
         bodyRecipes = recipes;
         bodyCache = new ArrayList<>(Collections.nCopies(recipes.size(), null));
         recipeIndex = 0;
+        updatePanelWidth();
     }
 
     private void setRecipe(int target)
     {
         recipeIndex = Math.max(0, Math.min(bodyRecipes.size() - 1, target));
+        updatePanelWidth();
     }
 
     private static List<Supplier<IRecipeLayoutDrawable<?>>> constantSuppliers(
@@ -320,10 +328,50 @@ public final class RecipeBookWidget extends AbstractWidget
     @Override
     public void setPosition(int x, int y)
     {
-        super.setPosition(x, y);
-        search.setPosition(x + SEARCH_X, y + SEARCH_Y);
-        backButton.setPosition(x + BACKWARD_X, y + ARROW_Y);
-        forwardButton.setPosition(x + FORWARD_X, y + ARROW_Y);
+        baseX = x;
+        baseY = y;
+        relayout();
+    }
+
+    // Apply the current width and position: anchored right edge, grown left, sub-widgets re-placed.
+    private void relayout()
+    {
+        int w = inRecipeMode() ? Math.min(panelWidth, maxPanelWidth()) : WIDTH;
+        int px = baseX + WIDTH - w;
+        super.setPosition(px, baseY);
+        setWidth(w);
+
+        search.setPosition(px + SEARCH_X, baseY + SEARCH_Y);
+        int center = px + w / 2;
+        backButton.setPosition(center + BACKWARD_X - WIDTH / 2, baseY + ARROW_Y);
+        forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
+    }
+
+    // Widen to fit the shown recipe, but never past the screen: the left edge (with the tab rail that
+    // protrudes TAB_X further left) must stay on-screen.
+    private int maxPanelWidth()
+    {
+        return Math.max(WIDTH, baseX + WIDTH + TAB_X - 2);
+    }
+
+    private void updatePanelWidth()
+    {
+        if (!inRecipeMode())
+        {
+            panelWidth = WIDTH;
+            relayout();
+            return;
+        }
+        IRecipeLayoutDrawable<?> recipe = currentRecipe();
+        recipe.setPosition(0, 0);
+        int natural = recipe.getRectWithBorder().getWidth();
+        panelWidth = Math.max(WIDTH, Math.min(maxPanelWidth(), natural + 2 * BODY_X));
+        relayout();
+    }
+
+    private int bodyWidth()
+    {
+        return getWidth() - 2 * BODY_X;
     }
 
     @Override
@@ -333,7 +381,8 @@ public final class RecipeBookWidget extends AbstractWidget
 
         int x = getX();
         int y = getY();
-        graphics.blit(BACKGROUND, x, y, 1, 1, WIDTH, HEIGHT);
+        // The panel texture is stretched horizontally to the current width (identity while browsing).
+        graphics.blit(BACKGROUND, x, y, getWidth(), HEIGHT, 1, 1, WIDTH, HEIGHT, 256, 256);
 
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         hoveredTab = null;
@@ -471,10 +520,10 @@ public final class RecipeBookWidget extends AbstractWidget
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
         // The search bar and its magnifier are baked into the book texture. Cover that strip with a
-        // slice of the book's own plain interior (sourced from the grid area) so the back control
-        // sits on clean parchment instead of overlapping the magnifier.
-        graphics.blit(BACKGROUND, x + BACK_X, y + SEARCH_Y - 3, BACK_X + 1, GRID_Y + 1,
-                WIDTH - 2 * BACK_X, SEARCH_H + 6);
+        // slice of the book's own plain interior (sourced from the grid area), stretched to the
+        // current width, so the back control sits on clean parchment instead of the magnifier.
+        graphics.blit(BACKGROUND, x + BACK_X, y + SEARCH_Y - 3, getWidth() - 2 * BACK_X, SEARCH_H + 6,
+                BACK_X + 1, GRID_Y + 1, WIDTH - 2 * BACK_X, SEARCH_H + 6, 256, 256);
 
         var font = Minecraft.getInstance().font;
         boolean overBack = inRect(mouseX, mouseY, x + BACK_X, y + BACK_Y, BACK_W, BACK_H);
@@ -488,10 +537,10 @@ public final class RecipeBookWidget extends AbstractWidget
         int bw = Math.max(1, bounds.getWidth());
         int bh = Math.max(1, bounds.getHeight());
 
-        float scale = Math.min(1f, Math.min((float) BODY_W / bw, (float) BODY_H / bh));
+        float scale = Math.min(1f, Math.min((float) bodyWidth() / bw, (float) BODY_H / bh));
         int drawW = Math.round(bw * scale);
         int drawH = Math.round(bh * scale);
-        int originX = x + BODY_X + (BODY_W - drawW) / 2;
+        int originX = x + BODY_X + (bodyWidth() - drawW) / 2;
         int originY = y + BODY_Y + (BODY_H - drawH) / 2;
 
         recipeScale = scale;
@@ -548,7 +597,7 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             var font = Minecraft.getInstance().font;
             String label = (index + 1) + "/" + count;
-            graphics.drawString(font, label, x + WIDTH / 2 - font.width(label) / 2, y + ARROW_Y + 5, 0xFFFFFF, true);
+            graphics.drawString(font, label, x + getWidth() / 2 - font.width(label) / 2, y + ARROW_Y + 5, 0xFFFFFF, true);
         }
     }
 
@@ -677,7 +726,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private boolean isMouseOverBook(double mouseX, double mouseY)
     {
-        return inRect(mouseX, mouseY, getX(), getY(), WIDTH, HEIGHT);
+        return inRect(mouseX, mouseY, getX(), getY(), getWidth(), HEIGHT);
     }
 
     private static boolean inRect(double mx, double my, int x, int y, int w, int h)

@@ -27,8 +27,12 @@ split.
 - A **single book button** replaces the vanilla recipe-book toggle.
 - The book opens as a panel to the **left of the inventory**; the inventory stays fully visible
   and usable.
-- **Fixed height = inventory height.** Width stays at roughly the vanilla book width and does
-  **not** grow — matching Minecraft's design language (shared height baseline, no widening).
+- **Fixed height = inventory height.** In the browse state the width stays at the vanilla book
+  width. In the recipe state the panel **grows left to fit the shown recipe** (revised from the
+  original "never widen" rule): JEI's category drawables have fixed horizontal layouts, so wide
+  multi-step recipes (e.g. Create sequenced assembly) would otherwise scale down to be unreadable.
+  The right edge stays anchored beside the inventory; growth is clamped so the left edge and the
+  protruding tab rail stay on-screen. A recipe still wider than the clamped width scales down.
 
 ### Two states in one column
 The book is a single vanilla-width column with two swappable states:
@@ -52,12 +56,12 @@ as peers here — this rail *is* the unification.
   The active selection persists across pages, like vanilla.
 
 ### Per-method recipe body
-The body renders polymorphically by recipe kind:
-- **Crafting** → a native mini crafting grid → result.
-- **Create / machine** → the recipe laid out **vertically** (inputs → machine → requirements
-  such as heating → output), so it fits the narrow column without widening the book. This is
-  rendered by hosting a **shrunk JEI `IRecipeCategory` drawable** inside the body rect — reusing
-  Create's own registered category renderers rather than reimplementing them.
+Every recipe kind — vanilla crafting and Create/machine alike — is rendered the same way: by
+hosting the recipe's **JEI `IRecipeCategory` drawable** inside the body rect (reusing JEI's and
+Create's registered renderers rather than reimplementing them). The drawable is scaled to fit the
+body; the panel first grows wider (see framing) so wide recipes need little or no shrinking. This
+replaces the earlier plan of a native crafting grid plus a hand-rolled vertical Create layout —
+one uniform path is simpler and covers every category, including fluids.
 
 ## Why vendor JEI
 JEI's source is vendored (`vendor/jei/`) so we can render Create's registered recipe categories
