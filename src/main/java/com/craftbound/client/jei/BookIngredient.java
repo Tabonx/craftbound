@@ -1,6 +1,7 @@
 package com.craftbound.client.jei;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import mezz.jei.api.ingredients.IIngredientHelper;
@@ -9,6 +10,8 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
 // A single browsable entry, decoupled from its JEI ingredient type. Rendering and tooltips are
@@ -50,6 +53,12 @@ public final class BookIngredient
     public String displayName()
     {
         return displayName;
+    }
+
+    // The backing item, when this entry is an item stack (empty for fluids and other types).
+    public Optional<Item> item()
+    {
+        return typed.getItemStack().map(ItemStack::getItem);
     }
 
     public void render(GuiGraphics graphics, int x, int y)

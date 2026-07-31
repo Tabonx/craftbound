@@ -31,6 +31,7 @@ public final class InventoryScreenTweaks
         removeVanillaRecipeButton(event);
 
         RecipeBookWidget book = new RecipeBookWidget();
+        book.setCraftableSource(() -> CraftableItems.craftableIn(inventory.getMenu()));
         event.addListener(book);
 
         ImageButton button = new ImageButton(

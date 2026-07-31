@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.craftbound.client.jei.BookIngredient;
@@ -30,6 +31,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
@@ -53,6 +55,18 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final WidgetSprites TAB_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/tab"),
             ResourceLocation.withDefaultNamespace("recipe_book/tab_selected"));
+    private static final ResourceLocation FILTER_ENABLED =
+            ResourceLocation.withDefaultNamespace("recipe_book/filter_enabled");
+    private static final ResourceLocation FILTER_DISABLED =
+            ResourceLocation.withDefaultNamespace("recipe_book/filter_disabled");
+    private static final ResourceLocation FILTER_ENABLED_HL =
+            ResourceLocation.withDefaultNamespace("recipe_book/filter_enabled_highlighted");
+    private static final ResourceLocation FILTER_DISABLED_HL =
+            ResourceLocation.withDefaultNamespace("recipe_book/filter_disabled_highlighted");
+    private static final Component TOOLTIP_ALL =
+            Component.translatable("gui.recipebook.toggleRecipes.all");
+    private static final Component TOOLTIP_CRAFTABLE =
+            Component.translatable("gui.recipebook.toggleRecipes.craftable");
 
     private static final int COLS = 5;
     private static final int PER_PAGE = COLS * 4;
@@ -64,6 +78,12 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int SEARCH_Y = 13;
     private static final int SEARCH_W = 81;
     private static final int SEARCH_H = 14;
+    // The craftable-filter toggle, reusing vanilla's filter sprites (26x16). Placed at vanilla's own
+    // spot right of the search field, where the book texture already leaves clean parchment.
+    private static final int FILTER_W = 26;
+    private static final int FILTER_H = 16;
+    private static final int FILTER_X = 110;
+    private static final int FILTER_Y = 12;
     private static final int ARROW_W = 12;
     private static final int ARROW_H = 17;
     private static final int FORWARD_X = 93;
@@ -102,6 +122,13 @@ public final class RecipeBookWidget extends AbstractWidget
     private int page = 0;
     private boolean loaded = false;
     private BookIngredient hovered = null;
+
+    // The craftable-filter state: which items are craftable right now (rebuilt when the inventory
+    // changes while filtering) and whether the filter button is hovered (for its tooltip).
+    private Supplier<Set<Item>> craftableSource = null;
+    private Set<Item> craftable = Set.of();
+    private int craftableTimesChanged = -1;
+    private boolean filterHovered = false;
 
     private List<RecipeGroup> recipeGroups = List.of();
     private int groupIndex = 0;
@@ -143,6 +170,12 @@ public final class RecipeBookWidget extends AbstractWidget
 
         this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
         this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> stepForward());
+    }
+
+    // Supplies the set of items craftable right now, bound by the host to the open menu.
+    public void setCraftableSource(Supplier<Set<Item>> source)
+    {
+        this.craftableSource = source;
     }
 
     private boolean inRecipeMode()
@@ -306,13 +339,52 @@ public final class RecipeBookWidget extends AbstractWidget
     private void applyFilter()
     {
         String needle = search.getValue().toLowerCase(Locale.ROOT);
-        if (needle.isEmpty())
-            filtered = allItems;
-        else
-            filtered = allItems.stream()
-                    .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle))
+        List<BookIngredient> result = needle.isEmpty() ? allItems
+                : allItems.stream()
+                        .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle))
+                        .toList();
+        if (RecipeBookState.isFiltering())
+            result = result.stream()
+                    .filter(item -> item.item().map(craftable::contains).orElse(false))
                     .toList();
+        filtered = result;
         setPage(page);
+    }
+
+    private int inventoryTimesChanged()
+    {
+        var player = Minecraft.getInstance().player;
+        return player == null ? -1 : player.getInventory().getTimesChanged();
+    }
+
+    // Rebuild the craftable set when the filter is on and the inventory has changed since the last
+    // build, then re-apply the filter so the grid reflects the new inventory.
+    private void refreshCraftableIfStale()
+    {
+        if (!RecipeBookState.isFiltering() || craftableSource == null)
+            return;
+        int changed = inventoryTimesChanged();
+        if (changed != craftableTimesChanged)
+        {
+            craftable = craftableSource.get();
+            craftableTimesChanged = changed;
+            applyFilter();
+        }
+    }
+
+    private void toggleFilter()
+    {
+        RecipeBookState.toggleFiltering();
+        if (RecipeBookState.isFiltering() && craftableSource != null)
+        {
+            craftable = craftableSource.get();
+            craftableTimesChanged = inventoryTimesChanged();
+        }
+        else
+        {
+            craftable = Set.of();
+        }
+        applyFilter();
     }
 
     private void setPage(int target)
@@ -378,6 +450,7 @@ public final class RecipeBookWidget extends AbstractWidget
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         ensureLoaded();
+        refreshCraftableIfStale();
 
         int x = getX();
         int y = getY();
@@ -386,6 +459,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         hoveredTab = null;
+        filterHovered = false;
         if (inRecipeMode())
         {
             renderRail(graphics, x, y, mouseX, mouseY);
@@ -500,6 +574,7 @@ public final class RecipeBookWidget extends AbstractWidget
     private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
     {
         search.render(graphics, mouseX, mouseY, partialTick);
+        renderFilterButton(graphics, x, y, mouseX, mouseY);
 
         int start = page * PER_PAGE;
         hovered = null;
@@ -515,6 +590,16 @@ public final class RecipeBookWidget extends AbstractWidget
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
                 hovered = item;
         }
+    }
+
+    private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
+    {
+        boolean on = RecipeBookState.isFiltering();
+        filterHovered = inRect(mouseX, mouseY, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
+        ResourceLocation sprite = on
+                ? (filterHovered ? FILTER_ENABLED_HL : FILTER_ENABLED)
+                : (filterHovered ? FILTER_DISABLED_HL : FILTER_DISABLED);
+        graphics.blitSprite(sprite, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
     }
 
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -573,6 +658,12 @@ public final class RecipeBookWidget extends AbstractWidget
         if (hoveredTab != null)
         {
             graphics.renderTooltip(minecraft.font, hoveredTab.title(), mouseX, mouseY);
+            return;
+        }
+        if (filterHovered)
+        {
+            graphics.renderTooltip(minecraft.font,
+                    RecipeBookState.isFiltering() ? TOOLTIP_CRAFTABLE : TOOLTIP_ALL, mouseX, mouseY);
             return;
         }
         if (hovered != null)
@@ -638,6 +729,14 @@ public final class RecipeBookWidget extends AbstractWidget
             if (drillUnderMouse(mouseX, mouseY, roleFor(button)))
                 return true;
             return isMouseOverBook(mouseX, mouseY);
+        }
+
+        if (inRect(mouseX, mouseY, getX() + FILTER_X, getY() + FILTER_Y, FILTER_W, FILTER_H))
+        {
+            playClickSound();
+            search.setFocused(false);
+            toggleFilter();
+            return true;
         }
 
         boolean onSearch = inRect(mouseX, mouseY, getX() + SEARCH_X, getY() + SEARCH_Y, SEARCH_W, SEARCH_H);

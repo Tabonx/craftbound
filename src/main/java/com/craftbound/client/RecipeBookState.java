@@ -5,6 +5,7 @@ package com.craftbound.client;
 public final class RecipeBookState
 {
     private static boolean open = false;
+    private static boolean filtering = false;
 
     private RecipeBookState()
     {
@@ -18,5 +19,16 @@ public final class RecipeBookState
     public static void toggle()
     {
         open = !open;
+    }
+
+    // Whether the browse grid is limited to items craftable right now (the filter button's state).
+    public static boolean isFiltering()
+    {
+        return filtering;
+    }
+
+    public static void toggleFiltering()
+    {
+        filtering = !filtering;
     }
 }
