@@ -1,19 +1,25 @@
 package com.craftbound.client;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
+import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 
-// Which item results the player can craft right now in a menu's crafting grid, from the player
-// inventory plus whatever sits in the craft slots. Includes Create's crafting-table recipes (they
-// are ordinary CraftingRecipes) and excludes machine recipes, which cannot be made in a grid.
+// Which item results the player can make right now in the open menu, from the player inventory plus
+// whatever sits in the input slots. Follows the menu's recipe book: a crafting screen checks
+// crafting recipes against its grid, a furnace/smoker/blast screen checks its smelting family.
+// Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
+// which are not made through any of these menus.
 //
 // Deliberately ignores recipe-unlock status: the browse grid already shows every producible item
 // regardless of unlock, so the filter is purely about having the ingredients on hand.
@@ -33,24 +39,42 @@ public final class CraftableItems
         minecraft.player.getInventory().fillStackedContents(contents);
         menu.fillCraftSlotsStackedContents(contents);
 
-        RegistryAccess registries = minecraft.level.registryAccess();
-        RecipeManager recipes = minecraft.level.getRecipeManager();
-        int width = menu.getGridWidth();
-        int height = menu.getGridHeight();
-
         Set<Item> result = new HashSet<>();
-        recipes.getAllRecipesFor(RecipeType.CRAFTING).forEach(holder ->
+        collect(minecraft.level.getRecipeManager(), recipeTypeFor(menu.getRecipeBookType()),
+                contents, menu.getGridWidth(), menu.getGridHeight(),
+                minecraft.level.registryAccess(), result);
+        return result;
+    }
+
+    private static RecipeType<?> recipeTypeFor(RecipeBookType bookType)
+    {
+        return switch (bookType)
         {
-            var recipe = holder.value();
+            case CRAFTING -> RecipeType.CRAFTING;
+            case FURNACE -> RecipeType.SMELTING;
+            case BLAST_FURNACE -> RecipeType.BLASTING;
+            case SMOKER -> RecipeType.SMOKING;
+        };
+    }
+
+    // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime
+    // from the menu, erase to a raw RecipeType and read each holder as a plain Recipe.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void collect(RecipeManager recipes, RecipeType<?> type, StackedContents contents,
+            int width, int height, RegistryAccess registries, Set<Item> result)
+    {
+        List<RecipeHolder<?>> holders = recipes.getAllRecipesFor((RecipeType) type);
+        for (RecipeHolder<?> holder : holders)
+        {
+            Recipe<?> recipe = holder.value();
             // Special recipes (the variable firework, leather dyeing, etc.) declare no ingredients,
             // so canCraft is trivially true even from an empty inventory. Vanilla's book skips them
             // the same way; where a normal recipe for the same result exists (e.g. the shapeless
-            // gunpowder + paper firework), that one is kept and checked properly below.
+            // gunpowder + paper firework), that one is kept and checked properly.
             if (recipe.isSpecial())
-                return;
+                continue;
             if (recipe.canCraftInDimensions(width, height) && contents.canCraft(recipe, null))
                 result.add(recipe.getResultItem(registries).getItem());
-        });
-        return result;
+        }
     }
 }

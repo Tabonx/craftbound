@@ -25,7 +25,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 
 @JeiPlugin
@@ -42,13 +42,13 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return ID;
     }
 
-    // Report "no GUI here" for the inventory so JEI does not draw its ingredient-list overlay
-    // next to it. Craftbound's own book takes over that role. Scoped to the inventory for now;
-    // other screens keep JEI's overlay until our book covers them.
+    // Report "no GUI here" for every container screen so JEI never draws its ingredient-list
+    // overlay: Craftbound's own book replaces it. JEI resolves screen handlers by isInstance, so a
+    // single handler on AbstractContainerScreen covers all of them (inventory, furnace, chest, …).
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration)
     {
-        registration.addGuiScreenHandler(InventoryScreen.class, screen -> null);
+        registration.addGuiScreenHandler(AbstractContainerScreen.class, screen -> null);
     }
 
     @Override
