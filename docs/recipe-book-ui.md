@@ -55,6 +55,14 @@ as peers here — this rail *is* the unification.
 - If methods overflow the visible height (currently ~5 tabs), the rail **pages with ▲ / ▼**.
   The active selection persists across pages, like vanilla.
 
+### Recipe order within a method
+JEI hands recipes over in the order Minecraft hashed them into its recipe map — arbitrary, and it
+shifts whenever recipes are added or removed. `RecipeOrder` ranks the ones the player can make
+right now first (stable sort, so everything else keeps its relative order), judged from the
+recipe's own JEI input slots so it works for Create categories as well as vanilla ones. It is
+computed once, when the recipe is opened: re-ranking live would make recipes jump under the cursor.
+Counts are ignored — this ranks recipes, it does not promise the craft fits.
+
 ### Per-method recipe body
 Every recipe kind — vanilla crafting and Create/machine alike — is rendered the same way: by
 hosting the recipe's **JEI `IRecipeCategory` drawable** inside the body rect (reusing JEI's and

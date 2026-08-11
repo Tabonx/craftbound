@@ -258,6 +258,14 @@ public final class RecipeBookWidget extends AbstractWidget
         return placer.placeable(currentRecipe());
     }
 
+    // Advances the shown recipe's own animations, JEI's cycling through the items an ingredient
+    // stands for included. Holding shift stops the cycle, which is JEI's own behaviour.
+    public void tick()
+    {
+        if (visible && inRecipeMode())
+            currentRecipe().tick();
+    }
+
     private void placeShownRecipe()
     {
         placeableRecipe().ifPresent(recipe -> placer.place(recipe, Screen.hasShiftDown()));
@@ -331,14 +339,17 @@ public final class RecipeBookWidget extends AbstractWidget
         return false;
     }
 
-    // Left-click a tab: the focused ingredient's recipes in that category.
+    // Left-click a tab: the focused ingredient's recipes in that category, the ones the player can
+    // make right now first.
     private void selectGroup(int target)
     {
         setActiveTab(target);
-        setBody(constantSuppliers(currentGroup().recipes()));
+        setBody(constantSuppliers(RecipeOrder.craftableFirst(currentGroup().recipes())));
     }
 
     // Right-click a tab: every recipe in that category, not just ones involving the focused item.
+    // Left unsorted — ranking these would mean building every drawable in the category up front,
+    // which is the cost the lazy suppliers exist to avoid.
     private void showAllRecipes(int target)
     {
         int previous = groupIndex;

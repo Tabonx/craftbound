@@ -1,8 +1,11 @@
 package com.craftbound.client;
 
+import java.util.Optional;
+
 import com.craftbound.Craftbound;
 import com.craftbound.client.mixin.ContainerScreenAccessor;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -12,6 +15,7 @@ import net.minecraft.world.inventory.RecipeBookMenu;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 // On every recipe-book screen (player inventory, crafting table, furnace, smoker, blast furnace),
@@ -72,17 +76,28 @@ public final class RecipeBookScreenTweaks
     @SubscribeEvent
     public static void onRender(ScreenEvent.Render.Post event)
     {
-        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen))
-            return;
+        if (event.getScreen() instanceof AbstractContainerScreen<?> screen)
+            book(screen).ifPresent(book ->
+                    book.renderDeferredTooltip(event.getGuiGraphics(), event.getMouseX(), event.getMouseY()));
+    }
 
+    // Widgets are not ticked by their screen, and the shown recipe needs it: JEI cycles ingredients
+    // that stand for several items (any planks, any log) on a tick, and stands still without one.
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event)
+    {
+        if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)
+            book(screen).ifPresent(RecipeBookWidget::tick);
+    }
+
+    private static Optional<RecipeBookWidget> book(AbstractContainerScreen<?> screen)
+    {
         for (GuiEventListener listener : screen.children())
         {
             if (listener instanceof RecipeBookWidget book)
-            {
-                book.renderDeferredTooltip(event.getGuiGraphics(), event.getMouseX(), event.getMouseY());
-                return;
-            }
+                return Optional.of(book);
         }
+        return Optional.empty();
     }
 
     // Position the GUI, our button and the book for the current open/closed state.
