@@ -245,7 +245,7 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         if (!inRecipeMode() || placer == null)
             return Optional.empty();
-        return placer.placeable(currentRecipe().getRecipe());
+        return placer.placeable(currentRecipe());
     }
 
     private void placeShownRecipe()

@@ -5,10 +5,15 @@ import java.util.Optional;
 import com.craftbound.PlaceRecipePayload;
 import com.craftbound.RecipePlacement;
 
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.recipe.RecipeType;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
+import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -23,13 +28,29 @@ public final class RecipePlacer
         this.menu = menu;
     }
 
-    // The vanilla recipe behind a JEI layout, if this menu can place it. Create's machine recipes
-    // and recipes for another menu (smelting while a crafting table is open) yield empty.
-    public Optional<RecipeHolder<?>> placeable(Object shownRecipe)
+    // The vanilla recipe behind a shown layout, if this menu can place it. Gated on the layout's
+    // own category, so only the plain crafting or furnace-family tab offers placement: Create shows
+    // ordinary crafting recipes under its own "Automatic Shaped Crafting" tab as well, and there
+    // the recipe is meant for a mechanical crafter, not for the grid.
+    public Optional<RecipeHolder<?>> placeable(IRecipeLayoutDrawable<?> layout)
     {
-        return shownRecipe instanceof RecipeHolder<?> recipe && RecipePlacement.canPlace(menu, recipe)
+        if (layout.getRecipeCategory().getRecipeType() != categoryFor(menu.getRecipeBookType()))
+            return Optional.empty();
+
+        return layout.getRecipe() instanceof RecipeHolder<?> recipe && RecipePlacement.canPlace(menu, recipe)
                 ? Optional.of(recipe)
                 : Optional.empty();
+    }
+
+    private static RecipeType<?> categoryFor(RecipeBookType bookType)
+    {
+        return switch (bookType)
+        {
+            case CRAFTING -> RecipeTypes.CRAFTING;
+            case FURNACE -> RecipeTypes.SMELTING;
+            case BLAST_FURNACE -> RecipeTypes.BLASTING;
+            case SMOKER -> RecipeTypes.SMOKING;
+        };
     }
 
     public boolean hasIngredients(RecipeHolder<?> recipe)

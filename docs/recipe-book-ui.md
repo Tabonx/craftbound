@@ -77,10 +77,12 @@ obsidian stops being tinted once it is mined. This carries over to the new brows
 
 ## Place button (already implemented)
 The recipe state carries a place button in the top strip, where the craftable filter sits while
-browsing. It appears only for recipes the **open menu** can actually lay out — a crafting recipe
-that fits its grid, or the matching smelting family for a furnace/smoker/blast furnace — and is
-greyed out while the ingredients are missing. Create's machine recipes have no such menu, so no
-button. Clicking sends `PlaceRecipePayload`; the server hands the recipe to
+browsing. It appears only on the tab matching the **open menu** — the plain crafting category, or
+the smelting family for a furnace/smoker/blast furnace — for a recipe that fits the menu's grid,
+and is greyed out while the ingredients are missing. Gating on the *category* and not just on the
+recipe matters: Create lists ordinary shaped recipes again under its own "Automatic Shaped
+Crafting" tab, where the recipe is meant for a mechanical crafter, so that tab offers no button
+even though the same recipe does under Crafting. Clicking sends `PlaceRecipePayload`; the server hands the recipe to
 `RecipeBookMenu.handlePlacement`, i.e. exactly the vanilla fill (shift = as many as possible).
 Because vanilla placement refuses recipes its own book has not unlocked, the handler first marks
 the recipe as known — Craftbound offers every recipe, so placing one counts as learning it.
