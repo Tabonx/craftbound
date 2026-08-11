@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import com.craftbound.Craftbound;
 import com.craftbound.CraftboundAttachments;
-import com.craftbound.CraftedItems;
+import com.craftbound.ObtainedItems;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeButton;
@@ -20,7 +20,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// For recipes the player has never crafted, swap the slot-background sprite vanilla is about
+// For recipes whose result the player has never had, swap the slot-background sprite vanilla is about
 // to draw for our tinted copy under the craftbound namespace. Because our textures share the
 // vanilla paths (recipe_book/slot_*), we just re-namespace the sprite the game already chose,
 // which preserves the craftable / "many" variants while recoloring them.
@@ -44,12 +44,12 @@ public abstract class RecipeButtonMixin
             index = 0)
     private ResourceLocation craftbound$swapUncraftedSprite(ResourceLocation original)
     {
-        if (craftbound$hasNeverCraftedRecipe())
+        if (craftbound$hasUnobtainedResult())
             return ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, original.getPath());
         return original;
     }
 
-    private boolean craftbound$hasNeverCraftedRecipe()
+    private boolean craftbound$hasUnobtainedResult()
     {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
@@ -63,7 +63,7 @@ public abstract class RecipeButtonMixin
             resultIds.add(BuiltInRegistries.ITEM.getKey(result.getItem()));
         }
 
-        Set<ResourceLocation> crafted = player.getData(CraftboundAttachments.CRAFTED_ITEMS);
-        return CraftedItems.hasUncrafted(crafted, resultIds);
+        Set<ResourceLocation> obtained = player.getData(CraftboundAttachments.OBTAINED_ITEMS);
+        return ObtainedItems.hasUnobtained(obtained, resultIds);
     }
 }
