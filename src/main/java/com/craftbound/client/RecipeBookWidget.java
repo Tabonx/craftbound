@@ -609,8 +609,15 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         // The search bar and its magnifier are baked into the book texture. Cover that strip with a
         // slice of the book's own plain interior (sourced from the grid area), stretched to the
-        // current width, so the back control sits on clean parchment instead of the magnifier.
-        graphics.blit(BACKGROUND, x + BACK_X, y + SEARCH_Y - 3, getWidth() - 2 * BACK_X, SEARCH_H + 6,
+        // current width, so the back control sits on clean parchment instead of the magnifier. The
+        // book texture (and its bezel) is stretched horizontally from WIDTH to getWidth(), so stretch
+        // this slice by the same factor; otherwise its edges fall a pixel or two inside the bezel.
+        // Round each edge inward (ceil left, floor right) so the slice stops just inside the bezel
+        // rather than spilling onto it.
+        float coverScale = (float) getWidth() / WIDTH;
+        int coverLeft = x + (int) Math.ceil(BACK_X * coverScale);
+        int coverRight = x + (int) Math.floor((WIDTH - BACK_X) * coverScale);
+        graphics.blit(BACKGROUND, coverLeft, y + SEARCH_Y - 3, coverRight - coverLeft, SEARCH_H + 6,
                 BACK_X + 1, GRID_Y + 1, WIDTH - 2 * BACK_X, SEARCH_H + 6, 256, 256);
 
         var font = Minecraft.getInstance().font;
