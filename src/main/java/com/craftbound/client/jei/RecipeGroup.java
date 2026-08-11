@@ -2,6 +2,8 @@ package com.craftbound.client.jei;
 
 import java.util.List;
 
+import com.craftbound.client.BookRail;
+
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 
@@ -12,7 +14,7 @@ import net.minecraft.network.chat.Component;
 // the focused item. Rendered as a tab on the book's left rail; its icon is captured as a draw
 // closure so items, fluids and JEI's own category drawables can all supply it uniformly. Keeps a
 // reference to the category so the whole category's recipes can be listed on demand.
-public final class RecipeGroup
+public final class RecipeGroup implements BookRail.Tab
 {
     private final IRecipeCategory<?> category;
     private final Component title;
@@ -33,6 +35,7 @@ public final class RecipeGroup
         return category;
     }
 
+    @Override
     public Component title()
     {
         return title;
@@ -43,6 +46,7 @@ public final class RecipeGroup
         return recipes;
     }
 
+    @Override
     public void drawIcon(GuiGraphics graphics, int x, int y)
     {
         icon.draw(graphics, x, y);

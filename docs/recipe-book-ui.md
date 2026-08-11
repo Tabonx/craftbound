@@ -94,6 +94,22 @@ even though the same recipe does under Crafting. Clicking sends `PlaceRecipePayl
 Because vanilla placement refuses recipes its own book has not unlocked, the handler first marks
 the recipe as known — Craftbound offers every recipe, so placing one counts as learning it.
 
+## Bookmarks (already implemented)
+The left rail carries recipe categories while a recipe is open and **bookmarks while browsing**,
+where the rail would otherwise be empty; `BookRail` owns the geometry, paging and hit-testing for
+both, and `RailLayout` is the pure paging math behind it. A bookmark stores JEI's own ingredient
+identity (`<type uid>|<ingredient uid>`), so items and fluids work alike and a bookmark survives
+restarts; it resolves against the ingredients the book already loaded, and one whose mod is gone
+just doesn't resolve rather than being deleted.
+
+The rail carries **one** ribbon tab, present once something is bookmarked, and clicking it switches
+the grid between everything and the bookmarked items — the bookmarked items are then browsed
+exactly like any others: same slots, same tints, same paging, same click-to-open, with search and
+the craftable filter still applying on top. Bookmarking itself is the ribbon button in the recipe
+view's strip, left of the place button; the same button clears one. Storage is
+`config/craftbound-bookmarks.json`, keyed per world (save name) and per server (address), and never
+touches the server — bookmarks are a client convenience.
+
 ## Trade-offs & open questions
 - **Recipe gathering** across vanilla + Create categories for a given output — mechanism TBD.
 - **Browse filtering/search** — category tabs vs. plain search in the browse state — not yet
