@@ -586,11 +586,11 @@ public final class RecipeBookWidget extends AbstractWidget
         Optional<Item> item = ingredient.item();
         boolean canCraft = item.map(craftable::contains).orElse(false);
         var player = Minecraft.getInstance().player;
-        boolean discovered = player == null || item.map(value ->
-                player.getData(CraftboundAttachments.CRAFTED_ITEMS)
+        boolean obtained = player == null || item.map(value ->
+                player.getData(CraftboundAttachments.OBTAINED_ITEMS)
                         .contains(BuiltInRegistries.ITEM.getKey(value))).orElse(true);
 
-        if (discovered)
+        if (obtained)
             return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
         return canCraft ? UNDISCOVERED_CRAFTABLE_SLOT : UNDISCOVERED_UNCRAFTABLE_SLOT;
     }

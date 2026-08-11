@@ -70,9 +70,10 @@ into **our own small rectangle** inside the book, instead of calling JEI's full-
 drawables.
 
 ## Progression tint (already implemented)
-`client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes the player has never
-crafted, backed by `CraftTracker` / `CraftedItems` / `CraftboundAttachments`. This carries over
-to the new browse grid unchanged.
+`client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes whose result the player has
+never had, backed by `ObtainedItemsTracker` / `ObtainedItems` / `CraftboundAttachments`. An item
+counts as obtained however it was acquired — mined, looted, traded — not just crafted, so e.g.
+obsidian stops being tinted once it is mined. This carries over to the new browse grid unchanged.
 
 ## Trade-offs & open questions
 - **No auto-fill.** Dropping ghost-fill loses the vanilla convenience of dumping ingredients
