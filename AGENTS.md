@@ -1,6 +1,8 @@
 Craftbound is a NeoForge 1.21.1 mod for the Create ecosystem that reworks Minecraft's vanilla recipe book.
 The goal is a restyled recipe-book UI with extra options, a custom recipe-unlock/progression system, and support for showing Create's machine recipe categories.
 
+The goal for the UI is to have it look as much as Minecraft Vanilla. Try to match the Mojang's design language. 
+
 Use fewer comments. Only add a comment when the code would be genuinely unclear without it. Prefer clearer code over comments, and omit comments when in doubt.
 
 ## Code Style

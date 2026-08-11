@@ -42,8 +42,8 @@ The book is a single vanilla-width column with two swappable states:
 2. **Recipe** — clicking an output **replaces the grid in the same column** with how that item
    is made. A **back button** (`‹ items`) returns to the browse grid.
 
-There is **one predictable behavior**: click → show the recipe. No conditional ghost-filling of
-an open crafting grid.
+There is **one predictable behavior**: click → show the recipe. Nothing is ever filled into the
+open screen unless the player asks for it with the place button (see below).
 
 ### Recipe methods = left rail
 When an item has more than one recipe, each method is a **tab on a left rail** that protrudes
@@ -75,10 +75,17 @@ never had, backed by `ObtainedItemsTracker` / `ObtainedItems` / `CraftboundAttac
 counts as obtained however it was acquired — mined, looted, traded — not just crafted, so e.g.
 obsidian stops being tinted once it is mined. This carries over to the new browse grid unchanged.
 
+## Place button (already implemented)
+The recipe state carries a place button in the top strip, where the craftable filter sits while
+browsing. It appears only for recipes the **open menu** can actually lay out — a crafting recipe
+that fits its grid, or the matching smelting family for a furnace/smoker/blast furnace — and is
+greyed out while the ingredients are missing. Create's machine recipes have no such menu, so no
+button. Clicking sends `PlaceRecipePayload`; the server hands the recipe to
+`RecipeBookMenu.handlePlacement`, i.e. exactly the vanilla fill (shift = as many as possible).
+Because vanilla placement refuses recipes its own book has not unlocked, the handler first marks
+the recipe as known — Craftbound offers every recipe, so placing one counts as learning it.
+
 ## Trade-offs & open questions
-- **No auto-fill.** Dropping ghost-fill loses the vanilla convenience of dumping ingredients
-  into an open crafting grid. If wanted back, add a **"place in grid ▸" button inside the recipe
-  body** (shown only when a compatible screen is open) rather than click-to-fill.
 - **Recipe gathering** across vanilla + Create categories for a given output — mechanism TBD.
 - **Browse filtering/search** — category tabs vs. plain search in the browse state — not yet
   designed.

@@ -4,11 +4,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.craftbound.RecipePlacement;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
-import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -40,21 +41,10 @@ public final class CraftableItems
         menu.fillCraftSlotsStackedContents(contents);
 
         Set<Item> result = new HashSet<>();
-        collect(minecraft.level.getRecipeManager(), recipeTypeFor(menu.getRecipeBookType()),
+        collect(minecraft.level.getRecipeManager(), RecipePlacement.recipeTypeFor(menu.getRecipeBookType()),
                 contents, menu.getGridWidth(), menu.getGridHeight(),
                 minecraft.level.registryAccess(), result);
         return result;
-    }
-
-    private static RecipeType<?> recipeTypeFor(RecipeBookType bookType)
-    {
-        return switch (bookType)
-        {
-            case CRAFTING -> RecipeType.CRAFTING;
-            case FURNACE -> RecipeType.SMELTING;
-            case BLAST_FURNACE -> RecipeType.BLASTING;
-            case SMOKER -> RecipeType.SMOKING;
-        };
     }
 
     // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime

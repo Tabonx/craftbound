@@ -20,22 +20,27 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
 // typed characters. Hosts a vanilla EditBox for search and ImageButtons for page arrows so it
@@ -76,6 +81,16 @@ public final class RecipeBookWidget extends AbstractWidget
             Component.translatable("gui.recipebook.toggleRecipes.all");
     private static final Component TOOLTIP_CRAFTABLE =
             Component.translatable("gui.recipebook.toggleRecipes.craftable");
+    // The place-into-grid button, drawn where the craftable filter sits while browsing.
+    private static final WidgetSprites PLACE_SPRITES = new WidgetSprites(
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/place_recipe"),
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/place_recipe_disabled"),
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/place_recipe_highlighted"));
+    private static final Component TOOLTIP_PLACE =
+            Component.translatable("craftbound.recipebook.place")
+                    .append(CommonComponents.NEW_LINE)
+                    .append(Component.translatable("craftbound.recipebook.place.all")
+                            .withStyle(ChatFormatting.GRAY));
 
     private static final int COLS = 5;
     private static final int PER_PAGE = COLS * 4;
@@ -93,6 +108,9 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int FILTER_H = 16;
     private static final int FILTER_X = 110;
     private static final int FILTER_Y = 12;
+    private static final int PLACE_W = 26;
+    private static final int PLACE_H = 16;
+    private static final int PLACE_MARGIN = WIDTH - FILTER_X - FILTER_W;
     private static final int ARROW_W = 12;
     private static final int ARROW_H = 17;
     private static final int FORWARD_X = 93;
@@ -166,6 +184,10 @@ public final class RecipeBookWidget extends AbstractWidget
     private final EditBox search;
     private final ImageButton backButton;
     private final ImageButton forwardButton;
+    private final ImageButton placeButton;
+
+    // Fills the open menu's input slots with the shown recipe; absent until the host binds a menu.
+    private RecipePlacer placer = null;
 
     public RecipeBookWidget()
     {
@@ -179,12 +201,21 @@ public final class RecipeBookWidget extends AbstractWidget
 
         this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
         this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> stepForward());
+
+        this.placeButton = new ImageButton(0, 0, PLACE_W, PLACE_H, PLACE_SPRITES, b -> placeShownRecipe());
+        this.placeButton.setTooltip(Tooltip.create(TOOLTIP_PLACE));
+        this.placeButton.visible = false;
     }
 
     // Supplies the set of items craftable right now, bound by the host to the open menu.
     public void setCraftableSource(Supplier<Set<Item>> source)
     {
         this.craftableSource = source;
+    }
+
+    public void setPlacer(RecipePlacer placer)
+    {
+        this.placer = placer;
     }
 
     private boolean inRecipeMode()
@@ -208,6 +239,18 @@ public final class RecipeBookWidget extends AbstractWidget
             bodyCache.set(recipeIndex, drawable);
         }
         return drawable;
+    }
+
+    private Optional<RecipeHolder<?>> placeableRecipe()
+    {
+        if (!inRecipeMode() || placer == null)
+            return Optional.empty();
+        return placer.placeable(currentRecipe().getRecipe());
+    }
+
+    private void placeShownRecipe()
+    {
+        placeableRecipe().ifPresent(recipe -> placer.place(recipe, Screen.hasShiftDown()));
     }
 
     // Browse and Recipe share the two page arrows; each step means "previous/next" in the active
@@ -419,6 +462,7 @@ public final class RecipeBookWidget extends AbstractWidget
         setWidth(w);
 
         search.setPosition(px + SEARCH_X, baseY + SEARCH_Y);
+        placeButton.setPosition(px + w - PLACE_MARGIN - PLACE_W, baseY + FILTER_Y);
         int center = px + w / 2;
         backButton.setPosition(center + BACKWARD_X - WIDTH / 2, baseY + ARROW_Y);
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
@@ -460,6 +504,7 @@ public final class RecipeBookWidget extends AbstractWidget
             renderBrowse(graphics, x, y, mouseX, mouseY, partialTick);
         }
 
+        renderPlaceButton(graphics, mouseX, mouseY, partialTick);
         renderPager(graphics, x, y, mouseX, mouseY, partialTick);
     }
 
@@ -683,6 +728,19 @@ public final class RecipeBookWidget extends AbstractWidget
         }
     }
 
+    // Offered only for recipes the open menu can lay out, and greyed out while the ingredients for
+    // them are missing.
+    private void renderPlaceButton(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        Optional<RecipeHolder<?>> recipe = placeableRecipe();
+        placeButton.visible = recipe.isPresent();
+        if (!placeButton.visible)
+            return;
+
+        placeButton.active = placer.hasIngredients(recipe.get());
+        placeButton.render(graphics, mouseX, mouseY, partialTick);
+    }
+
     private void renderPager(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
     {
         int count = inRecipeMode() ? bodyRecipes.size() : pageCount();
@@ -707,6 +765,9 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         if (!visible)
             return false;
+
+        if (placeButton.visible && placeButton.mouseClicked(mouseX, mouseY, button))
+            return true;
 
         if (inRecipeMode())
         {

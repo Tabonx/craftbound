@@ -44,6 +44,7 @@ public final class RecipeBookScreenTweaks
 
         RecipeBookWidget book = new RecipeBookWidget();
         book.setCraftableSource(() -> CraftableItems.craftableIn(menu));
+        book.setPlacer(new RecipePlacer(menu));
         event.addListener(book);
 
         ImageButton button = new ImageButton(
