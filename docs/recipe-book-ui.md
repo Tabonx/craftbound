@@ -69,6 +69,13 @@ into **our own small rectangle** inside the book, instead of calling JEI's full-
 `RecipesGui`. We reuse two things: Create's `IRecipeCategory` renderers and JEI's ingredient
 drawables.
 
+The embedded runtime finds plugins the way JEI does — `ForgePluginFinder` scans every loaded mod
+for `@JeiPlugin` — so any mod with JEI support shows up in the book without being named in our
+source. Only JEI's own GUI, internal and debug plugins are dropped, since they build the
+full-screen interface the book replaces. Note the flip side of embedding: `neoforge.mods.toml`
+declares the JEI mod itself `incompatible`, so a mod that *hard*-depends on JEI cannot be
+installed alongside Craftbound; optional JEI support (the common case) works fine.
+
 ## Progression tint (already implemented)
 `client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes whose result the player has
 never had, backed by `ObtainedItemsTracker` / `ObtainedItems` / `CraftboundAttachments`. An item

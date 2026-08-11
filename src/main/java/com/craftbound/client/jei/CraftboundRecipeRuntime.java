@@ -2,8 +2,7 @@ package com.craftbound.client.jei;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import com.simibubi.create.compat.jei.CreateJEI;
+import java.util.Set;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.common.Internal;
@@ -16,10 +15,14 @@ import mezz.jei.common.util.Translator;
 import mezz.jei.gui.config.InternalKeyMappings;
 import mezz.jei.gui.overlay.bookmarks.IngredientsTooltipComponent;
 import mezz.jei.gui.overlay.bookmarks.PreviewTooltipComponent;
+import mezz.jei.gui.plugins.JeiGuiPlugin;
 import mezz.jei.library.gui.ingredients.TagContentTooltipComponent;
-import mezz.jei.library.plugins.vanilla.VanillaPlugin;
+import mezz.jei.library.plugins.debug.JeiDebugPlugin;
+import mezz.jei.library.plugins.jei.JeiInternalPlugin;
 import mezz.jei.library.startup.JeiStarter;
 import mezz.jei.library.startup.StartData;
+import mezz.jei.neoforge.plugins.neoforge.NeoForgeGuiPlugin;
+import mezz.jei.neoforge.startup.ForgePluginFinder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -48,6 +51,11 @@ public final class CraftboundRecipeRuntime
         }
     };
 
+    // JEI's own GUI and debug plugins. They build the full-screen JEI interface and its debug
+    // categories, both of which Craftbound replaces with the book.
+    private static final Set<Class<?>> HEADLESS_EXCLUDED = Set.of(
+            JeiGuiPlugin.class, NeoForgeGuiPlugin.class, JeiInternalPlugin.class, JeiDebugPlugin.class);
+
     private final JeiStarter starter;
     private final RecipeRuntimeReadiness readiness = new RecipeRuntimeReadiness();
     private Connection connection;
@@ -60,11 +68,17 @@ public final class CraftboundRecipeRuntime
         Internal.setKeyMappings(keyMappings);
         Internal.setServerConnection(NO_SERVER_CONNECTION);
 
-        List<IModPlugin> plugins = new ArrayList<>(List.of(
-                new VanillaPlugin(),
-                new CreateJEI(),
-                new CraftboundJeiPlugin()));
-        starter = new JeiStarter(new StartData(plugins, NO_SERVER_CONNECTION, keyMappings));
+        starter = new JeiStarter(new StartData(discoverPlugins(), NO_SERVER_CONNECTION, keyMappings));
+    }
+
+    // Every @JeiPlugin in every loaded mod, found the same way JEI finds them, so any mod's recipe
+    // categories reach the book without being named here. JeiStarter orders them itself, and a
+    // plugin that throws is logged and skipped rather than taking the runtime down with it.
+    private static List<IModPlugin> discoverPlugins()
+    {
+        List<IModPlugin> plugins = new ArrayList<>(ForgePluginFinder.getModPlugins());
+        plugins.removeIf(plugin -> HEADLESS_EXCLUDED.contains(plugin.getClass()));
+        return plugins;
     }
 
     public static void register(IEventBus modEventBus)
