@@ -27,3 +27,5 @@ logs
 repo
 # macOS
 .DS_Store
+
+docs/superpowers/

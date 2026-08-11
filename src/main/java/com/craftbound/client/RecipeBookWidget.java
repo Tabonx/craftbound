@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.craftbound.Craftbound;
+import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
@@ -28,6 +30,7 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -44,8 +47,14 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private static final ResourceLocation BACKGROUND =
             ResourceLocation.withDefaultNamespace("textures/gui/recipe_book.png");
-    private static final ResourceLocation SLOT =
+    private static final ResourceLocation CRAFTABLE_SLOT =
             ResourceLocation.withDefaultNamespace("recipe_book/slot_craftable");
+    private static final ResourceLocation UNCRAFTABLE_SLOT =
+            ResourceLocation.withDefaultNamespace("recipe_book/slot_uncraftable");
+    private static final ResourceLocation UNDISCOVERED_CRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_craftable");
+    private static final ResourceLocation UNDISCOVERED_UNCRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_uncraftable");
     private static final WidgetSprites FORWARD_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward"),
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward_highlighted"));
@@ -141,11 +150,11 @@ public final class RecipeBookWidget extends AbstractWidget
     private List<IRecipeLayoutDrawable<?>> bodyCache = new ArrayList<>();
     private int recipeIndex = 0;
 
-    // The book keeps its right edge where the host placed it (baseX + WIDTH) and grows left in recipe
-    // mode to fit wide, multi-step recipes; panelWidth is the current width, WIDTH while browsing.
+    // The book keeps its right edge where the host placed it (baseX + WIDTH) and widens left to a
+    // single fixed width in recipe mode; browsing it stays WIDTH. The width never varies per recipe,
+    // so the panel's left edge (and the inventory beside it) stays put — recipes scale to fit.
     private int baseX;
     private int baseY;
-    private int panelWidth = WIDTH;
 
     // Placement of the recipe drawable from the last render, so clicks can be mapped into its space.
     private int recipeOriginX;
@@ -241,7 +250,7 @@ public final class RecipeBookWidget extends AbstractWidget
         groupIndex = 0;
         recipeIndex = 0;
         railOffset = 0;
-        updatePanelWidth();
+        relayout();
     }
 
     // Clicking an ingredient inside the shown recipe drills into it: left shows its recipes, right
@@ -301,13 +310,12 @@ public final class RecipeBookWidget extends AbstractWidget
         bodyRecipes = recipes;
         bodyCache = new ArrayList<>(Collections.nCopies(recipes.size(), null));
         recipeIndex = 0;
-        updatePanelWidth();
+        relayout();
     }
 
     private void setRecipe(int target)
     {
         recipeIndex = Math.max(0, Math.min(bodyRecipes.size() - 1, target));
-        updatePanelWidth();
     }
 
     private static List<Supplier<IRecipeLayoutDrawable<?>>> constantSuppliers(
@@ -357,18 +365,18 @@ public final class RecipeBookWidget extends AbstractWidget
         return player == null ? -1 : player.getInventory().getTimesChanged();
     }
 
-    // Rebuild the craftable set when the filter is on and the inventory has changed since the last
-    // build, then re-apply the filter so the grid reflects the new inventory.
+    // Rebuild the craftable set when the inventory changes, then update an active filter.
     private void refreshCraftableIfStale()
     {
-        if (!RecipeBookState.isFiltering() || craftableSource == null)
+        if (craftableSource == null)
             return;
         int changed = inventoryTimesChanged();
         if (changed != craftableTimesChanged)
         {
             craftable = craftableSource.get();
             craftableTimesChanged = changed;
-            applyFilter();
+            if (RecipeBookState.isFiltering())
+                applyFilter();
         }
     }
 
@@ -379,10 +387,6 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             craftable = craftableSource.get();
             craftableTimesChanged = inventoryTimesChanged();
-        }
-        else
-        {
-            craftable = Set.of();
         }
         applyFilter();
     }
@@ -405,10 +409,11 @@ public final class RecipeBookWidget extends AbstractWidget
         relayout();
     }
 
-    // Apply the current width and position: anchored right edge, grown left, sub-widgets re-placed.
+    // Apply the current width and position: anchored right edge, widened left in recipe mode to a
+    // fixed width (clamped to the screen), sub-widgets re-placed.
     private void relayout()
     {
-        int w = inRecipeMode() ? Math.min(panelWidth, maxPanelWidth()) : WIDTH;
+        int w = inRecipeMode() ? Math.min(RecipeBookLayout.RECIPE_WIDTH, maxPanelWidth()) : WIDTH;
         int px = baseX + WIDTH - w;
         super.setPosition(px, baseY);
         setWidth(w);
@@ -419,26 +424,11 @@ public final class RecipeBookWidget extends AbstractWidget
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
     }
 
-    // Widen to fit the shown recipe, but never past the screen: the left edge (with the tab rail that
-    // protrudes TAB_X further left) must stay on-screen.
+    // Cap the recipe-mode width so the left edge (with the tab rail that protrudes TAB_X further
+    // left) stays on-screen on very narrow windows.
     private int maxPanelWidth()
     {
         return Math.max(WIDTH, baseX + WIDTH + TAB_X - 2);
-    }
-
-    private void updatePanelWidth()
-    {
-        if (!inRecipeMode())
-        {
-            panelWidth = WIDTH;
-            relayout();
-            return;
-        }
-        IRecipeLayoutDrawable<?> recipe = currentRecipe();
-        recipe.setPosition(0, 0);
-        int natural = recipe.getRectWithBorder().getWidth();
-        panelWidth = Math.max(WIDTH, Math.min(maxPanelWidth(), natural + 2 * BODY_X));
-        relayout();
     }
 
     private int bodyWidth()
@@ -582,14 +572,27 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             int cellX = x + GRID_X + CELL * (i % COLS);
             int cellY = y + GRID_Y + CELL * (i / COLS);
-            graphics.blitSprite(SLOT, cellX, cellY, CELL, CELL);
-
             BookIngredient item = filtered.get(start + i);
+            graphics.blitSprite(slotFor(item), cellX, cellY, CELL, CELL);
             item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
 
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
                 hovered = item;
         }
+    }
+
+    private ResourceLocation slotFor(BookIngredient ingredient)
+    {
+        Optional<Item> item = ingredient.item();
+        boolean canCraft = item.map(craftable::contains).orElse(false);
+        var player = Minecraft.getInstance().player;
+        boolean discovered = player == null || item.map(value ->
+                player.getData(CraftboundAttachments.CRAFTED_ITEMS)
+                        .contains(BuiltInRegistries.ITEM.getKey(value))).orElse(true);
+
+        if (discovered)
+            return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
+        return canCraft ? UNDISCOVERED_CRAFTABLE_SLOT : UNDISCOVERED_UNCRAFTABLE_SLOT;
     }
 
     private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -606,8 +609,15 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         // The search bar and its magnifier are baked into the book texture. Cover that strip with a
         // slice of the book's own plain interior (sourced from the grid area), stretched to the
-        // current width, so the back control sits on clean parchment instead of the magnifier.
-        graphics.blit(BACKGROUND, x + BACK_X, y + SEARCH_Y - 3, getWidth() - 2 * BACK_X, SEARCH_H + 6,
+        // current width, so the back control sits on clean parchment instead of the magnifier. The
+        // book texture (and its bezel) is stretched horizontally from WIDTH to getWidth(), so stretch
+        // this slice by the same factor; otherwise its edges fall a pixel or two inside the bezel.
+        // Round each edge inward (ceil left, floor right) so the slice stops just inside the bezel
+        // rather than spilling onto it.
+        float coverScale = (float) getWidth() / WIDTH;
+        int coverLeft = x + (int) Math.ceil(BACK_X * coverScale);
+        int coverRight = x + (int) Math.floor((WIDTH - BACK_X) * coverScale);
+        graphics.blit(BACKGROUND, coverLeft, y + SEARCH_Y - 3, coverRight - coverLeft, SEARCH_H + 6,
                 BACK_X + 1, GRID_Y + 1, WIDTH - 2 * BACK_X, SEARCH_H + 6, 256, 256);
 
         var font = Minecraft.getInstance().font;
