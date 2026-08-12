@@ -188,6 +188,86 @@ class UnlocksTest
                 obtained("minecraft:oak_log"), Set.of()));
     }
 
+    @Test
+    void unlockingItemsAreTheOnesThatOpenSomething()
+    {
+        RecipeIndex index = index();
+
+        // The log opens planks and the planks open sticks; brass is no use while the mixer that
+        // consumes it is still locked away.
+        assertEquals(obtained("minecraft:oak_log", "minecraft:oak_planks"),
+                Unlocks.unlockingItems(STRICT, index, Set.of(), Set.of()));
+
+        Set<ResourceLocation> hasLog = obtained("minecraft:oak_log");
+        assertEquals(obtained("minecraft:oak_planks"),
+                Unlocks.unlockingItems(STRICT, index, hasLog, Unlocks.unlockedOutputs(STRICT, index, hasLog)));
+    }
+
+    // A machine is worth marking too: obtaining it is what opens its category.
+    @Test
+    void aCatalystIsMarkedWhenItIsTheMissingPiece()
+    {
+        RecipeIndex index = index();
+        Set<ResourceLocation> hasBrass = obtained("create:brass_ingot");
+
+        assertTrue(Unlocks.unlockingItems(STRICT, index, hasBrass,
+                Unlocks.unlockedOutputs(STRICT, index, hasBrass)).contains(rl("create:mechanical_mixer")));
+    }
+
+    // What the marks are for: one plank satisfying the shared recipe clears the mark from all of
+    // them, because none of the others opens anything the first has not already opened.
+    @Test
+    void obtainingOneAlternativeClearsTheMarkFromTheRest()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of("stick", node(CRAFTING,
+                        List.of(items("minecraft:oak_planks", "minecraft:birch_planks")),
+                        "item|minecraft:stick"))),
+                Map.of());
+
+        assertEquals(obtained("minecraft:oak_planks", "minecraft:birch_planks"),
+                Unlocks.unlockingItems(STRICT, index, Set.of(), Set.of()));
+
+        Set<ResourceLocation> hasOak = obtained("minecraft:oak_planks");
+        assertEquals(Set.of(),
+                Unlocks.unlockingItems(STRICT, index, hasOak, Unlocks.unlockedOutputs(STRICT, index, hasOak)));
+    }
+
+    // Under ALL_INPUTS a single item is only worth marking once it is the last one missing.
+    @Test
+    void allInputs_marksOnlyTheFinalMissingInput()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of("torch", node(CRAFTING,
+                        List.of(items("minecraft:stick"), items("minecraft:coal")), "item|minecraft:torch"))),
+                Map.of());
+
+        assertEquals(Set.of(), Unlocks.unlockingItems(STRICT, index, Set.of(), Set.of()));
+        assertEquals(obtained("minecraft:coal"),
+                Unlocks.unlockingItems(STRICT, index, obtained("minecraft:stick"), Set.of()));
+    }
+
+    // An output already reachable another way is nothing new, so nothing points at it.
+    @Test
+    void anAlreadyUnlockedOutputIsNotWorthMarking()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of(
+                        "torch", node(CRAFTING, List.of(items("minecraft:coal")), "item|minecraft:torch"),
+                        "torch_alt", node(CRAFTING, List.of(items("minecraft:charcoal")), "item|minecraft:torch"))),
+                Map.of());
+
+        Set<ResourceLocation> hasCoal = obtained("minecraft:coal");
+        assertEquals(Set.of(),
+                Unlocks.unlockingItems(STRICT, index, hasCoal, Unlocks.unlockedOutputs(STRICT, index, hasCoal)));
+    }
+
+    @Test
+    void disabledRulesMarkNothing()
+    {
+        assertEquals(Set.of(), Unlocks.unlockingItems(ProgressionRules.OPEN, index(), Set.of(), Set.of()));
+    }
+
     private static ResourceLocation rl(String id)
     {
         return ResourceLocation.parse(id);

@@ -72,6 +72,53 @@ public final class Unlocks
                 : slot.fluids().stream().anyMatch(producedKeys::contains);
     }
 
+    // Items whose absence is the only thing still holding a recipe back: obtaining one reveals
+    // something the book is not showing yet. This is what the grid marks, rather than "never
+    // obtained" — a plank nobody has held is only worth marking while it still opens a door, so the
+    // mark leaves every plank at once as soon as one of them satisfies the recipes they share.
+    //
+    // Judged one recipe ahead, not to a fixpoint: a mark promises the next step, not the whole tree.
+    public static Set<ResourceLocation> unlockingItems(ProgressionRules rules, RecipeIndex index,
+            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+    {
+        if (!rules.enabled())
+            return Set.of();
+
+        Set<ResourceLocation> unlocking = new HashSet<>();
+        Set<ResourceLocation> probe = new HashSet<>(obtained);
+        index.nodes()
+                .filter(node -> revealsSomething(node, unlockedOutputs))
+                .filter(node -> !recipeUnlocked(rules, index, node, obtained, unlockedOutputs))
+                .forEach(node -> {
+                    for (ResourceLocation candidate : candidates(index, node))
+                    {
+                        if (obtained.contains(candidate) || unlocking.contains(candidate))
+                            continue;
+
+                        probe.add(candidate);
+                        if (recipeUnlocked(rules, index, node, probe, unlockedOutputs))
+                            unlocking.add(candidate);
+                        probe.remove(candidate);
+                    }
+                });
+        return unlocking;
+    }
+
+    // A locked recipe whose outputs are all reachable some other way adds nothing to the book.
+    private static boolean revealsSomething(RecipeNode node, Set<String> unlockedOutputs)
+    {
+        return node.outputKeys().stream().anyMatch(key -> !unlockedOutputs.contains(key));
+    }
+
+    // Everything that could conceivably flip this recipe: its category's machines and whatever its
+    // slots accept. Each is then tested for real, so entries that cannot help are dropped.
+    private static Set<ResourceLocation> candidates(RecipeIndex index, RecipeNode node)
+    {
+        Set<ResourceLocation> candidates = new HashSet<>(index.catalystsFor(node.categoryUid()));
+        node.inputSlots().forEach(slot -> candidates.addAll(slot.items()));
+        return candidates;
+    }
+
     // The output keys of every unlocked recipe: what the browse grid is allowed to show.
     //
     // Grown to a fixpoint rather than decided in one pass, because unlocking a recipe can unlock

@@ -23,16 +23,6 @@ public final class ObtainedItems
             ByteBufCodecs.<RegistryFriendlyByteBuf, ResourceLocation, Set<ResourceLocation>>collection(
                     size -> new HashSet<>(), ResourceLocation.STREAM_CODEC);
 
-    public static boolean hasUnobtained(Set<ResourceLocation> obtained, Collection<ResourceLocation> resultIds)
-    {
-        for (ResourceLocation id : resultIds)
-        {
-            if (!obtained.contains(id))
-                return true;
-        }
-        return false;
-    }
-
     // Returns whether anything was actually added, so callers can skip a redundant sync.
     public static boolean recordAll(Set<ResourceLocation> obtained, Collection<ResourceLocation> ids)
     {

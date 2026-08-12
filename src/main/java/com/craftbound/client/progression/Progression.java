@@ -17,6 +17,7 @@ import com.craftbound.progression.Unlocks;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 // Client-side view of what the player has unlocked. The obtained set arrives on its own as a synced
@@ -31,6 +32,7 @@ public final class Progression
     private static RecipeIndex index = RecipeIndex.EMPTY;
     private static ProgressionRules rules = ProgressionRules.OPEN;
     private static Set<String> unlockedOutputs = Set.of();
+    private static Set<ResourceLocation> unlockingItems = Set.of();
     private static int obtainedSize = -1;
 
     // Unlocks not yet announced, and whether a baseline has been taken to measure them against.
@@ -59,6 +61,7 @@ public final class Progression
 
         Set<String> previous = unlockedOutputs;
         unlockedOutputs = rules.enabled() ? Unlocks.unlockedOutputs(rules, index, obtained) : Set.of();
+        unlockingItems = Unlocks.unlockingItems(rules, index, obtained, unlockedOutputs);
         recordNewlyUnlocked(previous);
         return true;
     }
@@ -98,6 +101,20 @@ public final class Progression
         return snapshot.displayFor(unlockKey);
     }
 
+    // Whether obtaining this item would reveal something the book is still hiding — what the grid
+    // marks. Fluids and other ingredient types can never be obtained, so they are never marked.
+    public static boolean unlocksMore(BookIngredient ingredient)
+    {
+        return ingredient.item()
+                .map(item -> unlocksMore(BuiltInRegistries.ITEM.getKey(item)))
+                .orElse(false);
+    }
+
+    public static boolean unlocksMore(ResourceLocation itemId)
+    {
+        return unlockingItems.contains(itemId);
+    }
+
     public static boolean isUnlocked(BookIngredient ingredient)
     {
         if (!rules.enabled())
@@ -130,6 +147,7 @@ public final class Progression
         snapshot = RecipeIndexSnapshot.EMPTY;
         index = RecipeIndex.EMPTY;
         unlockedOutputs = Set.of();
+        unlockingItems = Set.of();
         obtainedSize = -1;
         newlyUnlocked.clear();
         seeded = false;

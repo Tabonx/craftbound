@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
-import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
@@ -36,7 +35,6 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -59,9 +57,9 @@ public final class RecipeBookWidget extends AbstractWidget
             ResourceLocation.withDefaultNamespace("recipe_book/slot_craftable");
     private static final ResourceLocation UNCRAFTABLE_SLOT =
             ResourceLocation.withDefaultNamespace("recipe_book/slot_uncraftable");
-    private static final ResourceLocation UNDISCOVERED_CRAFTABLE_SLOT =
+    private static final ResourceLocation UNLOCKING_CRAFTABLE_SLOT =
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_craftable");
-    private static final ResourceLocation UNDISCOVERED_UNCRAFTABLE_SLOT =
+    private static final ResourceLocation UNLOCKING_UNCRAFTABLE_SLOT =
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_uncraftable");
     private static final WidgetSprites FORWARD_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward"),
@@ -641,18 +639,14 @@ public final class RecipeBookWidget extends AbstractWidget
         }
     }
 
+    // Marked slots are the ones worth getting hold of: obtaining them opens recipes the book is
+    // still hiding.
     private ResourceLocation slotFor(BookIngredient ingredient)
     {
-        Optional<Item> item = ingredient.item();
-        boolean canCraft = item.map(craftable::contains).orElse(false);
-        var player = Minecraft.getInstance().player;
-        boolean obtained = player == null || item.map(value ->
-                player.getData(CraftboundAttachments.OBTAINED_ITEMS)
-                        .contains(BuiltInRegistries.ITEM.getKey(value))).orElse(true);
-
-        if (obtained)
-            return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
-        return canCraft ? UNDISCOVERED_CRAFTABLE_SLOT : UNDISCOVERED_UNCRAFTABLE_SLOT;
+        boolean canCraft = ingredient.item().map(craftable::contains).orElse(false);
+        if (Progression.unlocksMore(ingredient))
+            return canCraft ? UNLOCKING_CRAFTABLE_SLOT : UNLOCKING_UNCRAFTABLE_SLOT;
+        return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
     }
 
     private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)

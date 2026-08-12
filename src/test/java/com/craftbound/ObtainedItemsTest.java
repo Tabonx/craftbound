@@ -22,33 +22,11 @@ class ObtainedItemsTest
     }
 
     @Test
-    void hasUnobtained_trueWhenAnyResultMissing()
-    {
-        Set<ResourceLocation> obtained = Set.of(rl("minecraft:stick"));
-        assertTrue(ObtainedItems.hasUnobtained(obtained, List.of(rl("minecraft:torch"))));
-        assertTrue(ObtainedItems.hasUnobtained(obtained, List.of(rl("minecraft:stick"), rl("minecraft:torch"))));
-    }
-
-    @Test
-    void hasUnobtained_falseWhenAllResultsObtained()
-    {
-        Set<ResourceLocation> obtained = Set.of(rl("minecraft:stick"), rl("minecraft:torch"));
-        assertFalse(ObtainedItems.hasUnobtained(obtained, List.of(rl("minecraft:stick"))));
-        assertFalse(ObtainedItems.hasUnobtained(obtained, List.of(rl("minecraft:stick"), rl("minecraft:torch"))));
-    }
-
-    @Test
-    void hasUnobtained_falseWhenNoRecipes()
-    {
-        assertFalse(ObtainedItems.hasUnobtained(Set.of(), List.of()));
-    }
-
-    @Test
     void recordAll_marksItemsHeldWithoutCrafting()
     {
         Set<ResourceLocation> obtained = new HashSet<>();
         assertTrue(ObtainedItems.recordAll(obtained, List.of(rl("minecraft:obsidian"))));
-        assertFalse(ObtainedItems.hasUnobtained(obtained, List.of(rl("minecraft:obsidian"))));
+        assertEquals(Set.of(rl("minecraft:obsidian")), obtained);
     }
 
     @Test
