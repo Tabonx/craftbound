@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 
 import com.craftbound.Craftbound;
 import com.craftbound.client.progression.Progression;
-import com.craftbound.progression.RecipeIndex;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -59,9 +58,9 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return runtime != null;
     }
 
-    public static RecipeIndex buildRecipeIndex()
+    public static RecipeIndexSnapshot buildRecipeIndex()
     {
-        return runtime == null ? RecipeIndex.EMPTY : RecipeIndexBuilder.build(runtime);
+        return runtime == null ? RecipeIndexSnapshot.EMPTY : RecipeIndexBuilder.build(runtime);
     }
 
     // The ingredient types a player browses as craftable results. Deliberately not "all registered

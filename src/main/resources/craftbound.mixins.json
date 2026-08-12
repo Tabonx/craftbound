@@ -6,6 +6,7 @@
   "client": [
     "RecipeButtonMixin",
     "RecipeBookVisibilityMixin",
+    "RecipeToastMixin",
     "ContainerScreenAccessor"
   ],
   "injectors": {

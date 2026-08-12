@@ -113,7 +113,55 @@ in hand means no mixing tab and no mixing recipes anywhere.
 - Anything the index could not read — a category that throws while laying a recipe out — counts as
   unlocked. Showing a recipe early is recoverable; hiding one forever is not.
 
+### Requirements a category hides
+Create's basin recipes need a heat source under the basin, but `BasinCategory` paints that in
+`draw()` rather than declaring it as a slot, so the generic walk cannot see it — lava looked
+makeable the moment its ingredients were in hand. `progression/create/HeatRequirement` turns a heat
+condition into **extra input slots** (heated → Blaze Burner; superheated → Blaze Burner *and* Blaze
+Cake, as two slots, since a burner alone only reaches "heated"), which is exactly what a heat source
+is: another thing you must have obtained. `Unlocks` stays free of any Create knowledge, and
+`client/jei/RecipeRequirements` is the only place that touches Create's classes, behind a
+`ModList.isLoaded` guard so Craftbound still runs without Create.
+
+Anything else a mod hides from its own layout stays invisible to progression, which errs towards
+showing a recipe too early rather than stranding one.
+
+### Fluids unlock transitively
+Fluids can never enter an inventory, so they can never be "obtained". Left at that they would gate
+nothing, and a Bar of Chocolate showed up before chocolate itself was reachable. A fluid input is
+instead satisfied when **some unlocked recipe produces it** — which makes `unlockedOutputs` a
+fixpoint rather than a single pass, since unlocking one recipe can unlock the next. Sugar and cocoa
+therefore reveal the chocolate *and* the bar in the same breath.
+
+Items keep the strict obtained rule; only fluids are transitive, precisely because they are the ones
+that cannot be held.
+
+Two things stop this from creating gates that never open:
+- A fluid **nothing produces** (water) is left unjudged, exactly like a slot we cannot read.
+- A fluid produced **only by recipes that also consume it** is likewise unjudged. Create's brewing
+  both takes and makes potion fluid; treating that as produced would lock every brewing recipe
+  behind a fluid with no way in (`RecipeIndex#bootstrappable`).
+
+A fluid's **bucket** is folded into the slot's items, so having one in hand also satisfies the slot.
+It only ever helps: judgeability is decided by the fluids, so a bucket never turns an ungateable
+water slot into a gate.
+
+`progression/UnlockKey` owns how outputs are named. Items are registry-level, ignoring counts and
+components. Fluids carry a **subtype** as well: every Create potion is `create:potion`, so a
+registry-only key let one unlocked brewing step reveal every potion in the game while each one's
+recipes stayed locked — fluids you could see with nothing behind them.
+
+The subtype has to come from `IIngredientHelper#getUid`. That is the only path reaching JEI's modern
+subtype data, which is where Create's `PotionFluidSubtypeInterpreter` puts the potion type; its
+legacy string counterpart — the one `getUniqueId` reads — returns `""`, so keying on that collapsed
+the potions all over again.
+
 ### Unlock toast
+Vanilla keeps unlocking recipes and toasting them even with its book forced hidden, which left two
+notifications side by side — one pointing at a book the player does not have — disagreeing with each
+other, since vanilla unlocks on its own rules rather than Craftbound's progression.
+`client/mixin/RecipeToastMixin` suppresses it, leaving one answer to "what did I just unlock?".
+
 Obtaining an item that unlocks something pops vanilla's recipe toast in the top-right — same
 `toast/recipe` sprite and same "New Recipes Unlocked! / Check your recipe book" strings, so it reads
 as the popup players already know. `RecipeUnlockToast` re-implements it over items because

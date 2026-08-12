@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,63 +25,84 @@ class UnlocksTest
     private static final ProgressionRules LOOSE =
             new ProgressionRules(true, UnlockRule.ANY_INPUT, true, Set.of(CRAFTING));
 
-    private static ResourceLocation rl(String id)
+    // Nothing unlocked yet and nothing produced anywhere: the baseline for slot-level assertions.
+    private static boolean satisfied(ProgressionRules rules, List<InputSlot> slots,
+            Set<ResourceLocation> obtained)
     {
-        return ResourceLocation.parse(id);
-    }
-
-    private static Set<ResourceLocation> obtained(String... ids)
-    {
-        return java.util.Arrays.stream(ids).map(UnlocksTest::rl).collect(java.util.stream.Collectors.toSet());
-    }
-
-    private static Set<ResourceLocation> slot(String... ids)
-    {
-        return obtained(ids);
+        return Unlocks.inputsSatisfied(rules, slots, obtained, Set.of(), Set.of());
     }
 
     @Test
     void allInputs_needsEverySlotSatisfied()
     {
-        List<Set<ResourceLocation>> inputs = List.of(slot("minecraft:oak_planks"), slot("minecraft:stick"));
+        List<InputSlot> inputs = List.of(items("minecraft:oak_planks"), items("minecraft:stick"));
 
-        assertFalse(Unlocks.inputsSatisfied(STRICT, inputs, obtained("minecraft:oak_planks")));
-        assertTrue(Unlocks.inputsSatisfied(STRICT, inputs, obtained("minecraft:oak_planks", "minecraft:stick")));
+        assertFalse(satisfied(STRICT, inputs, obtained("minecraft:oak_planks")));
+        assertTrue(satisfied(STRICT, inputs, obtained("minecraft:oak_planks", "minecraft:stick")));
     }
 
     @Test
     void allInputs_slotWithAlternativesNeedsOnlyOne()
     {
-        List<Set<ResourceLocation>> inputs =
-                List.of(slot("minecraft:oak_planks", "minecraft:birch_planks", "minecraft:spruce_planks"));
+        List<InputSlot> inputs =
+                List.of(items("minecraft:oak_planks", "minecraft:birch_planks", "minecraft:spruce_planks"));
 
-        assertTrue(Unlocks.inputsSatisfied(STRICT, inputs, obtained("minecraft:birch_planks")));
+        assertTrue(satisfied(STRICT, inputs, obtained("minecraft:birch_planks")));
     }
 
     @Test
     void anyInput_needsOneSlotSatisfied()
     {
-        List<Set<ResourceLocation>> inputs = List.of(slot("minecraft:oak_planks"), slot("minecraft:stick"));
+        List<InputSlot> inputs = List.of(items("minecraft:oak_planks"), items("minecraft:stick"));
 
-        assertTrue(Unlocks.inputsSatisfied(LOOSE, inputs, obtained("minecraft:stick")));
-        assertFalse(Unlocks.inputsSatisfied(LOOSE, inputs, obtained("minecraft:diamond")));
+        assertTrue(satisfied(LOOSE, inputs, obtained("minecraft:stick")));
+        assertFalse(satisfied(LOOSE, inputs, obtained("minecraft:diamond")));
     }
 
     @Test
     void unjudgeableSlotsNeverLockARecipe()
     {
-        List<Set<ResourceLocation>> fluidOnly = List.of(Set.of());
-        assertTrue(Unlocks.inputsSatisfied(STRICT, fluidOnly, Set.of()));
+        List<InputSlot> unreadable = List.of(InputSlot.ofItems(Set.of()));
+        assertTrue(satisfied(STRICT, unreadable, Set.of()));
 
-        List<Set<ResourceLocation>> mixed = List.of(Set.of(), slot("minecraft:sugar"));
-        assertFalse(Unlocks.inputsSatisfied(STRICT, mixed, Set.of()));
-        assertTrue(Unlocks.inputsSatisfied(STRICT, mixed, obtained("minecraft:sugar")));
+        List<InputSlot> mixed = List.of(InputSlot.ofItems(Set.of()), items("minecraft:sugar"));
+        assertFalse(satisfied(STRICT, mixed, Set.of()));
+        assertTrue(satisfied(STRICT, mixed, obtained("minecraft:sugar")));
     }
 
     @Test
     void recipeWithNoInputsIsUnlocked()
     {
-        assertTrue(Unlocks.inputsSatisfied(STRICT, List.of(), Set.of()));
+        assertTrue(satisfied(STRICT, List.of(), Set.of()));
+    }
+
+    // Water is in no recipe's output, so gating on it would be a gate that never opens.
+    @Test
+    void aFluidNothingProducesIsNotAGate()
+    {
+        List<InputSlot> waterSlot = List.of(fluidSlot("minecraft:water", "minecraft:water_bucket"));
+
+        assertTrue(Unlocks.inputsSatisfied(STRICT, waterSlot, Set.of(), Set.of(), Set.of()));
+    }
+
+    @Test
+    void aProducedFluidGatesUntilItIsUnlocked()
+    {
+        List<InputSlot> chocolate = List.of(fluidSlot("create:chocolate", "create:chocolate_bucket"));
+        Set<String> produced = Set.of("fluid|create:chocolate");
+
+        assertFalse(Unlocks.inputsSatisfied(STRICT, chocolate, Set.of(), Set.of(), produced));
+        assertTrue(Unlocks.inputsSatisfied(STRICT, chocolate, Set.of(),
+                Set.of("fluid|create:chocolate"), produced));
+    }
+
+    @Test
+    void aFluidsBucketAlsoSatisfiesTheSlot()
+    {
+        List<InputSlot> chocolate = List.of(fluidSlot("create:chocolate", "create:chocolate_bucket"));
+
+        assertTrue(Unlocks.inputsSatisfied(STRICT, chocolate, obtained("create:chocolate_bucket"),
+                Set.of(), Set.of("fluid|create:chocolate")));
     }
 
     @Test
@@ -107,8 +130,10 @@ class UnlocksTest
     void disabledRulesUnlockEverything()
     {
         RecipeIndex index = index();
-        assertTrue(Unlocks.recipeUnlocked(ProgressionRules.OPEN, index, node(MIXING,
-                List.of(slot("create:brass_ingot")), "item|create:brass_sheet"), Set.of()));
+
+        assertTrue(Unlocks.recipeUnlocked(ProgressionRules.OPEN, index,
+                node(MIXING, List.of(items("create:brass_ingot")), "item|create:brass_sheet"),
+                Set.of(), Set.of()));
         assertEquals(Set.of("item|minecraft:oak_planks", "item|minecraft:stick", "item|create:brass_sheet"),
                 Unlocks.unlockedOutputs(ProgressionRules.OPEN, index, Set.of()));
     }
@@ -132,33 +157,12 @@ class UnlocksTest
         Set<ResourceLocation> hasIngredientsOnly = obtained("minecraft:oak_log", "minecraft:oak_planks",
                 "create:brass_ingot");
 
-        assertFalse(Unlocks.unlockedOutputs(STRICT, index, hasIngredientsOnly).contains("item|create:brass_sheet"));
+        assertFalse(Unlocks.unlockedOutputs(STRICT, index, hasIngredientsOnly)
+                .contains("item|create:brass_sheet"));
 
         Set<ResourceLocation> hasMixer = obtained("minecraft:oak_log", "minecraft:oak_planks",
                 "create:brass_ingot", "create:mechanical_mixer");
         assertTrue(Unlocks.unlockedOutputs(STRICT, index, hasMixer).contains("item|create:brass_sheet"));
-    }
-
-    private static RecipeNode node(String category, List<Set<ResourceLocation>> inputs, String output)
-    {
-        return new RecipeNode(category, inputs, Set.of(output));
-    }
-
-    private static RecipeIndex index()
-    {
-        return new RecipeIndex(
-                Map.of(
-                        CRAFTING, Map.of(
-                                "planks", node(CRAFTING, List.of(slot("minecraft:oak_log")),
-                                        "item|minecraft:oak_planks"),
-                                "stick", node(CRAFTING, List.of(slot("minecraft:oak_planks")),
-                                        "item|minecraft:stick")),
-                        MIXING, Map.of(
-                                "brass_sheet", node(MIXING, List.of(slot("create:brass_ingot")),
-                                        "item|create:brass_sheet"))),
-                Map.of(
-                        CRAFTING, Set.of(rl("minecraft:crafting_table")),
-                        MIXING, Set.of(rl("create:mechanical_mixer"))));
     }
 
     // The same recipe object is listed by several categories — Create re-lists ordinary shaped
@@ -168,19 +172,61 @@ class UnlocksTest
     void aRecipeListedByTwoCategoriesUnlocksThroughTheOpenOne()
     {
         Object shared = "planks";
-        RecipeIndex index = new RecipeIndex(
+        RecipeIndex index = RecipeIndex.of(
                 Map.of(
-                        CRAFTING, Map.of(shared, node(CRAFTING, List.of(slot("minecraft:oak_log")),
+                        CRAFTING, Map.of(shared, node(CRAFTING, List.of(items("minecraft:oak_log")),
                                 "item|minecraft:oak_planks")),
-                        AUTOMATIC, Map.of(shared, node(AUTOMATIC, List.of(slot("minecraft:oak_log")),
+                        AUTOMATIC, Map.of(shared, node(AUTOMATIC, List.of(items("minecraft:oak_log")),
                                 "item|minecraft:oak_planks"))),
                 Map.of(AUTOMATIC, Set.of(rl("create:mechanical_crafter"))));
 
         assertEquals(Set.of("item|minecraft:oak_planks"),
                 Unlocks.unlockedOutputs(STRICT, index, obtained("minecraft:oak_log")));
         assertTrue(Unlocks.recipeUnlocked(STRICT, index, index.node(CRAFTING, shared),
-                obtained("minecraft:oak_log")));
+                obtained("minecraft:oak_log"), Set.of()));
         assertFalse(Unlocks.recipeUnlocked(STRICT, index, index.node(AUTOMATIC, shared),
-                obtained("minecraft:oak_log")));
+                obtained("minecraft:oak_log"), Set.of()));
+    }
+
+    private static ResourceLocation rl(String id)
+    {
+        return ResourceLocation.parse(id);
+    }
+
+    private static Set<ResourceLocation> obtained(String... ids)
+    {
+        return Arrays.stream(ids).map(UnlocksTest::rl).collect(Collectors.toSet());
+    }
+
+    private static InputSlot items(String... ids)
+    {
+        return InputSlot.ofItems(obtained(ids));
+    }
+
+    private static InputSlot fluidSlot(String fluidId, String bucketId)
+    {
+        return new InputSlot(Set.of(rl(bucketId)), Set.of("fluid|" + fluidId));
+    }
+
+    private static RecipeNode node(String category, List<InputSlot> inputs, String output)
+    {
+        return new RecipeNode(category, inputs, Set.of(output));
+    }
+
+    private static RecipeIndex index()
+    {
+        return RecipeIndex.of(
+                Map.of(
+                        CRAFTING, Map.of(
+                                "planks", node(CRAFTING, List.of(items("minecraft:oak_log")),
+                                        "item|minecraft:oak_planks"),
+                                "stick", node(CRAFTING, List.of(items("minecraft:oak_planks")),
+                                        "item|minecraft:stick")),
+                        MIXING, Map.of(
+                                "brass_sheet", node(MIXING, List.of(items("create:brass_ingot")),
+                                        "item|create:brass_sheet"))),
+                Map.of(
+                        CRAFTING, Set.of(rl("minecraft:crafting_table")),
+                        MIXING, Set.of(rl("create:mechanical_mixer"))));
     }
 }

@@ -1,6 +1,8 @@
 package com.craftbound.progression;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -24,27 +26,28 @@ public final class Unlocks
     }
 
     public static boolean recipeUnlocked(ProgressionRules rules, RecipeIndex index, RecipeNode node,
-            Set<ResourceLocation> obtained)
+            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
     {
         if (!rules.enabled())
             return true;
         return categoryUnlocked(rules, node.categoryUid(), index.catalystsFor(node.categoryUid()), obtained)
-                && inputsSatisfied(rules, node.inputSlots(), obtained);
+                && inputsSatisfied(rules, node.inputSlots(), obtained, unlockedOutputs, index.producedKeys());
     }
 
     // A recipe with no judgeable slots is always satisfied: there is nothing to hold it back, and
-    // refusing to show it would strand recipes whose inputs are all fluids.
-    public static boolean inputsSatisfied(ProgressionRules rules, List<Set<ResourceLocation>> inputSlots,
-            Set<ResourceLocation> obtained)
+    // refusing to show it would strand recipes whose inputs we cannot read.
+    public static boolean inputsSatisfied(ProgressionRules rules, List<InputSlot> inputSlots,
+            Set<ResourceLocation> obtained, Set<String> unlockedOutputs, Set<String> producedKeys)
     {
         boolean anySatisfied = false;
         boolean anyJudgeable = false;
-        for (Set<ResourceLocation> slot : inputSlots)
+        for (InputSlot slot : inputSlots)
         {
-            if (slot.isEmpty())
+            if (!judgeable(slot, producedKeys))
                 continue;
+
             anyJudgeable = true;
-            if (slot.stream().anyMatch(obtained::contains))
+            if (satisfied(slot, obtained, unlockedOutputs))
                 anySatisfied = true;
             else if (rules.rule() == UnlockRule.ALL_INPUTS)
                 return false;
@@ -52,14 +55,50 @@ public final class Unlocks
         return !anyJudgeable || anySatisfied;
     }
 
+    private static boolean satisfied(InputSlot slot, Set<ResourceLocation> obtained,
+            Set<String> unlockedOutputs)
+    {
+        return slot.items().stream().anyMatch(obtained::contains)
+                || slot.fluids().stream().anyMatch(unlockedOutputs::contains);
+    }
+
+    // A slot demanding fluids is judged on those fluids, so a bucket sitting in `items` can help
+    // satisfy the slot without turning an ungateable one (water) into a gate. Everything else is
+    // judged on its items.
+    private static boolean judgeable(InputSlot slot, Set<String> producedKeys)
+    {
+        return slot.fluids().isEmpty()
+                ? !slot.items().isEmpty()
+                : slot.fluids().stream().anyMatch(producedKeys::contains);
+    }
+
     // The output keys of every unlocked recipe: what the browse grid is allowed to show.
+    //
+    // Grown to a fixpoint rather than decided in one pass, because unlocking a recipe can unlock
+    // another: chocolate becomes reachable the moment sugar and cocoa are in hand, and the Bar of
+    // Chocolate that needs it becomes reachable in the same breath.
     public static Set<String> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
             Set<ResourceLocation> obtained)
     {
         Set<String> unlocked = new HashSet<>();
-        index.nodes()
-                .filter(node -> recipeUnlocked(rules, index, node, obtained))
-                .forEach(node -> unlocked.addAll(node.outputKeys()));
+        List<RecipeNode> pending = new ArrayList<>(index.nodes().toList());
+
+        boolean grew = true;
+        while (grew)
+        {
+            grew = false;
+            Iterator<RecipeNode> remaining = pending.iterator();
+            while (remaining.hasNext())
+            {
+                RecipeNode node = remaining.next();
+                if (!recipeUnlocked(rules, index, node, obtained, unlocked))
+                    continue;
+
+                unlocked.addAll(node.outputKeys());
+                remaining.remove();
+                grew = true;
+            }
+        }
         return unlocked;
     }
 

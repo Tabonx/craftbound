@@ -8,6 +8,7 @@ import java.util.Set;
 import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.RecipeIndexSnapshot;
 import com.craftbound.progression.ProgressionConfig;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
@@ -20,7 +21,6 @@ import org.slf4j.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 
 // Client-side view of what the player has unlocked. The obtained set arrives on its own as a synced
 // attachment, so nothing here talks to the server; it only caches the expensive parts — the recipe
@@ -32,6 +32,7 @@ public final class Progression
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    private static RecipeIndexSnapshot snapshot = RecipeIndexSnapshot.EMPTY;
     private static RecipeIndex index = RecipeIndex.EMPTY;
     private static ProgressionRules rules = ProgressionRules.OPEN;
     private static Set<String> unlockedOutputs = Set.of();
@@ -53,7 +54,10 @@ public final class Progression
             return false;
 
         if (indexStale)
-            index = CraftboundJeiPlugin.buildRecipeIndex();
+        {
+            snapshot = CraftboundJeiPlugin.buildRecipeIndex();
+            index = snapshot.index();
+        }
 
         rules = current;
         obtainedSize = obtained.size();
@@ -85,17 +89,21 @@ public final class Progression
 
     // Drained rather than read, because the book's own refresh and the toast tick both drive
     // refresh() and either may be the one that notices an unlock.
-    public static List<Item> drainNewlyUnlocked()
+    public static List<String> drainNewlyUnlocked()
     {
         if (newlyUnlocked.isEmpty())
             return List.of();
 
-        List<Item> items = newlyUnlocked.stream()
-                .map(BookIngredient::itemFromUnlockKey)
-                .flatMap(Optional::stream)
-                .toList();
+        List<String> keys = List.copyOf(newlyUnlocked);
         newlyUnlocked.clear();
-        return items;
+        return keys;
+    }
+
+    // The ingredient behind an unlock key, so the toast can draw it with the same JEI renderer the
+    // book uses instead of guessing at an item form.
+    public static Optional<BookIngredient> displayFor(String unlockKey)
+    {
+        return snapshot.displayFor(unlockKey);
     }
 
     public static boolean isUnlocked(BookIngredient ingredient)
@@ -114,7 +122,7 @@ public final class Progression
         if (!rules.enabled())
             return true;
         RecipeNode node = index.node(categoryUid, recipe);
-        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained());
+        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained(), unlockedOutputs);
     }
 
     public static boolean isCategoryUnlocked(String categoryUid)
@@ -127,6 +135,7 @@ public final class Progression
     // Recipes reload and world changes invalidate the index; it is rebuilt on the next refresh.
     public static void invalidate()
     {
+        snapshot = RecipeIndexSnapshot.EMPTY;
         index = RecipeIndex.EMPTY;
         unlockedOutputs = Set.of();
         obtainedSize = -1;

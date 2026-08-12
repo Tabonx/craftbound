@@ -1,9 +1,14 @@
 package com.craftbound.client.jei;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+
+import com.craftbound.progression.InputSlot;
 
 import mezz.jei.api.gui.builder.IIngredientAcceptor;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -15,7 +20,10 @@ import mezz.jei.library.gui.recipes.supplier.builder.IngredientSlotBuilder;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 // Runs a category's setRecipe without building anything drawable, keeping the slots apart so
 // "any one of these planks" stays one slot rather than dissolving into a flat ingredient list.
@@ -32,29 +40,51 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
         this.manager = manager;
     }
 
-    List<Set<ResourceLocation>> inputSlots()
+    List<InputSlot> inputSlots()
     {
-        return inputs.stream().map(SlotIngredientCollector::itemIds).toList();
+        return inputs.stream().map(this::toInputSlot).toList();
     }
 
-    Set<String> outputKeys()
+    // Fluids are recorded by identity so progression can ask whether they are reachable yet, and
+    // their bucket is folded in with the items so having one in hand also satisfies the slot.
+    private InputSlot toInputSlot(IngredientSlotBuilder slot)
     {
-        Set<String> keys = new HashSet<>();
-        for (IngredientSlotBuilder slot : outputs)
-            for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
-                keys.add(BookIngredient.unlockKey(manager, ingredient));
-        return keys;
-    }
+        Set<ResourceLocation> items = new HashSet<>();
+        Set<String> fluids = new HashSet<>();
 
-    private static Set<ResourceLocation> itemIds(IngredientSlotBuilder slot)
-    {
-        Set<ResourceLocation> ids = new HashSet<>();
         for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
+        {
             ingredient.getItemStack()
                     .map(ItemStack::getItem)
                     .map(BuiltInRegistries.ITEM::getKey)
-                    .ifPresent(ids::add);
-        return ids;
+                    .ifPresent(items::add);
+
+            if (ingredient.getIngredient() instanceof FluidStack fluid)
+            {
+                fluids.add(BookIngredient.unlockKey(manager, ingredient));
+                bucketId(fluid).ifPresent(items::add);
+            }
+        }
+        return new InputSlot(Set.copyOf(items), Set.copyOf(fluids));
+    }
+
+    private static Optional<ResourceLocation> bucketId(FluidStack fluid)
+    {
+        Item bucket = fluid.getFluid().getBucket();
+        return bucket == null || bucket == Items.AIR
+                ? Optional.empty()
+                : Optional.of(BuiltInRegistries.ITEM.getKey(bucket));
+    }
+
+    // Keyed by unlock key, keeping the ingredient itself: the unlock toast draws it with JEI's own
+    // renderer so a fluid looks the same there as it does in the book.
+    Map<String, ITypedIngredient<?>> outputs()
+    {
+        Map<String, ITypedIngredient<?>> byKey = new HashMap<>();
+        for (IngredientSlotBuilder slot : outputs)
+            for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
+                byKey.putIfAbsent(BookIngredient.unlockKey(manager, ingredient), ingredient);
+        return byKey;
     }
 
     @Override

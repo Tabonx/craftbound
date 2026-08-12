@@ -8,6 +8,8 @@ import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.IIngredientRenderer;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.ingredients.subtypes.UidContext;
+import com.craftbound.progression.UnlockKey;
+
 import mezz.jei.api.runtime.IIngredientManager;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,6 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 // A single browsable entry, decoupled from its JEI ingredient type. Rendering and tooltips are
 // captured as type-bound closures at construction so the widget can treat items, fluids and any
@@ -63,25 +66,33 @@ public final class BookIngredient
         return keyOf(typed, manager.getIngredientHelper(typed.getType()));
     }
 
-    private static final String ITEM_KEY_PREFIX = "item|";
-
     private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
-        return typed.getItemStack()
-                .map(stack -> ITEM_KEY_PREFIX + BuiltInRegistries.ITEM.getKey(stack.getItem()))
-                .orElseGet(() -> typed.getType().getUid() + "|"
-                        + helper.getUid(typed.getIngredient(), UidContext.Ingredient));
+        Optional<String> itemKey = typed.getItemStack()
+                .map(stack -> UnlockKey.ofItem(BuiltInRegistries.ITEM.getKey(stack.getItem())));
+        if (itemKey.isPresent())
+            return itemKey.get();
+
+        if (typed.getIngredient() instanceof FluidStack fluid)
+            return UnlockKey.ofFluid(BuiltInRegistries.FLUID.getKey(fluid.getFluid()),
+                    subtypeOf(typed, helper));
+
+        return typed.getType().getUid() + "|" + helper.getUid(typed.getIngredient(), UidContext.Ingredient);
     }
 
-    // Empty for keys that name something other than an item, and for an item whose mod has since
-    // been removed.
-    public static Optional<Item> itemFromUnlockKey(String key)
+    // What tells two potions apart. It has to come from getUid: that is the only path reaching JEI's
+    // modern subtype data, which is where Create's PotionFluidSubtypeInterpreter puts the potion
+    // type. Its legacy string counterpart — the one getUniqueId reads — returns "", so keying on
+    // that collapsed every potion onto one key and one unlocked brewing step revealed the lot.
+    //
+    // For a fluid, getUid hands back either the Fluid alone or List.of(fluid, subtypeData); only the
+    // subtype half is stringified, never the Fluid, whose toString is an identity hash. An
+    // ingredient type that does not follow that shape yields no subtype, which is merely the coarse
+    // behaviour rather than a crash.
+    private static <V> String subtypeOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
-        if (!key.startsWith(ITEM_KEY_PREFIX))
-            return Optional.empty();
-
-        ResourceLocation id = ResourceLocation.tryParse(key.substring(ITEM_KEY_PREFIX.length()));
-        return id == null ? Optional.empty() : BuiltInRegistries.ITEM.getOptional(id);
+        Object uid = helper.getUid(typed.getIngredient(), UidContext.Ingredient);
+        return uid instanceof List<?> parts && parts.size() == 2 ? String.valueOf(parts.get(1)) : "";
     }
 
     public String unlockKey()
