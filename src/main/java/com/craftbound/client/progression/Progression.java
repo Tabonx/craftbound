@@ -14,9 +14,6 @@ import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
 import com.craftbound.progression.Unlocks;
-import com.mojang.logging.LogUtils;
-
-import org.slf4j.Logger;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -30,8 +27,6 @@ import net.minecraft.resources.ResourceLocation;
 // a changed set, and comparing sizes costs nothing per frame.
 public final class Progression
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     private static RecipeIndexSnapshot snapshot = RecipeIndexSnapshot.EMPTY;
     private static RecipeIndex index = RecipeIndex.EMPTY;
     private static ProgressionRules rules = ProgressionRules.OPEN;
@@ -65,9 +60,6 @@ public final class Progression
         Set<String> previous = unlockedOutputs;
         unlockedOutputs = rules.enabled() ? Unlocks.unlockedOutputs(rules, index, obtained) : Set.of();
         recordNewlyUnlocked(previous);
-
-        LOGGER.debug("Progression: {} categories, {} recipes, {} items obtained, {} outputs unlocked",
-                index.byCategory().size(), index.nodes().count(), obtainedSize, unlockedOutputs.size());
         return true;
     }
 

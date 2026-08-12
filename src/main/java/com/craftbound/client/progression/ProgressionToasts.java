@@ -6,9 +6,6 @@ import java.util.Optional;
 import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
-import com.mojang.logging.LogUtils;
-
-import org.slf4j.Logger;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -25,7 +22,6 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 @EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class ProgressionToasts
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final int POLL_INTERVAL_TICKS = 20;
 
     @SubscribeEvent
@@ -50,8 +46,6 @@ public final class ProgressionToasts
                 .flatMap(Optional::stream)
                 .toList();
 
-        LOGGER.debug("Craftbound: toasting {} newly unlocked results ({} with an icon)",
-                unlocked.size(), icons.size());
         RecipeUnlockToast.addOrUpdate(minecraft.getToasts(), icons);
     }
 

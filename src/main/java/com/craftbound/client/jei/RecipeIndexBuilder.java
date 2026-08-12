@@ -54,8 +54,6 @@ final class RecipeIndexBuilder
             Map<Object, RecipeNode> nodes = new IdentityHashMap<>();
             collect(recipes, manager, category, noFocus, categoryUid, nodes, representatives);
             byCategory.put(categoryUid, nodes);
-            LOGGER.debug("Craftbound: indexed {} recipes in {} (catalysts: {})",
-                    nodes.size(), categoryUid, catalysts.get(categoryUid));
         });
 
         return new RecipeIndexSnapshot(RecipeIndex.of(byCategory, catalysts), Map.copyOf(representatives));
