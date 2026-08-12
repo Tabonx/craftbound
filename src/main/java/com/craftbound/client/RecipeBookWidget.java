@@ -16,6 +16,7 @@ import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.client.progression.Progression;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -461,7 +462,9 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void applyFilter()
     {
-        List<BookIngredient> source = showingBookmarks ? bookmarked : allItems;
+        List<BookIngredient> source = (showingBookmarks ? bookmarked : allItems).stream()
+                .filter(Progression::isUnlocked)
+                .toList();
         String needle = search.getValue().toLowerCase(Locale.ROOT);
         List<BookIngredient> result = needle.isEmpty() ? source
                 : source.stream()
@@ -473,6 +476,14 @@ public final class RecipeBookWidget extends AbstractWidget
                     .toList();
         filtered = result;
         setPage(page);
+    }
+
+    // Picking up a new kind of item can unlock recipes, so the grid re-filters as soon as the
+    // obtained set grows rather than waiting for the book to be reopened.
+    private void refreshUnlocksIfStale()
+    {
+        if (Progression.refresh())
+            applyFilter();
     }
 
     private int inventoryTimesChanged()
@@ -559,6 +570,7 @@ public final class RecipeBookWidget extends AbstractWidget
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         ensureLoaded();
+        refreshUnlocksIfStale();
         refreshCraftableIfStale();
 
         int x = getX();

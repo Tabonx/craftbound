@@ -22,8 +22,8 @@ import net.minecraft.world.item.crafting.RecipeType;
 // Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
 // which are not made through any of these menus.
 //
-// Deliberately ignores recipe-unlock status: the browse grid already shows every producible item
-// regardless of unlock, so the filter is purely about having the ingredients on hand.
+// Deliberately ignores progression: the grid it filters has already dropped everything still
+// locked, so this is purely about having the ingredients on hand.
 public final class CraftableItems
 {
     private CraftableItems()

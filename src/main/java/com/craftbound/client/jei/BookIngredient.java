@@ -8,8 +8,10 @@ import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.IIngredientRenderer;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.ingredients.subtypes.UidContext;
+import mezz.jei.api.runtime.IIngredientManager;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,15 +24,17 @@ public final class BookIngredient
 {
     private final ITypedIngredient<?> typed;
     private final String uid;
+    private final String unlockKey;
     private final String displayName;
     private final Renderer renderer;
     private final Function<TooltipFlag, List<Component>> tooltip;
 
-    private BookIngredient(ITypedIngredient<?> typed, String uid, String displayName, Renderer renderer,
-            Function<TooltipFlag, List<Component>> tooltip)
+    private BookIngredient(ITypedIngredient<?> typed, String uid, String unlockKey, String displayName,
+            Renderer renderer, Function<TooltipFlag, List<Component>> tooltip)
     {
         this.typed = typed;
         this.uid = uid;
+        this.unlockKey = unlockKey;
         this.displayName = displayName;
         this.renderer = renderer;
         this.tooltip = tooltip;
@@ -44,9 +48,31 @@ public final class BookIngredient
         return new BookIngredient(
                 typed,
                 typed.getType().getUid() + "|" + helper.getUid(ingredient, UidContext.Ingredient),
+                keyOf(typed, helper),
                 helper.getDisplayName(ingredient),
                 (graphics, x, y) -> renderer.render(graphics, ingredient, x, y),
                 flag -> renderer.getTooltip(ingredient, flag));
+    }
+
+    // Progression identity, deliberately coarser than uid(): items key on their registry id alone,
+    // so a recipe outputting a damaged or enchanted stack still unlocks the plain grid entry. Other
+    // ingredient types fall back to JEI's own uid, which is as fine-grained as we can be for them.
+    public static <V> String unlockKey(IIngredientManager manager, ITypedIngredient<V> typed)
+    {
+        return keyOf(typed, manager.getIngredientHelper(typed.getType()));
+    }
+
+    private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
+    {
+        return typed.getItemStack()
+                .map(stack -> "item|" + BuiltInRegistries.ITEM.getKey(stack.getItem()))
+                .orElseGet(() -> typed.getType().getUid() + "|"
+                        + helper.getUid(typed.getIngredient(), UidContext.Ingredient));
+    }
+
+    public String unlockKey()
+    {
+        return unlockKey;
     }
 
     public ITypedIngredient<?> typed()

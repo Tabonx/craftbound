@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.craftbound.Craftbound;
+import com.craftbound.client.progression.Progression;
+import com.craftbound.progression.RecipeIndex;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -55,6 +57,11 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public static boolean hasRuntime()
     {
         return runtime != null;
+    }
+
+    public static RecipeIndex buildRecipeIndex()
+    {
+        return runtime == null ? RecipeIndex.EMPTY : RecipeIndexBuilder.build(runtime);
     }
 
     // The ingredient types a player browses as craftable results. Deliberately not "all registered
@@ -132,7 +139,10 @@ public final class CraftboundJeiPlugin implements IModPlugin
         IFocusGroup group = focusFactory.createFocusGroup(focuses);
 
         List<RecipeGroup> result = new ArrayList<>();
-        categoriesFor(recipes, focuses).forEach(category ->
+        categoriesFor(recipes, focuses)
+                .filter(category -> Progression.isCategoryUnlocked(
+                        category.getRecipeType().getUid().toString()))
+                .forEach(category ->
         {
             List<IRecipeLayoutDrawable<?>> layouts = new ArrayList<>();
             addLayouts(recipes, category, focuses, group, layouts);
@@ -158,8 +168,10 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static <T> List<Supplier<IRecipeLayoutDrawable<?>>> recipeSuppliers(IRecipeManager recipes,
             IRecipeCategory<T> category, IFocusGroup noFocus)
     {
+        String categoryUid = category.getRecipeType().getUid().toString();
         return recipes.createRecipeLookup(category.getRecipeType())
                 .get()
+                .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
                 .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe ->
                         () -> recipes.createRecipeLayoutDrawableOrShowError(category, recipe, noFocus))
                 .toList();
@@ -188,7 +200,10 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return (graphics, x, y) -> renderer.render(graphics, ingredient, x, y);
     }
 
-    // The non-tag recipe categories matching the given focus (by role and ingredient).
+    // The non-tag recipe categories matching the given focus (by role and ingredient). Deliberately
+    // free of progression: this also answers "is this producible at all?" for the browse grid, whose
+    // ingredient list is built once and then filtered per frame. Gating here would bake whatever was
+    // locked at load time into that list, and nothing unlocked later could ever appear.
     private static Stream<IRecipeCategory<?>> categoriesFor(IRecipeManager recipes, List<IFocus<?>> focuses)
     {
         return recipes.createRecipeCategoryLookup()
@@ -207,9 +222,11 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static <T> void addLayouts(IRecipeManager recipes, IRecipeCategory<T> category,
             List<IFocus<?>> focuses, IFocusGroup group, List<IRecipeLayoutDrawable<?>> out)
     {
+        String categoryUid = category.getRecipeType().getUid().toString();
         recipes.createRecipeLookup(category.getRecipeType())
                 .limitFocus(focuses)
                 .get()
+                .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
                 .forEach(recipe -> out.add(
                         recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group)));
     }

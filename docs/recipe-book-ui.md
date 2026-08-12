@@ -84,11 +84,44 @@ full-screen interface the book replaces. Note the flip side of embedding: `neofo
 declares the JEI mod itself `incompatible`, so a mod that *hard*-depends on JEI cannot be
 installed alongside Craftbound; optional JEI support (the common case) works fine.
 
-## Progression tint (already implemented)
+## Obtained items (already implemented)
+`ObtainedItemsTracker` records every item the player has ever held into the synced
+`OBTAINED_ITEMS` attachment (`ObtainedItems` / `CraftboundAttachments`). An item counts as obtained
+however it was acquired — mined, looted, traded — not just crafted. This one set backs both the
+progression tint and progressive unlocking below.
+
 `client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes whose result the player has
-never had, backed by `ObtainedItemsTracker` / `ObtainedItems` / `CraftboundAttachments`. An item
-counts as obtained however it was acquired — mined, looted, traded — not just crafted, so e.g.
-obsidian stops being tinted once it is mined. This carries over to the new browse grid unchanged.
+never had; in the browse grid the same tint marks an item that is unlocked but has never been made.
+
+## Progressive unlocking (already implemented)
+The book starts nearly empty and grows as the player plays, instead of showing every recipe in the
+pack on day one. A recipe is **unlocked once everything it is made from has been obtained** — logs
+reveal planks, planks reveal sticks — and the chain carries across mechanisms: no Mechanical Mixer
+in hand means no mixing tab and no mixing recipes anywhere.
+
+- **Locked means hidden**, not greyed. Locked items are absent from the browse grid and from search;
+  locked recipes are absent from an item's rail, and a category with nothing left drops off entirely.
+- **Unlock state is derived, never stored.** The obtained set only ever grows, so anything unlocked
+  stays unlocked without a second thing to persist and keep in sync. Everything is computed
+  client-side from the already-synced attachment — no new packets.
+- **A slot's alternatives are one requirement.** "Any planks" is satisfied by any one of them, which
+  is why the index keeps slots apart instead of flattening a recipe to a list of ingredients the way
+  JEI's own `IngredientSupplierBuilder` does. A slot with no item alternatives (a fluid) cannot be
+  judged and never locks a recipe — the same convention `RecipeOrder` uses.
+- **`minecraft:crafting` is exempt from category gating** by default. Gating it on owning a crafting
+  table strands a new player, who needs the crafting category to find out how a table is made.
+- Anything the index could not read — a category that throws while laying a recipe out — counts as
+  unlocked. Showing a recipe early is recoverable; hiding one forever is not.
+
+Layering: `progression/Unlocks` is the whole rule set as pure functions over
+`RecipeIndex` / `RecipeNode` (plain ids and sets, unit-tested without the game).
+`client/jei/RecipeIndexBuilder` + `SlotIngredientCollector` reduce every recipe JEI knows to that
+data in one pass — running each category's `setRecipe` against a collector that builds nothing
+drawable. `client/progression/Progression` caches the index and the derived unlocked set, rebuilding
+when the obtained set grows (detected by its size, since it only grows).
+
+`ProgressionConfig` is a **server** config, so a pack decides the behaviour and every client agrees:
+`enabled`, `rule` (`ALL_INPUTS` / `ANY_INPUT`), `gateCategories`, and `exemptCategories`.
 
 ## Place button (already implemented)
 The recipe state carries a place button in the top strip, where the craftable filter sits while

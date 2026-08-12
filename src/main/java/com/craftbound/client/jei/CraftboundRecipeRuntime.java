@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.craftbound.client.progression.Progression;
+
 import mezz.jei.api.IModPlugin;
 import mezz.jei.common.Internal;
 import mezz.jei.common.gui.textures.Textures;
@@ -103,6 +105,7 @@ public final class CraftboundRecipeRuntime
     private void onRecipesUpdated(RecipesUpdatedEvent event)
     {
         observeConnection();
+        Progression.invalidate();
         if (connection != null)
             apply(readiness.recipesReady());
     }
@@ -111,6 +114,7 @@ public final class CraftboundRecipeRuntime
     {
         if (readiness.reset())
             starter.stop();
+        Progression.invalidate();
         connection = null;
     }
 
