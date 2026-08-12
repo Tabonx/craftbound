@@ -1,5 +1,8 @@
 package com.craftbound.client.progression;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.craftbound.CraftboundAttachments;
@@ -17,6 +20,7 @@ import org.slf4j.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 // Client-side view of what the player has unlocked. The obtained set arrives on its own as a synced
 // attachment, so nothing here talks to the server; it only caches the expensive parts — the recipe
@@ -32,6 +36,10 @@ public final class Progression
     private static ProgressionRules rules = ProgressionRules.OPEN;
     private static Set<String> unlockedOutputs = Set.of();
     private static int obtainedSize = -1;
+
+    // Unlocks not yet announced, and whether a baseline has been taken to measure them against.
+    private static final Set<String> newlyUnlocked = new LinkedHashSet<>();
+    private static boolean seeded = false;
 
     // Rebuilds the unlocked set if anything it depends on moved. Returns whether it changed, so the
     // book can re-apply its filter without polling the whole set.
@@ -49,11 +57,45 @@ public final class Progression
 
         rules = current;
         obtainedSize = obtained.size();
+
+        Set<String> previous = unlockedOutputs;
         unlockedOutputs = rules.enabled() ? Unlocks.unlockedOutputs(rules, index, obtained) : Set.of();
+        recordNewlyUnlocked(previous);
 
         LOGGER.debug("Progression: {} categories, {} recipes, {} items obtained, {} outputs unlocked",
                 index.byCategory().size(), index.nodes().count(), obtainedSize, unlockedOutputs.size());
         return true;
+    }
+
+    // The first pass over a real index establishes what the player already had; announcing all of it
+    // would bury them in toasts on every world join. Only what unlocks afterwards is news.
+    private static void recordNewlyUnlocked(Set<String> previous)
+    {
+        if (!seeded)
+        {
+            seeded = !index.isEmpty();
+            return;
+        }
+        for (String key : unlockedOutputs)
+        {
+            if (!previous.contains(key))
+                newlyUnlocked.add(key);
+        }
+    }
+
+    // Drained rather than read, because the book's own refresh and the toast tick both drive
+    // refresh() and either may be the one that notices an unlock.
+    public static List<Item> drainNewlyUnlocked()
+    {
+        if (newlyUnlocked.isEmpty())
+            return List.of();
+
+        List<Item> items = newlyUnlocked.stream()
+                .map(BookIngredient::itemFromUnlockKey)
+                .flatMap(Optional::stream)
+                .toList();
+        newlyUnlocked.clear();
+        return items;
     }
 
     public static boolean isUnlocked(BookIngredient ingredient)
@@ -88,6 +130,8 @@ public final class Progression
         index = RecipeIndex.EMPTY;
         unlockedOutputs = Set.of();
         obtainedSize = -1;
+        newlyUnlocked.clear();
+        seeded = false;
     }
 
     private static Set<ResourceLocation> obtained()

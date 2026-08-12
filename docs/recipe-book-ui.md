@@ -113,6 +113,16 @@ in hand means no mixing tab and no mixing recipes anywhere.
 - Anything the index could not read — a category that throws while laying a recipe out — counts as
   unlocked. Showing a recipe early is recoverable; hiding one forever is not.
 
+### Unlock toast
+Obtaining an item that unlocks something pops vanilla's recipe toast in the top-right — same
+`toast/recipe` sprite and same "New Recipes Unlocked! / Check your recipe book" strings, so it reads
+as the popup players already know. `RecipeUnlockToast` re-implements it over items because
+`net.minecraft`'s `RecipeToast` needs a `RecipeHolder`, which JEI-sourced machine recipes have no
+equivalent of. `ProgressionToasts` polls on a client tick rather than leaning on the book's own
+refresh: unlocks happen while the player is out mining, not while the book is open. The first pass
+over a fresh index is a silent baseline — announcing everything already unlocked would bury the
+player in toasts on every world join.
+
 Layering: `progression/Unlocks` is the whole rule set as pure functions over
 `RecipeIndex` / `RecipeNode` (plain ids and sets, unit-tested without the game).
 `client/jei/RecipeIndexBuilder` + `SlotIngredientCollector` reduce every recipe JEI knows to that

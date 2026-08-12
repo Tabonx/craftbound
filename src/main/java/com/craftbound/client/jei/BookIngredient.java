@@ -12,6 +12,7 @@ import mezz.jei.api.runtime.IIngredientManager;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -62,12 +63,25 @@ public final class BookIngredient
         return keyOf(typed, manager.getIngredientHelper(typed.getType()));
     }
 
+    private static final String ITEM_KEY_PREFIX = "item|";
+
     private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
         return typed.getItemStack()
-                .map(stack -> "item|" + BuiltInRegistries.ITEM.getKey(stack.getItem()))
+                .map(stack -> ITEM_KEY_PREFIX + BuiltInRegistries.ITEM.getKey(stack.getItem()))
                 .orElseGet(() -> typed.getType().getUid() + "|"
                         + helper.getUid(typed.getIngredient(), UidContext.Ingredient));
+    }
+
+    // Empty for keys that name something other than an item, and for an item whose mod has since
+    // been removed.
+    public static Optional<Item> itemFromUnlockKey(String key)
+    {
+        if (!key.startsWith(ITEM_KEY_PREFIX))
+            return Optional.empty();
+
+        ResourceLocation id = ResourceLocation.tryParse(key.substring(ITEM_KEY_PREFIX.length()));
+        return id == null ? Optional.empty() : BuiltInRegistries.ITEM.getOptional(id);
     }
 
     public String unlockKey()
