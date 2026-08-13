@@ -88,9 +88,6 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final ResourceLocation BOOKMARK_OFF_HL = bookmarkSprite("bookmark_highlighted");
     private static final ResourceLocation BOOKMARK_ON = bookmarkSprite("bookmark_on");
     private static final ResourceLocation BOOKMARK_ON_HL = bookmarkSprite("bookmark_on_highlighted");
-    private static final ResourceLocation BOOKMARK_TAB_ICON = bookmarkSprite("bookmark_tab");
-    private static final Component TOOLTIP_BOOKMARKS =
-            Component.translatable("craftbound.recipebook.bookmarks");
     private static final Component TOOLTIP_BOOKMARK =
             Component.translatable("craftbound.recipebook.bookmark");
     private static final Component TOOLTIP_BOOKMARKED =
@@ -165,13 +162,15 @@ public final class RecipeBookWidget extends AbstractWidget
     private List<RecipeGroup> recipeGroups = List.of();
     private int groupIndex = 0;
 
-    // The rail left of the book: recipe categories while a recipe is open, and while browsing a
-    // single tab that switches the grid between everything and the bookmarked items. The ingredient
-    // whose recipes are shown is kept so the bookmark button can toggle it.
+    // The rail left of the book: recipe categories while a recipe is open, and while browsing the
+    // ribbons that choose what fills the grid. The ingredient whose recipes are shown is kept so the
+    // bookmark button can toggle it.
     private final BookRail categoryRail = new BookRail();
-    private final BookRail bookmarkRail = new BookRail();
+    private final BookRail browseRail = new BookRail();
     private List<BookIngredient> bookmarked = List.of();
-    private boolean showingBookmarks = false;
+    private List<BrowseTab> browseTabs = List.of();
+    private BrowseTab activeTab = BrowseTab.ALL;
+    private ItemCategories categories = ItemCategories.EMPTY;
     private BookIngredient focused = null;
     private boolean bookmarkHovered = false;
 
@@ -395,14 +394,14 @@ public final class RecipeBookWidget extends AbstractWidget
             return;
         allItems.clear();
         allItems.addAll(CraftboundJeiPlugin.getAllIngredients());
+        categories = ItemCategories.fromClientRecipes();
         refreshBookmarks(); // also applies the filter, so the grid is ready
         loaded = true;
     }
 
     // Resolve the saved uids against the browsable ingredients, keeping the order they were
     // bookmarked in. A bookmark whose mod is gone simply does not resolve; it stays in the file, so
-    // reinstalling the mod brings it back. The rail carries one tab, shown once there is something
-    // to show, that switches the grid over to these.
+    // reinstalling the mod brings it back. The rail's last ribbon shows these, once there are any.
     private void refreshBookmarks()
     {
         Map<String, BookIngredient> byUid = new HashMap<>();
@@ -414,16 +413,16 @@ public final class RecipeBookWidget extends AbstractWidget
                 .filter(Objects::nonNull)
                 .toList();
 
-        if (bookmarked.isEmpty())
-            showingBookmarks = false;
-        updateBookmarkTab();
+        if (bookmarked.isEmpty() && activeTab == BrowseTab.BOOKMARKS)
+            activeTab = BrowseTab.ALL;
+        updateBrowseTabs();
         applyFilter();
     }
 
-    private void updateBookmarkTab()
+    private void updateBrowseTabs()
     {
-        bookmarkRail.setTabs(bookmarked.isEmpty() ? List.of() : List.of(BOOKMARKS_TAB),
-                showingBookmarks ? 0 : -1);
+        browseTabs = BrowseTab.visible(!bookmarked.isEmpty());
+        browseRail.setTabs(browseTabs, browseTabs.indexOf(activeTab));
     }
 
     private void toggleBookmark()
@@ -434,28 +433,13 @@ public final class RecipeBookWidget extends AbstractWidget
         refreshBookmarks();
     }
 
-    private void toggleBookmarkView()
+    private void selectBrowseTab(int index)
     {
-        showingBookmarks = !showingBookmarks;
-        updateBookmarkTab();
+        activeTab = browseTabs.get(index);
+        browseRail.showTab(index);
         page = 0;
         applyFilter();
     }
-
-    private static final BookRail.Tab BOOKMARKS_TAB = new BookRail.Tab()
-    {
-        @Override
-        public void drawIcon(GuiGraphics graphics, int x, int y)
-        {
-            graphics.blitSprite(BOOKMARK_TAB_ICON, x, y, 16, 16);
-        }
-
-        @Override
-        public Component title()
-        {
-            return TOOLTIP_BOOKMARKS;
-        }
-    };
 
     private void onSearchChanged(String value)
     {
@@ -464,9 +448,11 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void applyFilter()
     {
-        List<BookIngredient> source = (showingBookmarks ? bookmarked : allItems).stream()
-                .filter(Progression::isUnlocked)
-                .toList();
+        List<BookIngredient> source =
+                (activeTab == BrowseTab.BOOKMARKS ? bookmarked : allItems).stream()
+                        .filter(Progression::isUnlocked)
+                        .filter(this::inActiveTab)
+                        .toList();
         String needle = search.getValue().toLowerCase(Locale.ROOT);
         List<BookIngredient> result = needle.isEmpty() ? source
                 : source.stream()
@@ -478,6 +464,11 @@ public final class RecipeBookWidget extends AbstractWidget
                     .toList();
         filtered = result;
         setPage(page);
+    }
+
+    private boolean inActiveTab(BookIngredient item)
+    {
+        return !activeTab.isItemCategory() || categories.tabOf(item) == activeTab;
     }
 
     // Picking up a new kind of item can unlock recipes, so the grid re-filters as soon as the
@@ -550,7 +541,7 @@ public final class RecipeBookWidget extends AbstractWidget
         search.setPosition(px + SEARCH_X, baseY + SEARCH_Y);
         placeButton.setPosition(placeX(), baseY + FILTER_Y);
         categoryRail.setPosition(px, baseY);
-        bookmarkRail.setPosition(px, baseY);
+        browseRail.setPosition(px, baseY);
         int center = px + w / 2;
         backButton.setPosition(center + BACKWARD_X - WIDTH / 2, baseY + ARROW_Y);
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
@@ -615,7 +606,7 @@ public final class RecipeBookWidget extends AbstractWidget
         }
         else
         {
-            bookmarkRail.render(graphics, mouseX, mouseY);
+            browseRail.render(graphics, mouseX, mouseY);
             renderBrowse(graphics, x, y, mouseX, mouseY, partialTick);
         }
 
@@ -625,7 +616,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private BookRail rail()
     {
-        return inRecipeMode() ? categoryRail : bookmarkRail;
+        return inRecipeMode() ? categoryRail : browseRail;
     }
 
     private void renderBookmarkButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -833,7 +824,7 @@ public final class RecipeBookWidget extends AbstractWidget
     }
 
     // The rail's pagers and tabs. Categories: left-click shows the item's recipes there, right-click
-    // the whole category. The bookmark tab switches the grid to the bookmarked items and back.
+    // the whole category. Browse ribbons just choose what fills the grid.
     private boolean railClicked(double mouseX, double mouseY, int button)
     {
         BookRail rail = rail();
@@ -859,7 +850,7 @@ public final class RecipeBookWidget extends AbstractWidget
         }
         else
         {
-            toggleBookmarkView();
+            selectBrowseTab(tab);
         }
         return true;
     }

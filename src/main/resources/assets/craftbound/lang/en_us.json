@@ -1,6 +1,11 @@
 {
   "craftbound.recipebook.place": "Place Ingredients",
   "craftbound.recipebook.place.all": "Hold Shift for as many as possible",
+  "craftbound.recipebook.tab.all": "All",
+  "craftbound.recipebook.tab.equipment": "Equipment",
+  "craftbound.recipebook.tab.building": "Building Blocks",
+  "craftbound.recipebook.tab.misc": "Miscellaneous",
+  "craftbound.recipebook.tab.redstone": "Redstone",
   "craftbound.recipebook.bookmarks": "Bookmarks",
   "craftbound.recipebook.bookmark": "Bookmark",
   "craftbound.recipebook.bookmark.remove": "Remove Bookmark",
