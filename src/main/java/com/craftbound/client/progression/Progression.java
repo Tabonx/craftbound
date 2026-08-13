@@ -39,6 +39,11 @@ public final class Progression
     private static final Set<String> newlyUnlocked = new LinkedHashSet<>();
     private static boolean seeded = false;
 
+    // Unlocks the player has not yet laid eyes on in the book. Kept apart from newlyUnlocked, which
+    // the toast drains as soon as it fires; this one survives until the grid actually shows the
+    // entry, the way vanilla holds a highlight until the recipe appears on a page.
+    private static final Set<String> highlighted = new LinkedHashSet<>();
+
     // Rebuilds the unlocked set if anything it depends on moved. Returns whether it changed, so the
     // book can re-apply its filter without polling the whole set.
     public static boolean refresh()
@@ -78,7 +83,10 @@ public final class Progression
         for (String key : unlockedOutputs)
         {
             if (!previous.contains(key))
+            {
                 newlyUnlocked.add(key);
+                highlighted.add(key);
+            }
         }
     }
 
@@ -92,6 +100,13 @@ public final class Progression
         List<String> keys = List.copyOf(newlyUnlocked);
         newlyUnlocked.clear();
         return keys;
+    }
+
+    // Claims an entry's highlight: true once, for the first render that shows it, which then plays
+    // the animation on its own clock.
+    public static boolean takeHighlight(BookIngredient ingredient)
+    {
+        return highlighted.remove(ingredient.unlockKey());
     }
 
     // The ingredient behind an unlock key, so the toast can draw it with the same JEI renderer the
@@ -150,6 +165,7 @@ public final class Progression
         unlockingItems = Set.of();
         obtainedSize = -1;
         newlyUnlocked.clear();
+        highlighted.clear();
         seeded = false;
     }
 

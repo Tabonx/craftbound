@@ -106,6 +106,7 @@ public final class RecipeBookWidget extends AbstractWidget
         return ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/" + name);
     }
 
+    private static final float ANIMATION_TICKS = 15f;
     private static final int COLS = 5;
     private static final int PER_PAGE = COLS * 4;
     private static final int CELL = 25;
@@ -150,6 +151,9 @@ public final class RecipeBookWidget extends AbstractWidget
     private int page = 0;
     private boolean loaded = false;
     private BookIngredient hovered = null;
+
+    // Highlight animations in flight, by unlock key, counting down in ticks.
+    private final Map<String, Float> highlights = new HashMap<>();
 
     // The craftable-filter state: which items are craftable right now (rebuilt when the inventory
     // changes while filtering) and whether the filter button is hovered (for its tooltip).
@@ -631,12 +635,43 @@ public final class RecipeBookWidget extends AbstractWidget
             int cellX = x + GRID_X + CELL * (i % COLS);
             int cellY = y + GRID_Y + CELL * (i / COLS);
             BookIngredient item = filtered.get(start + i);
-            graphics.blitSprite(slotFor(item), cellX, cellY, CELL, CELL);
-            item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
+            renderCell(graphics, item, cellX, cellY, partialTick);
 
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
                 hovered = item;
         }
+    }
+
+    // A newly unlocked entry swells and settles once, vanilla's recipe-book highlight: a half sine
+    // over ANIMATION_TICKS, scaling the slot and its item about the item's centre.
+    private void renderCell(GuiGraphics graphics, BookIngredient item, int cellX, int cellY, float partialTick)
+    {
+        if (Progression.takeHighlight(item))
+            highlights.put(item.unlockKey(), ANIMATION_TICKS);
+
+        Float remaining = highlights.get(item.unlockKey());
+        if (remaining != null)
+        {
+            float scale = 1f + 0.1f * (float) Math.sin(remaining / ANIMATION_TICKS * Math.PI);
+            int centerX = cellX + ITEM_INSET + 8;
+            int centerY = cellY + ITEM_INSET + 8;
+            graphics.pose().pushPose();
+            graphics.pose().translate(centerX, centerY, 0f);
+            graphics.pose().scale(scale, scale, 1f);
+            graphics.pose().translate(-centerX, -centerY, 0f);
+
+            float left = remaining - partialTick;
+            if (left > 0f)
+                highlights.put(item.unlockKey(), left);
+            else
+                highlights.remove(item.unlockKey());
+        }
+
+        graphics.blitSprite(slotFor(item), cellX, cellY, CELL, CELL);
+        item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
+
+        if (remaining != null)
+            graphics.pose().popPose();
     }
 
     // Marked slots are the ones worth getting hold of: obtaining them opens recipes the book is
