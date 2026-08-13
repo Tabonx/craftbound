@@ -149,5 +149,15 @@ public final class Unlocks
         return unlocked;
     }
 
+    // Whether the player is allowed to know this item exists: its recipe is unlocked, or they have
+    // held one. Holding it matters on its own because plenty of things no recipe produces — a Bell,
+    // Create's creative-only blocks — can still be come by, and starting the game able to name them
+    // gives away the whole catalogue.
+    public static boolean discovered(Set<String> unlockedOutputs, Set<ResourceLocation> obtained,
+            ResourceLocation itemId)
+    {
+        return obtained.contains(itemId) || unlockedOutputs.contains(UnlockKey.ofItem(itemId));
+    }
+
     private Unlocks() {}
 }

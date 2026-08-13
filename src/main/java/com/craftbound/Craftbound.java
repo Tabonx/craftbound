@@ -1,6 +1,7 @@
 package com.craftbound;
 
 import com.craftbound.client.jei.CraftboundRecipeRuntime;
+import com.craftbound.client.ponder.CraftboundPonderPlugin;
 import com.craftbound.progression.ProgressionConfig;
 
 import net.neoforged.bus.api.IEventBus;
@@ -21,6 +22,9 @@ public class Craftbound
         modContainer.registerConfig(ModConfig.Type.SERVER, ProgressionConfig.SPEC);
 
         if (dist.isClient())
+        {
             CraftboundRecipeRuntime.register(modEventBus);
+            CraftboundPonderPlugin.register();
+        }
     }
 }

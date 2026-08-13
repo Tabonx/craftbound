@@ -130,6 +130,16 @@ public final class Progression
         return unlockingItems.contains(itemId);
     }
 
+    // Whether an item may be named outside the book — Ponder's listings ask this. Fails open while
+    // the index is still empty: a screen opened before JEI has built it must show everything rather
+    // than pretend the game is empty.
+    public static boolean isDiscovered(ResourceLocation itemId)
+    {
+        if (!rules.enabled() || index.isEmpty())
+            return true;
+        return Unlocks.discovered(unlockedOutputs, obtained(), itemId);
+    }
+
     public static boolean isUnlocked(BookIngredient ingredient)
     {
         if (!rules.enabled())

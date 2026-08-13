@@ -283,6 +283,27 @@ class UnlocksTest
         return InputSlot.ofItems(obtained(ids));
     }
 
+    @Test
+    void discovered_needsTheRecipeUnlockedOrTheItemInHand()
+    {
+        ResourceLocation planks = rl("minecraft:oak_planks");
+
+        assertFalse(Unlocks.discovered(Set.of(), Set.of(), planks));
+        assertTrue(Unlocks.discovered(Set.of("item|minecraft:oak_planks"), Set.of(), planks));
+        assertTrue(Unlocks.discovered(Set.of(), Set.of(planks), planks));
+    }
+
+    // A Bell and Create's creative-only blocks have no recipe at all, so nothing ever unlocks them;
+    // picking one up is the only way they should be able to appear.
+    @Test
+    void discovered_hidesUncraftableThingsUntilObtained()
+    {
+        ResourceLocation bell = rl("minecraft:bell");
+
+        assertFalse(Unlocks.discovered(Set.of(), Set.of(), bell));
+        assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
+    }
+
     private static InputSlot fluidSlot(String fluidId, String bucketId)
     {
         return new InputSlot(Set.of(rl(bucketId)), Set.of("fluid|" + fluidId));
