@@ -548,7 +548,7 @@ public final class RecipeBookWidget extends AbstractWidget
         setWidth(w);
 
         search.setPosition(px + SEARCH_X, baseY + SEARCH_Y);
-        placeButton.setPosition(px + w - PLACE_MARGIN - PLACE_W, baseY + FILTER_Y);
+        placeButton.setPosition(placeX(), baseY + FILTER_Y);
         categoryRail.setPosition(px, baseY);
         bookmarkRail.setPosition(px, baseY);
         int center = px + w / 2;
@@ -561,6 +561,30 @@ public final class RecipeBookWidget extends AbstractWidget
     private int maxPanelWidth()
     {
         return Math.max(WIDTH, baseX + WIDTH + BookRail.TAB_X - 2);
+    }
+
+    // The panel texture (bezel included) is stretched horizontally in recipe mode, so edge insets
+    // are scaled with it; a fixed inset would sit closer to the border than it does while browsing.
+    private float panelScale()
+    {
+        return (float) getWidth() / WIDTH;
+    }
+
+    private int backX()
+    {
+        return getX() + (int) Math.ceil(BACK_X * panelScale());
+    }
+
+    // The right-hand button slot, shared by the place button and — when there is no recipe to place —
+    // the bookmark toggle, which otherwise sits to its left.
+    private int placeX()
+    {
+        return getX() + getWidth() - (int) Math.ceil(PLACE_MARGIN * panelScale()) - PLACE_W;
+    }
+
+    private int bookmarkX()
+    {
+        return placeableRecipe().isPresent() ? placeX() - BOOKMARK_GAP - BOOKMARK_W : placeX();
     }
 
     private int bodyWidth()
@@ -602,11 +626,6 @@ public final class RecipeBookWidget extends AbstractWidget
     private BookRail rail()
     {
         return inRecipeMode() ? categoryRail : bookmarkRail;
-    }
-
-    private int bookmarkX()
-    {
-        return getX() + getWidth() - PLACE_MARGIN - PLACE_W - BOOKMARK_GAP - BOOKMARK_W;
     }
 
     private void renderBookmarkButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -704,15 +723,16 @@ public final class RecipeBookWidget extends AbstractWidget
         // Round each edge inward (ceil left, floor right) so the slice stops just inside the bezel
         // rather than spilling onto it.
         float coverScale = (float) getWidth() / WIDTH;
-        int coverLeft = x + (int) Math.ceil(BACK_X * coverScale);
+        int coverLeft = backX();
         int coverRight = x + (int) Math.floor((WIDTH - BACK_X) * coverScale);
         graphics.blit(BACKGROUND, coverLeft, y + SEARCH_Y - 3, coverRight - coverLeft, SEARCH_H + 6,
                 BACK_X + 1, GRID_Y + 1, WIDTH - 2 * BACK_X, SEARCH_H + 6, 256, 256);
 
         var font = Minecraft.getInstance().font;
-        boolean overBack = inRect(mouseX, mouseY, x + BACK_X, y + BACK_Y, BACK_W, BACK_H);
-        graphics.blitSprite(BACKWARD_SPRITES.get(true, overBack), x + BACK_X, y + BACK_Y, ARROW_W, ARROW_H);
-        graphics.drawString(font, BACK_LABEL, x + BACK_X + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
+        int backX = backX();
+        boolean overBack = inRect(mouseX, mouseY, backX, y + BACK_Y, BACK_W, BACK_H);
+        graphics.blitSprite(BACKWARD_SPRITES.get(true, overBack), backX, y + BACK_Y, ARROW_W, ARROW_H);
+        graphics.drawString(font, BACK_LABEL, backX + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
                 0xFFFFFF, true);
 
         IRecipeLayoutDrawable<?> layout = currentRecipe();
@@ -864,7 +884,7 @@ public final class RecipeBookWidget extends AbstractWidget
                 toggleBookmark();
                 return true;
             }
-            if (inRect(mouseX, mouseY, getX() + BACK_X, getY() + BACK_Y, BACK_W, BACK_H))
+            if (inRect(mouseX, mouseY, backX(), getY() + BACK_Y, BACK_W, BACK_H))
             {
                 playClickSound();
                 closeRecipe();
