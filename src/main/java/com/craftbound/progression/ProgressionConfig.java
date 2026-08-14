@@ -6,7 +6,8 @@ import java.util.Set;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 // Server config, so a pack decides how progression behaves and every client on the server agrees:
-// NeoForge syncs SERVER configs to clients, and the book filters client-side against them.
+// NeoForge syncs SERVER configs to clients, and the book filters client-side against them. On a
+// server without Craftbound nothing is synced, so the client's own copy decides.
 public final class ProgressionConfig
 {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();

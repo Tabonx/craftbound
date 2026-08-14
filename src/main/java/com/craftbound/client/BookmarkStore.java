@@ -14,13 +14,10 @@ import com.mojang.serialization.JsonOps;
 
 import org.slf4j.Logger;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.loading.FMLPaths;
 
-// The bookmark file and the "which world is this?" question, kept apart from Bookmarks so the
-// data stays testable. Bookmarks are a client convenience, so nothing here talks to the server.
+// The bookmark file, kept apart from Bookmarks so the data stays testable. Bookmarks are a client
+// convenience, so nothing here talks to the server.
 public final class BookmarkStore
 {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -31,38 +28,25 @@ public final class BookmarkStore
 
     public static List<String> current()
     {
-        return load().of(worldKey());
+        return load().of(WorldKey.current());
     }
 
     public static boolean contains(String uid)
     {
-        return load().contains(worldKey(), uid);
+        return load().contains(WorldKey.current(), uid);
     }
 
     public static boolean toggle(String uid)
     {
-        boolean added = load().toggle(worldKey(), uid);
+        boolean added = load().toggle(WorldKey.current(), uid);
         save();
         return added;
     }
 
     public static void remove(String uid)
     {
-        load().remove(worldKey(), uid);
+        load().remove(WorldKey.current(), uid);
         save();
-    }
-
-    // Singleplayer keys off the save's name, multiplayer off the server address. Anything else
-    // (Realms, an unusual connection) shares one bucket rather than losing its bookmarks.
-    private static String worldKey()
-    {
-        Minecraft minecraft = Minecraft.getInstance();
-        MinecraftServer server = minecraft.getSingleplayerServer();
-        if (server != null)
-            return "world/" + server.getWorldData().getLevelName();
-
-        ServerData serverData = minecraft.getCurrentServer();
-        return serverData != null ? "server/" + serverData.ip : "unknown";
     }
 
     private static Path file()

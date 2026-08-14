@@ -792,8 +792,8 @@ public final class RecipeBookWidget extends AbstractWidget
         }
     }
 
-    // Offered only for recipes the open menu can lay out, and greyed out while the ingredients for
-    // them are missing.
+    // Offered only for recipes the open menu can lay out, and greyed out while placing them would
+    // not work.
     private void renderPlaceButton(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         Optional<RecipeHolder<?>> recipe = placeableRecipe();
@@ -801,7 +801,7 @@ public final class RecipeBookWidget extends AbstractWidget
         if (!placeButton.visible)
             return;
 
-        placeButton.active = placer.hasIngredients(recipe.get());
+        placeButton.active = placer.canPlace(recipe.get());
         placeButton.render(graphics, mouseX, mouseY, partialTick);
     }
 

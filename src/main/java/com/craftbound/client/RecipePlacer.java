@@ -10,7 +10,9 @@ import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.RecipeType;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
@@ -53,10 +55,17 @@ public final class RecipePlacer
         };
     }
 
-    public boolean hasIngredients(RecipeHolder<?> recipe)
+    // Whether asking would actually do something: the ingredients are there, and on a server
+    // without Craftbound the vanilla recipe book has learned the recipe, since that server places
+    // nothing else. The book is synced to the client, so this is the server's own answer rather
+    // than a guess, and the button greys out instead of silently doing nothing.
+    public boolean canPlace(RecipeHolder<?> recipe)
     {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null)
+            return false;
+
+        if (!ServerSupport.installed() && !player.getRecipeBook().contains(recipe))
             return false;
 
         StackedContents contents = new StackedContents();
@@ -65,8 +74,19 @@ public final class RecipePlacer
         return contents.canCraft(recipe.value(), null);
     }
 
+    // A server without Craftbound cannot take our packet, so ask with vanilla's. That one only
+    // places recipes the player's vanilla recipe book already holds, which is as far as the client
+    // can get on its own.
     public void place(RecipeHolder<?> recipe, boolean placeAll)
     {
-        PacketDistributor.sendToServer(new PlaceRecipePayload(menu.containerId, recipe.id(), placeAll));
+        if (ServerSupport.installed())
+        {
+            PacketDistributor.sendToServer(new PlaceRecipePayload(menu.containerId, recipe.id(), placeAll));
+            return;
+        }
+
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        if (connection != null)
+            connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
     }
 }

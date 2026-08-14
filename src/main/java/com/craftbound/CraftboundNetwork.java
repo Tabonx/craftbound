@@ -14,7 +14,10 @@ public final class CraftboundNetwork
     @SubscribeEvent
     public static void onRegisterPayloads(final RegisterPayloadHandlersEvent event)
     {
-        event.registrar("1").playToServer(
+        // Optional, so a server without Craftbound still accepts the client: NeoForge refuses any
+        // connection that is missing a required payload. RecipePlacer falls back to the vanilla
+        // packet when the channel is absent.
+        event.registrar("1").optional().playToServer(
                 PlaceRecipePayload.TYPE, PlaceRecipePayload.STREAM_CODEC, CraftboundNetwork::placeRecipe);
     }
 

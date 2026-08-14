@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeIndexSnapshot;
@@ -15,14 +14,12 @@ import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
 import com.craftbound.progression.Unlocks;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
-// Client-side view of what the player has unlocked. The obtained set arrives on its own as a synced
-// attachment, so nothing here talks to the server; it only caches the expensive parts, the recipe
-// index and the derived unlocked-output set, and rebuilds them when the inputs change.
+// Client-side view of what the player has unlocked. The obtained set comes from
+// ClientObtainedItems, so nothing here talks to the server; it only caches the expensive parts, the
+// recipe index and the derived unlocked-output set, and rebuilds them when the inputs change.
 //
 // Staleness is judged by the obtained set's size: it only ever grows, so a changed size is exactly
 // a changed set, and comparing sizes costs nothing per frame.
@@ -181,8 +178,7 @@ public final class Progression
 
     private static Set<ResourceLocation> obtained()
     {
-        LocalPlayer player = Minecraft.getInstance().player;
-        return player == null ? Set.of() : player.getData(CraftboundAttachments.OBTAINED_ITEMS);
+        return ClientObtainedItems.current();
     }
 
     private Progression() {}

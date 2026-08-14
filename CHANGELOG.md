@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2
+
+- Craftbound can now be used on servers that do not have it installed. Such servers no
+  longer refuse the connection, and progression keeps working: the client tracks the
+  items you obtain itself and remembers them per server.
+- On a server without Craftbound, placing a recipe into the crafting grid works for
+  recipes your vanilla recipe book has already learned. The place button is greyed out
+  for the rest instead of doing nothing when clicked.
+
 ## 0.1.0
 
 First release.
