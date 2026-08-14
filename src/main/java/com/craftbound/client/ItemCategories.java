@@ -15,7 +15,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // Which ribbon each item belongs on, taken from the book category vanilla already stores on every
-// crafting and cooking recipe — so any mod shipping ordinary recipes is categorised for free.
+// crafting and cooking recipe, so any mod shipping ordinary recipes is categorised for free.
 // Anything else (Create's mixing, pressing, and the rest) has no such category and falls to Misc,
 // which is where vanilla puts an uncategorised recipe too.
 public final class ItemCategories

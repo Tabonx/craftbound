@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import net.minecraft.resources.ResourceLocation;
 
 // Progression walked over a model of Create's actual early game, since Create is what this mod is
-// aimed at. The recipes are fixtures rather than the real datapack — real recipes need a running
-// game — but they are shaped exactly as RecipeIndexBuilder produces them, heat requirements
+// aimed at. The recipes are fixtures rather than the real datapack, since real recipes need a running
+// game, but they are shaped exactly as RecipeIndexBuilder produces them, heat requirements
 // included, and they go through the real HeatRequirement mapping.
 class CreateProgressionTest
 {
@@ -180,7 +180,7 @@ class CreateProgressionTest
     // other potion in the grid. That mismatch showed up as fluids you could see but whose recipes
     // were all still locked.
     // Potions are subtypes of one fluid. Keyed only by that fluid, unlocking the first brewing step
-    // put every potion in the grid while their own recipes stayed locked — visible fluids with
+    // put every potion in the grid while their own recipes stayed locked: visible fluids with
     // nothing behind them.
     @Test
     void unlockingOneBrewingStepDoesNotRevealEveryPotion()
@@ -195,7 +195,7 @@ class CreateProgressionTest
     }
 
     // The second step brews from the first one's output, so it waits for both that and its own
-    // ingredient — the same chaining as items, carried through a fluid.
+    // ingredient, the same chaining as items, carried through a fluid.
     @Test
     void aLaterBrewingStepWaitsForTheOneItBrewsFrom()
     {

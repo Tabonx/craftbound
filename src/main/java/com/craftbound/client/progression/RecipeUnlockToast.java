@@ -16,7 +16,7 @@ import net.minecraft.world.item.Items;
 // Vanilla's recipe toast, backed by book ingredients instead of RecipeHolders: the book unlocks
 // recipes that came from JEI categories, which have no RecipeHolder to hand to net.minecraft's
 // RecipeToast. Same sprite, same strings and the same cycling layout, so it reads as the popup
-// players know — and each result is drawn with the renderer the book itself uses, so a fluid looks
+// players know, and each result is drawn with the renderer the book itself uses, so a fluid looks
 // the same in both places.
 public final class RecipeUnlockToast implements Toast
 {

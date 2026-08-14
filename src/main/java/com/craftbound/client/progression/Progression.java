@@ -21,8 +21,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 // Client-side view of what the player has unlocked. The obtained set arrives on its own as a synced
-// attachment, so nothing here talks to the server; it only caches the expensive parts — the recipe
-// index and the derived unlocked-output set — and rebuilds them when the inputs change.
+// attachment, so nothing here talks to the server; it only caches the expensive parts, the recipe
+// index and the derived unlocked-output set, and rebuilds them when the inputs change.
 //
 // Staleness is judged by the obtained set's size: it only ever grows, so a changed size is exactly
 // a changed set, and comparing sizes costs nothing per frame.
@@ -116,7 +116,7 @@ public final class Progression
         return snapshot.displayFor(unlockKey);
     }
 
-    // Whether obtaining this item would reveal something the book is still hiding — what the grid
+    // Whether obtaining this item would reveal something the book is still hiding, which is what the grid
     // marks. Fluids and other ingredient types can never be obtained, so they are never marked.
     public static boolean unlocksMore(BookIngredient ingredient)
     {
@@ -130,7 +130,7 @@ public final class Progression
         return unlockingItems.contains(itemId);
     }
 
-    // Whether an item may be named outside the book — Ponder's listings ask this. Fails open while
+    // Whether an item may be named outside the book: Ponder's listings ask this. Fails open while
     // the index is still empty: a screen opened before JEI has built it must show everything rather
     // than pretend the game is empty.
     public static boolean isDiscovered(ResourceLocation itemId)
@@ -150,7 +150,7 @@ public final class Progression
     // Judged within the category being shown: the same recipe object is listed by several
     // categories, and being locked as a mechanical-crafter recipe says nothing about it as a
     // crafting-table one. Recipes missing from the index (a category that failed to lay one out)
-    // count as unlocked — hiding a recipe we could not read would make it unreachable forever.
+    // count as unlocked: hiding a recipe we could not read would make it unreachable forever.
     public static boolean isRecipeUnlocked(String categoryUid, Object recipe)
     {
         if (!rules.enabled())

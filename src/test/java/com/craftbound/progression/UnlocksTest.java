@@ -165,7 +165,7 @@ class UnlocksTest
         assertTrue(Unlocks.unlockedOutputs(STRICT, index, hasMixer).contains("item|create:brass_sheet"));
     }
 
-    // The same recipe object is listed by several categories — Create re-lists ordinary shaped
+    // The same recipe object is listed by several categories: Create re-lists ordinary shaped
     // recipes under its own mechanical-crafter category. Being locked there must not hide it from
     // the crafting table, which is what a single recipe-keyed map did.
     @Test

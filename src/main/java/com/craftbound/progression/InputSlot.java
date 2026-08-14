@@ -6,8 +6,8 @@ import net.minecraft.resources.ResourceLocation;
 
 // What one recipe slot demands, as alternatives: any one of them satisfies it.
 //
-// Items are satisfied by having obtained them. Fluids cannot be obtained — they never enter an
-// inventory — so they are satisfied by being unlockable: some unlocked recipe produces them. That
+// Items are satisfied by having obtained them. Fluids cannot be obtained, since they never enter an
+// inventory, so they are satisfied by being unlockable: some unlocked recipe produces them. That
 // is what stops a Bar of Chocolate appearing before the chocolate itself is reachable.
 //
 // `items` also carries a fluid's bucket, which only ever helps satisfy the slot; whether the slot

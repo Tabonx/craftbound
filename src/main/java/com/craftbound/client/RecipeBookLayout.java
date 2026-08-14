@@ -1,7 +1,7 @@
 package com.craftbound.client;
 
 // Pure layout math for docking the book left of the inventory. When the book is open we reserve a
-// fixed column on the left — sized for the widened recipe panel, not the narrow browse panel — and
+// fixed column on the left, sized for the widened recipe panel, not the narrow browse panel, and
 // shift the inventory right by that constant, keeping the book+inventory pair centered. Because the
 // reservation is constant the inventory never moves between browse and recipe states, nor per
 // recipe; it only moves when the book opens or closes. Kept free of Minecraft types so it can be

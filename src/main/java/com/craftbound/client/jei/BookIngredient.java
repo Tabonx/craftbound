@@ -82,7 +82,7 @@ public final class BookIngredient
 
     // What tells two potions apart. It has to come from getUid: that is the only path reaching JEI's
     // modern subtype data, which is where Create's PotionFluidSubtypeInterpreter puts the potion
-    // type. Its legacy string counterpart — the one getUniqueId reads — returns "", so keying on
+    // type. Its legacy string counterpart, the one getUniqueId reads, returns "", so keying on
     // that collapsed every potion onto one key and one unlocked brewing step revealed the lot.
     //
     // For a fluid, getUid hands back either the Fluid alone or List.of(fluid, subtypeData); only the

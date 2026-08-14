@@ -182,7 +182,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     // The book keeps its right edge where the host placed it (baseX + WIDTH) and widens left to a
     // single fixed width in recipe mode; browsing it stays WIDTH. The width never varies per recipe,
-    // so the panel's left edge (and the inventory beside it) stays put — recipes scale to fit.
+    // so the panel's left edge (and the inventory beside it) stays put: recipes scale to fit.
     private int baseX;
     private int baseY;
 
@@ -350,7 +350,7 @@ public final class RecipeBookWidget extends AbstractWidget
     }
 
     // Right-click a tab: every recipe in that category, not just ones involving the focused item.
-    // Left unsorted — ranking these would mean building every drawable in the category up front,
+    // Left unsorted: ranking these would mean building every drawable in the category up front,
     // which is the cost the lazy suppliers exist to avoid.
     private void showAllRecipes(int target)
     {
@@ -567,7 +567,7 @@ public final class RecipeBookWidget extends AbstractWidget
         return getX() + (int) Math.ceil(BACK_X * panelScale());
     }
 
-    // The right-hand button slot, shared by the place button and — when there is no recipe to place —
+    // The right-hand button slot, shared by the place button and, when there is no recipe to place,
     // the bookmark toggle, which otherwise sits to its left.
     private int placeX()
     {

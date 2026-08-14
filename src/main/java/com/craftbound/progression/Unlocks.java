@@ -74,7 +74,7 @@ public final class Unlocks
 
     // Items whose absence is the only thing still holding a recipe back: obtaining one reveals
     // something the book is not showing yet. This is what the grid marks, rather than "never
-    // obtained" — a plank nobody has held is only worth marking while it still opens a door, so the
+    // obtained": a plank nobody has held is only worth marking while it still opens a door, so the
     // mark leaves every plank at once as soon as one of them satisfies the recipes they share.
     //
     // Judged one recipe ahead, not to a fixpoint: a mark promises the next step, not the whole tree.
@@ -150,8 +150,8 @@ public final class Unlocks
     }
 
     // Whether the player is allowed to know this item exists: its recipe is unlocked, or they have
-    // held one. Holding it matters on its own because plenty of things no recipe produces — a Bell,
-    // Create's creative-only blocks — can still be come by, and starting the game able to name them
+    // held one. Holding it matters on its own because plenty of things no recipe produces, a Bell or
+    // Create's creative-only blocks, can still be come by, and starting the game able to name them
     // gives away the whole catalogue.
     public static boolean discovered(Set<String> unlockedOutputs, Set<ResourceLocation> obtained,
             ResourceLocation itemId)

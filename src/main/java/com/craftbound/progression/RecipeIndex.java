@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 // Automatic Shaped Crafting. A single recipe-keyed map would let the mechanical crafter's entry
 // overwrite the crafting table's and lock the recipe behind a machine the player cannot have yet.
 //
-// `producedKeys` is every output anything makes. A fluid outside it — water, say — is not produced
+// `producedKeys` is every output anything makes. A fluid outside it, water for example, is not produced
 // by any recipe, so requiring it to be "unlocked" would be a gate that can never open; slots
 // demanding one are left unjudged instead.
 public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
@@ -34,7 +34,7 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
 
     // Only what a recipe makes *without already needing it*. Create's brewing both consumes and
     // produces potion fluid, so counting that as "produced" would gate every brewing recipe behind
-    // a fluid nothing could ever bootstrap — a cycle with no way in. A fluid reachable only from
+    // a fluid nothing could ever bootstrap, a cycle with no way in. A fluid reachable only from
     // itself is left unjudged instead, exactly like one nothing produces at all.
     private static Set<String> bootstrappable(RecipeNode node)
     {
