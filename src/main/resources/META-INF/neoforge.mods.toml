@@ -12,6 +12,10 @@ description='''${mod_description}'''
 [[mixins]]
 config="${mod_id}.mixins.json"
 
+# Ponder ships with Create. This config is not required, so its mixins are skipped when Create is absent.
+[[mixins]]
+config="${mod_id}.ponder.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
@@ -26,10 +30,11 @@ config="${mod_id}.mixins.json"
     ordering="NONE"
     side="BOTH"
 
-# Craftbound is built on top of Create, so it must load after Create and requires it to be present.
+# Create is optional: without it the book simply has no Create categories to show. It must still
+# load first, so its recipe categories are registered before the book reads them.
 [[dependencies.${mod_id}]]
     modId="create"
-    type="required"
+    type="optional"
     versionRange="[6.0.0,)"
     ordering="AFTER"
     side="BOTH"

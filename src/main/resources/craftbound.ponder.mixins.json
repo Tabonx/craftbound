@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.craftbound.client.ponder.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "PonderUIMixin",
+    "PonderTagScreenMixin",
+    "PonderTagIndexScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

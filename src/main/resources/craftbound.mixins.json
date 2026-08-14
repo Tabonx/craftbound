@@ -7,10 +7,7 @@
     "RecipeButtonMixin",
     "RecipeBookVisibilityMixin",
     "RecipeToastMixin",
-    "ContainerScreenAccessor",
-    "PonderTagScreenMixin",
-    "PonderTagIndexScreenMixin",
-    "PonderUIMixin"
+    "ContainerScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

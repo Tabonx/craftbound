@@ -1,4 +1,4 @@
-# Recipe Book UI — design intentions
+# Recipe Book UI: design intentions
 
 Living design doc for Craftbound's reworked recipe book. Captures the settled UX model so
 implementation stays aligned. Update this when a decision changes.
@@ -7,7 +7,7 @@ implementation stays aligned. Update this when a decision changes.
 
 One recipe book that looks Minecraft-native and unifies **vanilla crafting** and **Create
 machine recipes** (mixing, crushing, smelting, …) in a single place. It must not overlay or
-replace the whole screen — it lives alongside the inventory the way the vanilla recipe book
+replace the whole screen. It lives alongside the inventory the way the vanilla recipe book
 does.
 
 ## The problem with the "two books" approach
@@ -17,7 +17,7 @@ book/interface for machine recipes. That splits recipes **by mechanism** (crafti
 machine), which forces the player to already know the mechanism before they look. People think
 **by result item** ("how do I get brass?"), so they end up hunting through both books.
 
-**Unifying principle:** browse by output, then reveal *every* way to make it — vanilla and
+**Unifying principle:** browse by output, then reveal *every* way to make it, with vanilla and
 Create as peers. The recipe mechanism is a sub-navigation within one item, never a top-level
 split.
 
@@ -37,9 +37,9 @@ split.
 ### Two states in one column
 The book is a single vanilla-width column with two swappable states:
 
-1. **Browse** — a search box and a scrollable grid of output items (like the vanilla book).
+1. **Browse**: a search box and a scrollable grid of output items (like the vanilla book).
    Never-crafted items keep the progression tint (see below).
-2. **Recipe** — clicking an output **replaces the grid in the same column** with how that item
+2. **Recipe**: clicking an output **replaces the grid in the same column** with how that item
    is made. A **back button** (`‹ items`) returns to the browse grid.
 
 There is **one predictable behavior**: click → show the recipe. Nothing is ever filled into the
@@ -48,7 +48,7 @@ open screen unless the player asks for it with the place button (see below).
 ### Recipe methods = left rail
 When an item has more than one recipe, each method is a **tab on a left rail** that protrudes
 from the panel, mirroring vanilla's category tabs. Vanilla crafting and Create machines appear
-as peers here — this rail *is* the unification.
+as peers here. This rail *is* the unification.
 
 - Rail tabs are badged with each recipe **category's icon** (crafting table, furnace, blast
   furnace, Create crushing wheels, mechanical mixer, …).
@@ -56,20 +56,20 @@ as peers here — this rail *is* the unification.
   The active selection persists across pages, like vanilla.
 
 ### Recipe order within a method
-JEI hands recipes over in the order Minecraft hashed them into its recipe map — arbitrary, and it
+JEI hands recipes over in the order Minecraft hashed them into its recipe map, which is arbitrary and
 shifts whenever recipes are added or removed. `RecipeOrder` ranks the ones the player can make
 right now first (stable sort, so everything else keeps its relative order), judged from the
 recipe's own JEI input slots so it works for Create categories as well as vanilla ones. It is
 computed once, when the recipe is opened: re-ranking live would make recipes jump under the cursor.
-Counts are ignored — this ranks recipes, it does not promise the craft fits.
+Counts are ignored: this ranks recipes, it does not promise the craft fits.
 
 ### Per-method recipe body
-Every recipe kind — vanilla crafting and Create/machine alike — is rendered the same way: by
+Every recipe kind, vanilla crafting and Create/machine alike, is rendered the same way: by
 hosting the recipe's **JEI `IRecipeCategory` drawable** inside the body rect (reusing JEI's and
 Create's registered renderers rather than reimplementing them). The drawable is scaled to fit the
 body; the panel first grows wider (see framing) so wide recipes need little or no shrinking. This
-replaces the earlier plan of a native crafting grid plus a hand-rolled vertical Create layout —
-one uniform path is simpler and covers every category, including fluids.
+replaces the earlier plan of a native crafting grid plus a hand-rolled vertical Create layout.
+One uniform path is simpler and covers every category, including fluids.
 
 ## Why vendor JEI
 JEI's source is vendored (`vendor/jei/`) so we can render Create's registered recipe categories
@@ -77,8 +77,8 @@ into **our own small rectangle** inside the book, instead of calling JEI's full-
 `RecipesGui`. We reuse two things: Create's `IRecipeCategory` renderers and JEI's ingredient
 drawables.
 
-The embedded runtime finds plugins the way JEI does — `ForgePluginFinder` scans every loaded mod
-for `@JeiPlugin` — so any mod with JEI support shows up in the book without being named in our
+The embedded runtime finds plugins the way JEI does, with `ForgePluginFinder` scanning every loaded mod
+for `@JeiPlugin`, so any mod with JEI support shows up in the book without being named in our
 source. Only JEI's own GUI, internal and debug plugins are dropped, since they build the
 full-screen interface the book replaces. Note the flip side of embedding: `neoforge.mods.toml`
 declares the JEI mod itself `incompatible`, so a mod that *hard*-depends on JEI cannot be
@@ -87,7 +87,7 @@ installed alongside Craftbound; optional JEI support (the common case) works fin
 ## Obtained items (already implemented)
 `ObtainedItemsTracker` records every item the player has ever held into the synced
 `OBTAINED_ITEMS` attachment (`ObtainedItems` / `CraftboundAttachments`). An item counts as obtained
-however it was acquired — mined, looted, traded — not just crafted. This one set backs both the
+however it was acquired, whether mined, looted or traded, not just crafted. This one set backs both the
 progression tint and progressive unlocking below.
 
 `client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes whose result the player has
@@ -95,33 +95,48 @@ never had; in the browse grid the same tint marks an item that is unlocked but h
 
 ## Progressive unlocking (already implemented)
 The book starts nearly empty and grows as the player plays, instead of showing every recipe in the
-pack on day one. A recipe is **unlocked once everything it is made from has been obtained** — logs
-reveal planks, planks reveal sticks — and the chain carries across mechanisms: no Mechanical Mixer
+pack on day one. A recipe is **unlocked once everything it is made from has been obtained**. Logs
+reveal planks, planks reveal sticks, and the chain carries across mechanisms: no Mechanical Mixer
 in hand means no mixing tab and no mixing recipes anywhere.
 
 - **Locked means hidden**, not greyed. Locked items are absent from the browse grid and from search;
   locked recipes are absent from an item's rail, and a category with nothing left drops off entirely.
 - **Unlock state is derived, never stored.** The obtained set only ever grows, so anything unlocked
   stays unlocked without a second thing to persist and keep in sync. Everything is computed
-  client-side from the already-synced attachment — no new packets.
+  client-side from the already-synced attachment, with no new packets.
 - **A slot's alternatives are one requirement.** "Any planks" is satisfied by any one of them, which
   is why the index keeps slots apart instead of flattening a recipe to a list of ingredients the way
   JEI's own `IngredientSupplierBuilder` does. A slot with no item alternatives (a fluid) cannot be
-  judged and never locks a recipe — the same convention `RecipeOrder` uses.
+  judged and never locks a recipe, the same convention `RecipeOrder` uses.
 - **`minecraft:crafting` is exempt from category gating** by default. Gating it on owning a crafting
   table strands a new player, who needs the crafting category to find out how a table is made.
-- Anything the index could not read — a category that throws while laying a recipe out — counts as
+- Anything the index could not read, such as a category that throws while laying a recipe out, counts as
   unlocked. Showing a recipe early is recoverable; hiding one forever is not.
 
 ### Requirements a category hides
 Create's basin recipes need a heat source under the basin, but `BasinCategory` paints that in
-`draw()` rather than declaring it as a slot, so the generic walk cannot see it — lava looked
+`draw()` rather than declaring it as a slot, so the generic walk cannot see it, and lava looked
 makeable the moment its ingredients were in hand. `progression/create/HeatRequirement` turns a heat
 condition into **extra input slots** (heated → Blaze Burner; superheated → Blaze Burner *and* Blaze
 Cake, as two slots, since a burner alone only reaches "heated"), which is exactly what a heat source
 is: another thing you must have obtained. `Unlocks` stays free of any Create knowledge, and
-`client/jei/RecipeRequirements` is the only place that touches Create's classes, behind a
-`ModList.isLoaded` guard so Craftbound still runs without Create.
+`client/jei/RecipeRequirements` is the only place outside `client/ponder` that touches Create's
+classes, behind a `ModList.isLoaded` guard.
+
+## Create is optional
+Create is declared `optional` in `neoforge.mods.toml`, and the mod runs without it: the book is
+built on JEI's plugin system, not on Create. Two things carry the dependency, and both are isolated
+so they simply do not run when Create is absent.
+
+- `client/ponder/` holds the Ponder integration, with its mixins in `client/ponder/mixin/` under a
+  separate `craftbound.ponder.mixins.json` marked `"required": false`, so Mixin skips them when the
+  Ponder classes are missing. `CraftboundPonderPlugin.register()` sits behind a
+  `ModList.isLoaded("ponder")` check in `Craftbound`, because resolving the class loads Ponder's own.
+- `client/jei/RecipeRequirements` guards the heat requirement described above.
+
+Create is `compileOnly` and reaches the dev client through that run's own `dependencies` block, so
+the `clientNoCreate` run starts a client without Create, Ponder, Flywheel or Registrate to exercise
+these paths.
 
 Anything else a mod hides from its own layout stays invisible to progression, which errs towards
 showing a recipe too early rather than stranding one.
@@ -129,7 +144,7 @@ showing a recipe too early rather than stranding one.
 ### Fluids unlock transitively
 Fluids can never enter an inventory, so they can never be "obtained". Left at that they would gate
 nothing, and a Bar of Chocolate showed up before chocolate itself was reachable. A fluid input is
-instead satisfied when **some unlocked recipe produces it** — which makes `unlockedOutputs` a
+instead satisfied when **some unlocked recipe produces it**, which makes `unlockedOutputs` a
 fixpoint rather than a single pass, since unlocking one recipe can unlock the next. Sugar and cocoa
 therefore reveal the chocolate *and* the bar in the same breath.
 
@@ -149,32 +164,32 @@ water slot into a gate.
 `progression/UnlockKey` owns how outputs are named. Items are registry-level, ignoring counts and
 components. Fluids carry a **subtype** as well: every Create potion is `create:potion`, so a
 registry-only key let one unlocked brewing step reveal every potion in the game while each one's
-recipes stayed locked — fluids you could see with nothing behind them.
+recipes stayed locked, fluids you could see with nothing behind them.
 
 The subtype has to come from `IIngredientHelper#getUid`. That is the only path reaching JEI's modern
 subtype data, which is where Create's `PotionFluidSubtypeInterpreter` puts the potion type; its
-legacy string counterpart — the one `getUniqueId` reads — returns `""`, so keying on that collapsed
+legacy string counterpart, the one `getUniqueId` reads, returns `""`, so keying on that collapsed
 the potions all over again.
 
 ### Unlock toast
 Vanilla keeps unlocking recipes and toasting them even with its book forced hidden, which left two
-notifications side by side — one pointing at a book the player does not have — disagreeing with each
+notifications side by side, one pointing at a book the player does not have, disagreeing with each
 other, since vanilla unlocks on its own rules rather than Craftbound's progression.
 `client/mixin/RecipeToastMixin` suppresses it, leaving one answer to "what did I just unlock?".
 
-Obtaining an item that unlocks something pops vanilla's recipe toast in the top-right — same
+Obtaining an item that unlocks something pops vanilla's recipe toast in the top-right, using the same
 `toast/recipe` sprite and same "New Recipes Unlocked! / Check your recipe book" strings, so it reads
 as the popup players already know. `RecipeUnlockToast` re-implements it over items because
 `net.minecraft`'s `RecipeToast` needs a `RecipeHolder`, which JEI-sourced machine recipes have no
 equivalent of. `ProgressionToasts` polls on a client tick rather than leaning on the book's own
 refresh: unlocks happen while the player is out mining, not while the book is open. The first pass
-over a fresh index is a silent baseline — announcing everything already unlocked would bury the
+over a fresh index is a silent baseline: announcing everything already unlocked would bury the
 player in toasts on every world join.
 
 Layering: `progression/Unlocks` is the whole rule set as pure functions over
 `RecipeIndex` / `RecipeNode` (plain ids and sets, unit-tested without the game).
 `client/jei/RecipeIndexBuilder` + `SlotIngredientCollector` reduce every recipe JEI knows to that
-data in one pass — running each category's `setRecipe` against a collector that builds nothing
+data in one pass, running each category's `setRecipe` against a collector that builds nothing
 drawable. `client/progression/Progression` caches the index and the derived unlocked set, rebuilding
 when the obtained set grows (detected by its size, since it only grows).
 
@@ -183,15 +198,15 @@ when the obtained set grows (detected by its size, since it only grows).
 
 ## Place button (already implemented)
 The recipe state carries a place button in the top strip, where the craftable filter sits while
-browsing. It appears only on the tab matching the **open menu** — the plain crafting category, or
-the smelting family for a furnace/smoker/blast furnace — for a recipe that fits the menu's grid,
+browsing. It appears only on the tab matching the **open menu**, the plain crafting category, or
+the smelting family for a furnace/smoker/blast furnace, for a recipe that fits the menu's grid,
 and is greyed out while the ingredients are missing. Gating on the *category* and not just on the
 recipe matters: Create lists ordinary shaped recipes again under its own "Automatic Shaped
 Crafting" tab, where the recipe is meant for a mechanical crafter, so that tab offers no button
 even though the same recipe does under Crafting. Clicking sends `PlaceRecipePayload`; the server hands the recipe to
 `RecipeBookMenu.handlePlacement`, i.e. exactly the vanilla fill (shift = as many as possible).
 Because vanilla placement refuses recipes its own book has not unlocked, the handler first marks
-the recipe as known — Craftbound offers every recipe, so placing one counts as learning it.
+the recipe as known: Craftbound offers every recipe, so placing one counts as learning it.
 
 ## Bookmarks (already implemented)
 The left rail carries recipe categories while a recipe is open and **bookmarks while browsing**,
@@ -202,28 +217,36 @@ restarts; it resolves against the ingredients the book already loaded, and one w
 just doesn't resolve rather than being deleted.
 
 The rail carries **one** ribbon tab, present once something is bookmarked, and clicking it switches
-the grid between everything and the bookmarked items — the bookmarked items are then browsed
+the grid between everything and the bookmarked items. The bookmarked items are then browsed
 exactly like any others: same slots, same tints, same paging, same click-to-open, with search and
 the craftable filter still applying on top. Bookmarking itself is the ribbon button in the recipe
 view's strip, left of the place button; the same button clears one. Storage is
 `config/craftbound-bookmarks.json`, keyed per world (save name) and per server (address), and never
-touches the server — bookmarks are a client convenience.
+touches the server: bookmarks are a client convenience.
 
 ## Trade-offs & open questions
-- **Recipe gathering** across vanilla + Create categories for a given output — mechanism TBD.
-- **Browse filtering/search** — category tabs vs. plain search in the browse state — not yet
-  designed.
-- **Responsive positioning.** The panel docks left of the inventory; at small window sizes it
-  overlaps the inventory. Needs a fallback (shift/scale/collapse) — deferred.
+- **Narrow screens.** `RecipeBookLayout` reserves a fixed column wide enough for the widened
+  recipe panel and shifts the inventory right by it, so the two never overlap and the inventory
+  never moves between browse and recipe states. The reservation is clamped at the screen edge,
+  so an effective width below roughly 384 px (a small window at a large GUI scale) pushes the
+  pair off-centre. Untested at those sizes.
+- **Recipes wider than the clamped panel** still scale down to fit, which is readable for most
+  Create categories but tight for long sequenced assembly chains.
+- **Category gating leans on the workstation being an item.** A category whose "machine" is not
+  a held item cannot be gated, and falls back to being always unlocked.
 
 ## Status
+Implemented and in use:
 - Vanilla recipe book **suppressed** globally via `client/mixin/RecipeBookVisibilityMixin`
-  (forces `RecipeBookComponent.isVisible()` false). Note: this also removes the vanilla book at
-  crafting tables / furnaces, which our unified book will need to cover.
-- JEI-render bet **validated**: a Create recipe renders inside our own rect via
-  `IRecipeManager.createRecipeLayoutDrawableOrShowError` + `IRecipeLayoutDrawable`. See the
-  throwaway spike (`client/RecipeLayoutSpike` + `CraftboundJeiPlugin.createCreateRecipeLayout`),
-  to be replaced by the real docked panel.
+  (forces `RecipeBookComponent.isVisible()` false). The Craftbound book replaces it everywhere
+  the vanilla one appeared, including crafting tables and the furnace family.
+- Recipes render through JEI's own category drawables inside the docked panel, via
+  `IRecipeManager.createRecipeLayoutDrawableOrShowError` + `IRecipeLayoutDrawable`. The design
+  spike this started as is gone.
+- Browse grid with search, item category ribbons, bookmarks, the craftable-only filter and the
+  place button, all described above.
+- Progression, unlock toasts and the Create heat requirement, all described above.
+- Ponder scenes hide items the player has not discovered (`client/ponder`).
 
 ## Reference
 Interactive layout mock (throwaway, not in-repo) built during design, demonstrated on **brass**

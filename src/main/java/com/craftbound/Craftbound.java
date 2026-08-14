@@ -7,6 +7,7 @@ import com.craftbound.progression.ProgressionConfig;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 
@@ -24,7 +25,9 @@ public class Craftbound
         if (dist.isClient())
         {
             CraftboundRecipeRuntime.register(modEventBus);
-            CraftboundPonderPlugin.register();
+            // Resolving CraftboundPonderPlugin loads Ponder's classes, so it stays behind the check.
+            if (ModList.get().isLoaded("ponder"))
+                CraftboundPonderPlugin.register();
         }
     }
 }

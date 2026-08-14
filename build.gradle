@@ -50,6 +50,28 @@ runs {
 
         // Larger default dev window.
         arguments.addAll '--width', '1600', '--height', '900'
+
+        // Create and friends live here rather than on the project, so `clientNoCreate` can leave
+        // them out. Create's own POM lists the whole dev pack it tests against (JEI, FTB,
+        // JourneyMap, Curios, ...), none of which resolves from these repositories, so the ':slim'
+        // artifact is taken without its transitives.
+        dependencies {
+            runtime(project.dependencies.create("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
+                transitive = false
+            })
+            runtime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+            runtime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+            runtime "com.tterrag.registrate:Registrate:${registrate_version}"
+        }
+    }
+
+    // The same client without Create, Ponder, Flywheel or Registrate, for testing that Craftbound
+    // still works when its optional dependency is absent.
+    clientNoCreate {
+        configure 'client'
+
+        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+        arguments.addAll '--width', '1600', '--height', '900'
     }
 
     server {
@@ -92,11 +114,12 @@ dependencies {
     // Create and its dependencies (NeoForge 1.21.1).
     // See https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1
     // The ':slim' Create artifact is non-transitive, so Ponder/Flywheel/Registrate are declared explicitly.
-    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-    implementation "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+    // Compiled against, never required at runtime: Create is an optional dependency of the mod.
+    compileOnly("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+    compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
     compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
-    runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
-    implementation "com.tterrag.registrate:Registrate:${registrate_version}"
+    compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
+
 
     // Unit testing
     testImplementation platform("org.junit:junit-bom:5.11.3")
