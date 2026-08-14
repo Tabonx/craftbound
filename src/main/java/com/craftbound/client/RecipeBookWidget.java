@@ -456,7 +456,8 @@ public final class RecipeBookWidget extends AbstractWidget
         String needle = search.getValue().toLowerCase(Locale.ROOT);
         List<BookIngredient> result = needle.isEmpty() ? source
                 : source.stream()
-                        .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle))
+                        .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle)
+                                || SearchAliases.matches(item.unlockKey(), needle))
                         .toList();
         if (RecipeBookState.isFiltering())
             result = result.stream()
