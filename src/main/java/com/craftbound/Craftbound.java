@@ -3,6 +3,9 @@ package com.craftbound;
 import com.craftbound.client.jei.CraftboundRecipeRuntime;
 import com.craftbound.client.ponder.CraftboundPonderPlugin;
 import com.craftbound.progression.ProgressionConfig;
+import com.mojang.logging.LogUtils;
+
+import org.slf4j.Logger;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.api.distmarker.Dist;
@@ -17,6 +20,8 @@ public class Craftbound
 {
     public static final String MODID = "craftbound";
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public Craftbound(IEventBus modEventBus, ModContainer modContainer, Dist dist)
     {
         CraftboundAttachments.ATTACHMENT_TYPES.register(modEventBus);
@@ -27,7 +32,22 @@ public class Craftbound
             CraftboundRecipeRuntime.register(modEventBus);
             // Resolving CraftboundPonderPlugin loads Ponder's classes, so it stays behind the check.
             if (ModList.get().isLoaded("ponder"))
-                CraftboundPonderPlugin.register();
+                registerPonderPlugin();
+        }
+    }
+
+    // Create is optional and its version range has no upper bound, so a Create that moved its
+    // Ponder API turns the first touch of these classes into a link error. The book itself does not
+    // need Ponder, so the integration is dropped and the mod loads on.
+    private static void registerPonderPlugin()
+    {
+        try
+        {
+            CraftboundPonderPlugin.register();
+        }
+        catch (LinkageError e)
+        {
+            LOGGER.error("Ponder integration disabled: this version of Create no longer fits it", e);
         }
     }
 }

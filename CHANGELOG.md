@@ -2,6 +2,10 @@
 
 ## 0.1.2
 
+- Updating Create no longer risks crashing the game. If a new version no longer fits
+  Craftbound's Ponder integration, that integration turns itself off and the book keeps
+  working.
+
 - Craftbound can now be used on servers that do not have it installed. Such servers no
   longer refuse the connection, and progression keeps working: the client tracks the
   items you obtain itself and remembers them per server.

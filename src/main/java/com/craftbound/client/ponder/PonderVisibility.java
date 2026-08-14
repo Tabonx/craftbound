@@ -2,8 +2,12 @@ package com.craftbound.client.ponder;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import com.craftbound.client.progression.Progression;
+import com.mojang.logging.LogUtils;
+
+import org.slf4j.Logger;
 
 import net.createmod.catnip.registry.RegisteredObjectsHelper;
 import net.createmod.ponder.foundation.PonderIndex;
@@ -19,17 +23,27 @@ import net.minecraft.world.level.ItemLike;
 // index and the category screens cannot drift apart as Ponder's own screens change.
 public final class PonderVisibility
 {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    // Create is an optional dependency on a version range with no upper bound, so its Ponder API
+    // can move under us. Every call into it is answered "show everything" once that happens: the
+    // filtering is cosmetic, and losing it beats taking the game down with a link error.
+    private static boolean available = true;
+
     public static boolean isHidden(ItemLike itemLike)
     {
-        return !Progression.isDiscovered(BuiltInRegistries.ITEM.getKey(itemLike.asItem()));
+        return guarded(() -> !Progression.isDiscovered(BuiltInRegistries.ITEM.getKey(itemLike.asItem())), false);
     }
 
     // Ponder keys entries by item *or* block id, so they are resolved the way Ponder resolves them
     // before being judged; a key naming nothing is left in, for Ponder to draw as a missing entry.
     public static boolean isHidden(ResourceLocation key)
     {
-        ItemLike resolved = RegisteredObjectsHelper.getItemOrBlock(key);
-        return resolved != null && isHidden(resolved);
+        return guarded(() ->
+        {
+            ItemLike resolved = RegisteredObjectsHelper.getItemOrBlock(key);
+            return resolved != null && isHidden(resolved);
+        }, false);
     }
 
     public static Set<ResourceLocation> visible(Set<ResourceLocation> keys)
@@ -43,7 +57,26 @@ public final class PonderVisibility
     // into. Its main item counts as an entry, since the category screen still shows that one.
     public static boolean hasVisibleItems(PonderTag tag)
     {
-        return PonderIndex.getTagAccess().getItems(tag).stream().anyMatch(key -> !isHidden(key));
+        return guarded(
+                () -> PonderIndex.getTagAccess().getItems(tag).stream().anyMatch(key -> !isHidden(key)),
+                true);
+    }
+
+    private static boolean guarded(BooleanSupplier call, boolean whenUnavailable)
+    {
+        if (!available)
+            return whenUnavailable;
+
+        try
+        {
+            return call.getAsBoolean();
+        }
+        catch (LinkageError e)
+        {
+            available = false;
+            LOGGER.error("Ponder integration disabled: this version of Create no longer fits it", e);
+            return whenUnavailable;
+        }
     }
 
     private PonderVisibility() {}
