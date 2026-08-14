@@ -1,0 +1,17 @@
+name: Suggest something
+description: An idea for a new feature or a change to how something works.
+labels: ['suggestion']
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+      description: Describe the idea in your own words.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+      description: What is awkward or missing today that this would fix?

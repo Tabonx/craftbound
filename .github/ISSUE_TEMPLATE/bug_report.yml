@@ -1,0 +1,53 @@
+name: Report a bug
+description: Something in the game is broken or not working the way you expect.
+labels: ['bug']
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem in your own words. What did you expect instead?
+      placeholder: The recipe book opened empty when I clicked the book button in my inventory.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      description: Step by step, what you did before the problem showed up.
+      placeholder: |
+        1. Start a new world
+        2. Open the inventory
+        3. Click the recipe book button
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: The Craftbound version, and the Minecraft, NeoForge and Create versions you play on.
+      placeholder: Craftbound 0.1.0, Minecraft 1.21.1, NeoForge 21.1.244, Create 6.0.10
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods
+      description: Which other mods are installed? A modpack name is fine.
+      placeholder: Just Create and its dependencies.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log or crash report
+      description: |
+        If the game crashed, attach the newest file from `crash-reports`. Otherwise `logs/latest.log`.
+
+        Both live in your game folder. Modded launchers have an "Open folder" on the instance;
+        the official launcher uses:
+        - Windows: `%appdata%\.minecraft`
+        - macOS: `~/Library/Application Support/minecraft`
+        - Linux: `~/.minecraft`
