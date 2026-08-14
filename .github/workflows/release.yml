@@ -1,14 +1,14 @@
-name: Build
+name: Release
 
 on:
   push:
-    branches: ['main']
-  pull_request:
-  workflow_dispatch:
+    tags: ['v*']
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,5 +25,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build with Gradle
+      - name: Build
         run: ./gradlew build
+
+      - name: Publish
+        run: ./gradlew publishMods
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

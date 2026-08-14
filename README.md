@@ -5,8 +5,10 @@ recipe book: a restyled UI, extra options, and a custom recipe-unlock/progressio
 system that surfaces Create's machine recipes.
 
 - **Minecraft:** 1.21.1
-- **Mod loader:** NeoForge 21.1.176
+- **Mod loader:** NeoForge 21.1.244
 - **Requires:** Create 6.x
+- **Incompatible with:** JEI — Craftbound embeds the recipe infrastructure it needs
+  and cannot run alongside the full mod.
 
 ## Development
 
@@ -29,9 +31,20 @@ Useful Gradle commands:
 - `./gradlew --refresh-dependencies` — refresh the local dependency cache.
 - `./gradlew clean` — clear build outputs (does not touch your source).
 
+## Releasing
+
+Push a `v`-prefixed tag; the release workflow builds the jar and publishes a GitHub
+release from it. The tag is the version of record — `mod_version` in
+`gradle.properties` is only used by local and untagged builds.
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
 ## License
 
-Craftbound is licensed under the [MIT License](LICENSE).
+Craftbound is licensed under the [MIT License](LICENSE). It includes source code from
+Just Enough Items, also MIT licensed — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Resources
 
