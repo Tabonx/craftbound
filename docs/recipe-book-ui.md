@@ -129,14 +129,15 @@ built on JEI's plugin system, not on Create. Two things carry the dependency, an
 so they simply do not run when Create is absent.
 
 - `client/ponder/` holds the Ponder integration, with its mixins in `client/ponder/mixin/` under a
-  separate `craftbound.ponder.mixins.json` marked `"required": false`, so Mixin skips them when the
-  Ponder classes are missing. `CraftboundPonderPlugin.register()` sits behind a
+  separate `craftbound.ponder.mixins.json` marked `"required": false` with `defaultRequire` 0, so
+  Mixin skips them when the Ponder classes are missing and an injector that no longer matches a
+  changed Create is a warning rather than a crash. `CraftboundPonderPlugin.register()` sits behind a
   `ModList.isLoaded("ponder")` check in `Craftbound`, because resolving the class loads Ponder's own.
 - `client/jei/RecipeRequirements` guards the heat requirement described above.
 
-Create is `compileOnly` and reaches the dev client through that run's own `dependencies` block, so
-the `clientNoCreate` run starts a client without Create, Ponder, Flywheel or Registrate to exercise
-these paths.
+Create is `compileOnly` for compiling and `localRuntime` for the dev client to load, so it never
+reaches the published jar. `./gradlew runClient -PnoCreate` drops Create, Ponder, Flywheel and
+Registrate from that runtime classpath and starts a client without them, to exercise these paths.
 
 Anything else a mod hides from its own layout stays invisible to progression, which errs towards
 showing a recipe too early rather than stranding one.

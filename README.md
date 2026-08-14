@@ -19,7 +19,7 @@ Prerequisites: JDK 21 and IntelliJ IDEA.
 1. Open the project folder in IntelliJ (it imports the Gradle build automatically).
    Set the Project SDK to Java 21 if prompted.
 2. Run the **client** run configuration to launch a dev Minecraft instance with
-   Craftbound and Create loaded. **clientNoCreate** is the same client without
+   Craftbound and Create loaded. Adding `-PnoCreate` starts the same client without
    Create, Ponder, Flywheel and Registrate, for testing that the mod still works
    when its optional dependency is absent.
 3. Build a distributable jar with:
@@ -32,7 +32,7 @@ Prerequisites: JDK 21 and IntelliJ IDEA.
 
 Useful Gradle commands:
 
-- `./gradlew runClient` / `./gradlew runClientNoCreate` launch the two dev clients.
+- `./gradlew runClient` launches the dev client; add `-PnoCreate` to launch it without Create.
 - `./gradlew --refresh-dependencies` refreshes the local dependency cache.
 - `./gradlew clean` clears build outputs (does not touch your source).
 

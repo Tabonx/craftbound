@@ -50,28 +50,6 @@ runs {
 
         // Larger default dev window.
         arguments.addAll '--width', '1600', '--height', '900'
-
-        // Create and friends live here rather than on the project, so `clientNoCreate` can leave
-        // them out. Create's own POM lists the whole dev pack it tests against (JEI, FTB,
-        // JourneyMap, Curios, ...), none of which resolves from these repositories, so the ':slim'
-        // artifact is taken without its transitives.
-        dependencies {
-            runtime(project.dependencies.create("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
-                transitive = false
-            })
-            runtime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-            runtime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
-            runtime "com.tterrag.registrate:Registrate:${registrate_version}"
-        }
-    }
-
-    // The same client without Create, Ponder, Flywheel or Registrate, for testing that Craftbound
-    // still works when its optional dependency is absent.
-    clientNoCreate {
-        configure 'client'
-
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        arguments.addAll '--width', '1600', '--height', '900'
     }
 
     server {
@@ -119,6 +97,18 @@ dependencies {
     compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
     compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
     compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
+
+    // The same mods for the dev client to actually load. They have to sit on the project's runtime
+    // classpath: NeoGradle offers only that to FML as mod files, so a jar added to a run's own
+    // dependencies is a library on the classpath and never a loaded mod. localRuntime keeps them
+    // out of the published metadata, so the shipped jar still only suggests Create.
+    // Run with -PnoCreate to leave them out and exercise the mod without its optional dependency.
+    if (!project.hasProperty('noCreate')) {
+        localRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+        localRuntime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+        localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+        localRuntime "com.tterrag.registrate:Registrate:${registrate_version}"
+    }
 
 
     // Unit testing
