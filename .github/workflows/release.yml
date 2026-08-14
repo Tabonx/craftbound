@@ -35,3 +35,5 @@ jobs:
         run: ./gradlew publishMods
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_modrinthToken: ${{ secrets.MODRINTH_TOKEN }}
+          ORG_GRADLE_PROJECT_curseforgeApikey: ${{ secrets.CURSEFORGE_TOKEN }}
