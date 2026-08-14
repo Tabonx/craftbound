@@ -22,3 +22,10 @@ Use fewer comments. Only add a comment when the code would be genuinely unclear 
 - Organize code by feature/domain, not by technical layer.
 - Keep client-only code (rendering, client Mixins) under a `client` package, separate from common code that also runs on the dedicated server.
 
+## Changelog
+- Record player-facing changes in `CHANGELOG.md` under an `## <version>` heading as part of the change itself, not at release time.
+- Newest version first. Add the entry to the topmost unreleased version, or start a new `## <version>` section if the top one is already released.
+- Write for players, not for the diff: what changed in the game, no file or class names.
+- Releases publish the section matching the tag verbatim, so nothing outside it (including the `# Changelog` heading) reaches the release notes.
+- Purely internal work (build, CI, refactors, tests) does not belong there.
+

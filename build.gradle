@@ -156,16 +156,25 @@ publishing {
     }
 }
 
+// The release notes are the CHANGELOG section headed by the version being released, so a release
+// carries its own entry rather than the whole file.
+def changelogFor(String released)
+{
+    def notes = rootProject.file('CHANGELOG.md')
+    if (!notes.exists())
+        return "${mod_name} ${released}"
+
+    def section = notes.text.split(/(?m)^## /).find { it.readLines()[0].trim() == released }
+    section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
+}
+
 publishMods {
     file = tasks.named('jar', Jar).flatMap { it.archiveFile }
     version = modVersion
     displayName = "${mod_name} ${modVersion} for NeoForge ${minecraft_version}"
     type = ReleaseType.valueOf(publish_type.toUpperCase(Locale.ROOT))
     modLoaders.add('neoforge')
-    changelog = providers.provider {
-        def notes = rootProject.file('CHANGELOG.md')
-        notes.exists() ? notes.text : "${mod_name} ${modVersion}"
-    }
+    changelog = providers.provider { changelogFor(modVersion) }
 
     github {
         repository = github_repository
