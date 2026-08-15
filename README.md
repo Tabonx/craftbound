@@ -1,9 +1,10 @@
 # Craftbound
 
-A Minecraft mod that reworks the recipe book: a restyled UI, extra options, and a
-custom recipe-unlock/progression system. Recipes come from every installed mod
-through an embedded JEI runtime, [Create](https://modrinth.com/mod/create)'s machine
-categories included.
+Recipe book replacement to keep items hidden until you find the ingredients they need.
+
+Craftbound replaces Minecraft's recipe book with one that adds recipes for all the mods
+you have installed, through an embedded JEI runtime, and turns them into a way to
+progressively discover the game as you play.
 
 - **Minecraft:** 1.21.1
 - **Mod loader:** NeoForge 21.1.244
