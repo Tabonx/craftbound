@@ -204,7 +204,7 @@ publishMods {
                 start = publish_minecraft_version_start
                 end = minecraft_version
             }
-            requires('create')
+            optional('create')
             incompatible('jei')
         }
     }
@@ -218,7 +218,7 @@ publishMods {
                 end = minecraft_version
             }
             javaVersions.add(JavaVersion.VERSION_21)
-            requires('create')
+            optional('create')
             incompatible('jei')
         }
     }
