@@ -36,16 +36,6 @@ Useful Gradle commands:
 - `./gradlew --refresh-dependencies` refreshes the local dependency cache.
 - `./gradlew clean` clears build outputs (does not touch your source).
 
-## Releasing
-
-Push a `v`-prefixed tag; the release workflow builds the jar and publishes a GitHub
-release from it. The tag is the version of record. `mod_version` in
-`gradle.properties` is only used by local and untagged builds.
-
-```sh
-git tag v0.1.0 && git push origin v0.1.0
-```
-
 ## License
 
 Craftbound is licensed under the [MIT License](LICENSE). It includes source code from
