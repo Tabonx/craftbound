@@ -33,6 +33,12 @@ public final class ProgressionConfig
             .defineList("exemptCategories", List.of("minecraft:crafting"),
                     () -> "", element -> element instanceof String);
 
+    private static final ModConfigSpec.BooleanValue GATE_HINTS = BUILDER
+            .comment("Mark the items that would unlock more recipes only once the player has bound a",
+                    "Bookbinder's Lens into their book. Never applies on a server without Craftbound,",
+                    "where the lens cannot be obtained and the marks always show.")
+            .define("gateHintsBehindLens", true);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     // Falls back to the defaults until the config is loaded, so the book never has to special-case
@@ -46,6 +52,11 @@ public final class ProgressionConfig
             return DEFAULTS;
         return new ProgressionRules(ENABLED.get(), RULE.get(), GATE_CATEGORIES.get(),
                 Set.copyOf(EXEMPT_CATEGORIES.get()));
+    }
+
+    public static boolean gateHintsBehindLens()
+    {
+        return !SPEC.isLoaded() || GATE_HINTS.get();
     }
 
     private ProgressionConfig() {}

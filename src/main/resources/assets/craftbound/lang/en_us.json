@@ -9,5 +9,8 @@
   "craftbound.recipebook.bookmarks": "Bookmarks",
   "craftbound.recipebook.bookmark": "Bookmark",
   "craftbound.recipebook.bookmark.remove": "Remove Bookmark",
-  "craftbound.ponder.unknown": "???"
+  "craftbound.ponder.unknown": "???",
+  "item.craftbound.bookbinders_lens": "Bookbinder's Lens",
+  "craftbound.upgrade.toast.title": "Recipe Book Upgraded",
+  "craftbound.upgrade.toast.description": "What is that?"
 }

@@ -8,6 +8,7 @@ import java.util.Set;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeIndexSnapshot;
+import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.progression.ProgressionConfig;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
@@ -114,7 +115,8 @@ public final class Progression
     }
 
     // Whether obtaining this item would reveal something the book is still hiding, which is what the grid
-    // marks. Fluids and other ingredient types can never be obtained, so they are never marked.
+    // marks. Fluids and other ingredient types can never be obtained, so they are never marked. The
+    // marks themselves are an upgrade, so they stay hidden until the book carries the lens.
     public static boolean unlocksMore(BookIngredient ingredient)
     {
         return ingredient.item()
@@ -124,7 +126,7 @@ public final class Progression
 
     public static boolean unlocksMore(ResourceLocation itemId)
     {
-        return unlockingItems.contains(itemId);
+        return ClientBookUpgrade.hintsUnlocked() && unlockingItems.contains(itemId);
     }
 
     // Whether an item may be named outside the book: Ponder's listings ask this. Fails open while

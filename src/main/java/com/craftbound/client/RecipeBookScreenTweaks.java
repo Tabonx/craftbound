@@ -10,7 +10,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -51,22 +50,11 @@ public final class RecipeBookScreenTweaks
         book.setPlacer(new RecipePlacer(menu));
         event.addListener(book);
 
-        ImageButton button = new ImageButton(
-                vanillaButton.getX(), buttonY, 20, 18,
-                RecipeBookComponent.RECIPE_BUTTON_SPRITES,
+        RecipeBookToggleButton button = new RecipeBookToggleButton(vanillaButton.getX(), buttonY,
                 b -> {
                     RecipeBookState.toggle();
                     applyLayout(screen, book, b, buttonOffsetX, buttonY);
-                })
-        {
-            // A mouse click otherwise leaves the button focused, so it stays highlighted until
-            // focus moves elsewhere. Refuse focus so only a live hover highlights the toggle.
-            @Override
-            public void setFocused(boolean focused)
-            {
-                super.setFocused(false);
-            }
-        };
+                });
         event.addListener(button);
 
         applyLayout(screen, book, button, buttonOffsetX, buttonY);

@@ -25,6 +25,8 @@ public class Craftbound
     public Craftbound(IEventBus modEventBus, ModContainer modContainer, Dist dist)
     {
         CraftboundAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        CraftboundItems.ITEMS.register(modEventBus);
+        modEventBus.addListener(CraftboundItems::addToCreativeTabs);
         modContainer.registerConfig(ModConfig.Type.SERVER, ProgressionConfig.SPEC);
 
         if (dist.isClient())
