@@ -1,4 +1,5 @@
 import me.modmuss50.mpp.ReleaseType
+import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
 
 plugins {
     id 'java-library'
@@ -6,16 +7,29 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.gradle.userdev' version '7.0.170'
-    id 'me.modmuss50.mod-publish-plugin' version '0.7.3'
+    id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
 }
 
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-// Releases take their version from the pushed tag; every other build falls back to mod_version.
+// Releases take their version from the pushed tag. Every other build takes the version the
+// changelog is currently being written for, so a dry run rehearses the release that is coming
+// rather than whatever mod_version was last set to.
 def releaseTag = System.getenv('GITHUB_REF_NAME')
-ext.modVersion = releaseTag?.matches(/v\d.*/) ? releaseTag.substring(1) : mod_version
+ext.modVersion = releaseTag?.matches(/v\d.*/) ? releaseTag.substring(1) : unreleasedVersion()
+
+// The topmost section heading in the changelog, which is the version being worked on.
+def unreleasedVersion()
+{
+    def notes = rootProject.file('CHANGELOG.md')
+    if (!notes.exists())
+        return mod_version
+
+    def heading = notes.readLines().find { it.startsWith('## ') }
+    return heading ? heading.substring(3).trim() : mod_version
+}
 
 version = modVersion
 group = mod_group_id
@@ -182,6 +196,11 @@ def changelogFor(String released)
 }
 
 publishMods {
+    // A rehearsal that builds and validates every payload without uploading, so a broken publish
+    // shows up on a normal push instead of after a tag has been cut.
+    dryRun = providers.gradleProperty('publishDryRun').map { true }.orElse(false)
+    // Uploads fail transiently often enough that one bad response should not cost a re-tag.
+    maxRetries = 3
     file = tasks.named('jar', Jar).flatMap { it.archiveFile }
     version = modVersion
     displayName = "${mod_name} ${modVersion} for NeoForge ${minecraft_version}"
@@ -204,6 +223,7 @@ publishMods {
                 start = publish_minecraft_version_start
                 end = minecraft_version
             }
+            environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
             optional('create')
             incompatible('jei')
         }
@@ -218,8 +238,8 @@ publishMods {
                 end = minecraft_version
             }
             javaVersions.add(JavaVersion.VERSION_21)
-            clientRequired = true
-            serverRequired = false
+            client = true
+            server = false
             optional('create')
             incompatible('jei')
         }

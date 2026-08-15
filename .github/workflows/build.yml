@@ -32,3 +32,9 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
+
+      # A publish rehearsal: builds every platform's payload and validates it without uploading.
+      # Skipped on pull requests, where a fork cannot change publishing anyway.
+      - name: Publish dry run
+        if: github.event_name != 'pull_request'
+        run: ./gradlew publishMods -PpublishDryRun
