@@ -19,6 +19,7 @@ import com.craftbound.client.progression.Progression;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -37,6 +38,7 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
@@ -98,6 +100,11 @@ public final class RecipeBookWidget extends AbstractWidget
                     .append(Component.translatable("craftbound.recipebook.place.all")
                             .withStyle(ChatFormatting.GRAY));
 
+    // The JEI tooltip lines the book drops: the one naming the mod a recipe came from, and the
+    // "Accepts any:" tag hint, whose tag name follows on the line after it.
+    private static final String RECIPE_BY_KEY = "jei.tooltip.recipe.by";
+    private static final String RECIPE_TAG_KEY = "jei.tooltip.recipe.tag";
+
     private static ResourceLocation bookmarkSprite(String name)
     {
         return ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/" + name);
@@ -148,6 +155,8 @@ public final class RecipeBookWidget extends AbstractWidget
     private int page = 0;
     private boolean loaded = false;
     private BookIngredient hovered = null;
+    // The hovered recipe slot's tooltip, drawn with the rest of them once the screen is done.
+    private List<Component> slotTooltip = List.of();
 
     // Highlight animations in flight, by unlock key, counting down in ticks.
     private final Map<String, Float> highlights = new HashMap<>();
@@ -599,6 +608,7 @@ public final class RecipeBookWidget extends AbstractWidget
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         filterHovered = false;
         bookmarkHovered = false;
+        slotTooltip = List.of();
         if (inRecipeMode())
         {
             categoryRail.render(graphics, mouseX, mouseY);
@@ -753,9 +763,46 @@ public final class RecipeBookWidget extends AbstractWidget
         pose.translate(originX, originY, 0);
         pose.scale(scale, scale, 1f);
         pose.translate(-bounds.getX(), -bounds.getY(), 0);
+        RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
+
         layout.drawRecipe(graphics, (int) localX, (int) localY);
-        layout.drawOverlays(graphics, (int) localX, (int) localY);
+        // JEI's own overlays draw the slot tooltip at once, inside this scaled pose and with the mod
+        // name stamped on it. Its highlight is all we want here; the tooltip is taken apart below
+        // and drawn later, unscaled, like every other tooltip in the book.
+        if (slot == null)
+            layout.drawOverlays(graphics, (int) localX, (int) localY);
+        else
+        {
+            pose.pushPose();
+            pose.translate(slot.offset().x(), slot.offset().y(), 0);
+            slot.slot().drawHoverOverlays(graphics);
+            pose.popPose();
+        }
         pose.popPose();
+
+        slotTooltip = slot == null ? List.of() : slotTooltip(slot.slot());
+    }
+
+    // JEI's slot tooltip, less the lines that talk about mods and tags rather than about the thing
+    // under the cursor. The mod name itself is never in here, since JEI only adds that as it draws.
+    private static List<Component> slotTooltip(IRecipeSlotDrawable slot)
+    {
+        List<Component> lines = slot.getTooltip();
+        List<Component> kept = new ArrayList<>(lines.size());
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String key = translationKey(lines.get(i));
+            if (RECIPE_TAG_KEY.equals(key))
+                i++;
+            else if (!RECIPE_BY_KEY.equals(key))
+                kept.add(lines.get(i));
+        }
+        return kept;
+    }
+
+    private static String translationKey(Component line)
+    {
+        return line.getContents() instanceof TranslatableContents contents ? contents.getKey() : "";
     }
 
     // Drawn after the whole screen (slots and their placeholder sprites) so the tooltip layers
@@ -789,7 +836,10 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
             graphics.renderComponentTooltip(minecraft.font, hovered.tooltip(flag), mouseX, mouseY);
+            return;
         }
+        if (!slotTooltip.isEmpty())
+            graphics.renderComponentTooltip(minecraft.font, slotTooltip, mouseX, mouseY);
     }
 
     // Offered only for recipes the open menu can lay out, and greyed out while placing them would

@@ -5,11 +5,16 @@
 - The book no longer marks the items that would unlock more recipes until you upgrade it.
   Craft a Bookbinder's Lens (amethyst, copper and glass panes) and use it to bind it into
   your recipe book: the marks appear and the recipe book button shows the lens.
-  Right-clicking the recipe book button takes the lens back out if you want the hints gone
-  again. Dying drops the lens with the rest of your things, so you can fetch it back and bind it
+  Shift + right-clicking the recipe book button takes the lens back out if you want the
+  hints gone again. Dying drops the lens with the rest of your things, so you can fetch it back and bind it
   again, unless keepInventory is on. On a server without Craftbound the lens cannot be
   obtained, so the marks show from the start as before. Servers can turn the whole gate
   off in the config.
+
+- Tooltips in the book are quieter: they no longer name the mod an item or a recipe came
+  from, no longer list the tag a slot accepts, and shapeless recipes are no longer marked
+  in the corner. Tooltips inside a recipe are also drawn at full size instead of shrinking
+  with the recipe.
 
 - Updating Create no longer risks crashing the game. If a new version no longer fits
   Craftbound's Ponder integration, that integration turns itself off and the book keeps
