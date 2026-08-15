@@ -6,7 +6,8 @@
   "client": [
     "PonderUIMixin",
     "PonderTagScreenMixin",
-    "PonderTagIndexScreenMixin"
+    "PonderTagIndexScreenMixin",
+    "PonderTooltipHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 0

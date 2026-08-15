@@ -11,6 +11,10 @@
   obtained, so the marks show from the start as before. Servers can turn the whole gate
   off in the config.
 
+- Ponder can no longer be opened from a book entry you have never held: the hold-to-ponder
+  shortcut is simply absent on those. Items lying in chests, inventories and machines are
+  unaffected, so anything you can actually see in the world can still be pondered.
+
 - Tooltips in the book are quieter: they no longer name the mod an item or a recipe came
   from, no longer list the tag a slot accepts, and shapeless recipes are no longer marked
   in the corner. Tooltips inside a recipe are also drawn at full size instead of shrinking

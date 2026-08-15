@@ -139,6 +139,13 @@ public final class Progression
         return Unlocks.discovered(unlockedOutputs, obtained(), itemId);
     }
 
+    // Whether the player has ever held this item, which is a narrower question than isDiscovered:
+    // the book shows recipes for things the player has not made yet.
+    public static boolean isObtained(ResourceLocation itemId)
+    {
+        return obtained().contains(itemId);
+    }
+
     public static boolean isUnlocked(BookIngredient ingredient)
     {
         if (!rules.enabled())

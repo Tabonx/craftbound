@@ -15,6 +15,7 @@ import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.client.ponder.PonderGate;
 import com.craftbound.client.progression.Progression;
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -780,7 +781,8 @@ public final class RecipeBookWidget extends AbstractWidget
         }
         pose.popPose();
 
-        slotTooltip = slot == null ? List.of() : slotTooltip(slot.slot());
+        slotTooltip = slot == null ? List.of()
+                : PonderGate.whileBuildingBookTooltip(() -> slotTooltip(slot.slot()));
     }
 
     // JEI's slot tooltip, less the lines that talk about mods and tags rather than about the thing
@@ -835,7 +837,8 @@ public final class RecipeBookWidget extends AbstractWidget
         if (hovered != null)
         {
             TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
-            graphics.renderComponentTooltip(minecraft.font, hovered.tooltip(flag), mouseX, mouseY);
+            graphics.renderComponentTooltip(minecraft.font,
+                    PonderGate.whileBuildingBookTooltip(() -> hovered.tooltip(flag)), mouseX, mouseY);
             return;
         }
         if (!slotTooltip.isEmpty())
