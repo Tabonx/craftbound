@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Craftbound is now published on CurseForge as well as Modrinth.
+
 ## 0.1.2
 
 - The book no longer marks the items that would unlock more recipes until you upgrade it.
