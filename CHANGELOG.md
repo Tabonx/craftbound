@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Craftbound is now published on CurseForge as well as Modrinth. The 0.1.3 upload there
+  did not go through.
+
 ## 0.1.3
 
 - Craftbound is now published on CurseForge as well as Modrinth.

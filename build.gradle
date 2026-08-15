@@ -218,6 +218,8 @@ publishMods {
                 end = minecraft_version
             }
             javaVersions.add(JavaVersion.VERSION_21)
+            clientRequired = true
+            serverRequired = false
             optional('create')
             incompatible('jei')
         }
