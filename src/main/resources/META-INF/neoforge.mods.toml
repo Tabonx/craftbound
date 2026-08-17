@@ -18,6 +18,11 @@ config="${mod_id}.mixins.json"
 [[mixins]]
 config="${mod_id}.ponder.mixins.json"
 
+# Keeping JEI's own interface off screen is the one thing with no api behind it, so these reach into
+# JEI itself. Not required: a JEI that moved them should bring its interface back, not refuse to load.
+[[mixins]]
+config="${mod_id}.jei.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
@@ -41,9 +46,11 @@ config="${mod_id}.ponder.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
+# The book is built on JEI's plugin system: JEI is what knows every mod's recipes, so it must load
+# first and be present for the book to have anything to show.
 [[dependencies.${mod_id}]]
     modId="jei"
-    type="incompatible"
-    reason="Craftbound embeds the recipe infrastructure it needs and cannot run alongside the full JEI mod."
-    ordering="NONE"
+    type="required"
+    versionRange="${jei_version_range}"
+    ordering="AFTER"
     side="CLIENT"

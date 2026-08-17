@@ -3,15 +3,15 @@
 Recipe book replacement to keep items hidden until you find the ingredients they need.
 
 Craftbound replaces Minecraft's recipe book with one that adds recipes for all the mods
-you have installed, through an embedded JEI runtime, and turns them into a way to
-progressively discover the game as you play.
+you have installed, through JEI, and turns them into a way to progressively discover the
+game as you play.
 
 - **Minecraft:** 1.21.1
 - **Mod loader:** NeoForge 21.1.244
+- **Required:** JEI 19.21.0 or newer. It is what knows every mod's recipes, so the book
+  is built on it.
 - **Optional:** Create 6.x. Without it the book simply has no Create recipes to show,
   and the Ponder integration stays inactive.
-- **Incompatible with:** JEI. Craftbound embeds the recipe infrastructure it needs
-  and cannot run alongside the full mod.
 
 ## Development
 
@@ -39,8 +39,7 @@ Useful Gradle commands:
 
 ## License
 
-Craftbound is licensed under the [MIT License](LICENSE). It includes source code from
-Just Enough Items, also MIT licensed. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Craftbound is licensed under the [MIT License](LICENSE).
 
 ## Resources
 

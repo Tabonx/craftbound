@@ -36,6 +36,7 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
+    maven { url = 'https://maven.blamejared.com' }         // JEI
     maven { url = 'https://maven.createmod.net' }         // Create, Ponder, Flywheel
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
 }
@@ -80,16 +81,8 @@ runs {
     }
 }
 
-def jeiModules = ['CommonApi', 'Core', 'Library', 'Gui', 'Common', 'NeoForgeApi', 'NeoForge']
-
 sourceSets {
     main {
-        java {
-            jeiModules.each { srcDir "vendor/jei/${it}/src/main/java" }
-            exclude 'mezz/jei/neoforge/JustEnoughItems.java'
-            exclude 'mezz/jei/neoforge/JustEnoughItemsClient.java'
-            exclude 'mezz/jei/neoforge/JustEnoughItemsClientSafeRunner.java'
-        }
         resources {
             srcDir 'src/generated/resources'
         }
@@ -102,6 +95,14 @@ configurations {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
+
+    // JEI, required at runtime. Only the api artifacts are on the compile classpath, so reaching
+    // for a JEI internal is a compile error rather than something that breaks on the next JEI or
+    // Minecraft version. The one internal Craftbound still needs (the shapeless icon it hides) is
+    // named as a string in the mixin instead.
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Create and its dependencies (NeoForge 1.21.1).
     // See https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1
@@ -125,7 +126,9 @@ dependencies {
     }
 
 
-    // Unit testing
+    // Unit testing. JEI's api is on the test compile classpath so tests can reach the pure logic in
+    // classes that mention a JEI type, without those tests needing a JEI runtime.
+    testCompileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     testImplementation platform("org.junit:junit-bom:5.11.3")
     testImplementation "org.junit.jupiter:junit-jupiter"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
@@ -144,7 +147,7 @@ tasks.withType(ProcessResources).configureEach {
             mod_version            : modVersion,
             mod_authors            : mod_authors,
             mod_description        : mod_description,
-            jei_source_version     : jei_source_version
+            jei_version_range      : jei_version_range
     ]
     inputs.properties replaceProperties
 
@@ -154,19 +157,6 @@ tasks.withType(ProcessResources).configureEach {
 
     filesMatching(['pack.mcmeta']) {
         expand replaceProperties
-    }
-
-    // JEI's own pack.mcmeta and mod icon would otherwise land on ours at the jar root.
-    from('vendor/jei/Common/src/main/resources') {
-        exclude 'pack.mcmeta', 'jei-icon.png'
-    }
-
-    from('vendor/jei/LICENSE.txt') {
-        rename { 'LICENSE-JEI.txt' }
-    }
-
-    from('vendor/jei/NeoForge/src/main/resources/META-INF/services') {
-        into 'META-INF/services'
     }
 }
 
@@ -225,7 +215,7 @@ publishMods {
             }
             environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
             optional('create')
-            incompatible('jei')
+            requires('jei')
         }
     }
 
@@ -241,7 +231,7 @@ publishMods {
             client = true
             server = false
             optional('create')
-            incompatible('jei')
+            requires('jei')
         }
     }
 }

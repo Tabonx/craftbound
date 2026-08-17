@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
+import com.craftbound.client.jei.BookRecipeRender;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.ponder.PonderGate;
@@ -759,30 +760,33 @@ public final class RecipeBookWidget extends AbstractWidget
         double localX = (mouseX - originX) / scale + bounds.getX();
         double localY = (mouseY - originY) / scale + bounds.getY();
 
-        PoseStack pose = graphics.pose();
-        pose.pushPose();
-        pose.translate(originX, originY, 0);
-        pose.scale(scale, scale, 1f);
-        pose.translate(-bounds.getX(), -bounds.getY(), 0);
-        RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
-
-        layout.drawRecipe(graphics, (int) localX, (int) localY);
-        // JEI's own overlays draw the slot tooltip at once, inside this scaled pose and with the mod
-        // name stamped on it. Its highlight is all we want here; the tooltip is taken apart below
-        // and drawn later, unscaled, like every other tooltip in the book.
-        if (slot == null)
-            layout.drawOverlays(graphics, (int) localX, (int) localY);
-        else
+        BookRecipeRender.whileDrawing(() ->
         {
+            PoseStack pose = graphics.pose();
             pose.pushPose();
-            pose.translate(slot.offset().x(), slot.offset().y(), 0);
-            slot.slot().drawHoverOverlays(graphics);
-            pose.popPose();
-        }
-        pose.popPose();
+            pose.translate(originX, originY, 0);
+            pose.scale(scale, scale, 1f);
+            pose.translate(-bounds.getX(), -bounds.getY(), 0);
+            RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
 
-        slotTooltip = slot == null ? List.of()
-                : PonderGate.whileBuildingBookTooltip(() -> slotTooltip(slot.slot()));
+            layout.drawRecipe(graphics, (int) localX, (int) localY);
+            // JEI's own overlays draw the slot tooltip at once, inside this scaled pose and with the
+            // mod name stamped on it. Its highlight is all we want here; the tooltip is taken apart
+            // below and drawn later, unscaled, like every other tooltip in the book.
+            if (slot == null)
+                layout.drawOverlays(graphics, (int) localX, (int) localY);
+            else
+            {
+                pose.pushPose();
+                pose.translate(slot.offset().x(), slot.offset().y(), 0);
+                slot.slot().drawHoverOverlays(graphics);
+                pose.popPose();
+            }
+            pose.popPose();
+
+            slotTooltip = slot == null ? List.of()
+                    : PonderGate.whileBuildingBookTooltip(() -> slotTooltip(slot.slot()));
+        });
     }
 
     // JEI's slot tooltip, less the lines that talk about mods and tags rather than about the thing
