@@ -74,12 +74,23 @@ final class RecipeIndexBuilder
                 return;
 
             Map<String, ITypedIngredient<?>> outputs = collector.outputs();
-            outputs.forEach(representatives::putIfAbsent);
+            outputs.forEach((key, output) ->
+                    representatives.putIfAbsent(key, normalized(manager, output)));
 
             List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
             inputs.addAll(RecipeRequirements.extraSlots(recipe));
             out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet()));
         });
+    }
+
+    // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot
+    // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
+    // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
+    // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
+    private static <V> ITypedIngredient<V> normalized(IIngredientManager manager,
+            ITypedIngredient<V> ingredient)
+    {
+        return manager.normalizeTypedIngredient(ingredient);
     }
 
     // A recipe whose category cannot lay it out is left out of the index entirely; the book treats
