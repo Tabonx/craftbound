@@ -42,15 +42,20 @@ base {
     archivesName = "${mod_id}-${minecraft_version}"
 }
 
-// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Each Minecraft version targets the Java that Mojang ships with it, which moved from 21 to 25.
+// Gradle provisions the toolchain itself, so no local JDK has to match.
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
 
 neoForge {
     version = neo_version
 
-    parchment {
-        minecraftVersion = parchment_minecraft_version
-        mappingsVersion = parchment_mappings_version
+    // Parchment lags new Minecraft versions and may never cover some of them. A version without it
+    // builds against the plain official names.
+    if (project.hasProperty('parchment_mappings_version')) {
+        parchment {
+            minecraftVersion = parchment_minecraft_version
+            mappingsVersion = parchment_mappings_version
+        }
     }
 
     accessTransformers.from rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -115,6 +120,13 @@ sourceSets {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+}
+
+// A version that is not the active one has its sources preprocessed into the build directory, and
+// ModDevGradle reads that same directory while collecting the mod's folders. Gradle 9 wants the
+// ordering between the two spelled out rather than inferred.
+tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
+    dependsOn tasks.matching { it.name == 'stonecutterGenerate' }
 }
 
 // Create has no release above 1.21.1. Versions it does not cover build without it, the same way a
@@ -271,7 +283,7 @@ publishMods {
             projectId = curseforge_id
             accessToken = providers.gradleProperty('curseforgeApikey')
             minecraftVersions.addAll publishMinecraftVersions
-            javaVersions.add(JavaVersion.VERSION_21)
+            javaVersions.add(JavaVersion.toVersion(java_version))
             client = true
             server = false
             if (hasCreate)
