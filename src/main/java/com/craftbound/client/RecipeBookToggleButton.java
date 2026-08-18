@@ -5,7 +5,12 @@ import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.upgrade.UnbindLensPayload;
 
 import net.minecraft.client.Minecraft;
+import java.util.function.BooleanSupplier;
+
 import net.minecraft.client.gui.GuiGraphics;
+//? if >=1.21.5 {
+/*import net.minecraft.client.input.MouseButtonEvent;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.Screen;
@@ -33,11 +38,36 @@ public final class RecipeBookToggleButton extends ImageButton
         super(x, y, WIDTH, HEIGHT, RecipeBookComponent.RECIPE_BUTTON_SPRITES, onPress, CommonComponents.EMPTY);
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    public void extractContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
+        drawUpgradeHint(graphics);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
+    {
+        return unbindOr(event.x(), event.y(), event.button(), () -> super.mouseClicked(event, doubleClick));
+    }
+    *///?} else {
     @Override
     public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         super.renderWidget(graphics, mouseX, mouseY, partialTick);
+        drawUpgradeHint(graphics);
+    }
 
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    {
+        return unbindOr(mouseX, mouseY, button, () -> super.mouseClicked(mouseX, mouseY, button));
+    }
+    //?}
+
+    private void drawUpgradeHint(GuiGraphics graphics)
+    {
         if (ClientBookUpgrade.hintsActive())
             Canvas.sprite(graphics, UPGRADE_OVERLAY, getX(), getY(), WIDTH, HEIGHT);
     }
@@ -45,14 +75,13 @@ public final class RecipeBookToggleButton extends ImageButton
     // Shift + right-click takes the lens back, which only the server can do; the book is only ever
     // bound on a server that has Craftbound, so the payload always has a channel to travel on. The
     // modifier is there because losing the upgrade to a stray click would be a poor surprise.
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    private boolean unbindOr(double mouseX, double mouseY, int button, BooleanSupplier fallback)
     {
-        if (button != 1 || !Screen.hasShiftDown() || !visible || !isMouseOver(mouseX, mouseY)
+        if (button != 1 || !Input.shiftDown() || !visible || !isMouseOver(mouseX, mouseY)
                 || !ClientBookUpgrade.bound())
-            return super.mouseClicked(mouseX, mouseY, button);
+            return fallback.getAsBoolean();
 
-        PacketDistributor.sendToServer(new UnbindLensPayload());
+        Net.toServer(new UnbindLensPayload());
         Minecraft.getInstance().getSoundManager()
                 .play(SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 1.0F));
         return true;

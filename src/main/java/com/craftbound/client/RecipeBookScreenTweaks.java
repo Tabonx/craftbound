@@ -74,7 +74,7 @@ public final class RecipeBookScreenTweaks
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event)
     {
-        if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)
+        if (Screens.current() instanceof AbstractContainerScreen<?> screen)
             book(screen).ifPresent(RecipeBookWidget::tick);
     }
 

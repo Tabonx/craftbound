@@ -52,7 +52,11 @@ public final class BookUpgradeEvents
     private static DeathOutcome outcomeFor(ServerPlayer player)
     {
         return BookUpgrade.onDeath(player.getData(CraftboundAttachments.BOOK_UPGRADED),
+                //? if >=1.21.5 {
+                /*player.level().getGameRules().get(GameRules.KEEP_INVENTORY));
+                *///?} else {
                 player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY));
+                //?}
     }
 
     private BookUpgradeEvents() {}

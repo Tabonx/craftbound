@@ -2,6 +2,7 @@ package com.craftbound.client;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 //? if >=1.21.5 {
@@ -19,6 +20,28 @@ public final class Canvas
         /*graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height);
         *///?} else {
         graphics.blitSprite(sprite, x, y, width, height);
+        //?}
+    }
+
+    // A region of a texture file, as opposed to a stitched gui sprite.
+    public static void texture(GuiGraphics graphics, ResourceLocation texture, int x, int y, int width, int height,
+            float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight)
+    {
+        //? if >=1.21.5 {
+        /*graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height,
+                regionWidth, regionHeight, textureWidth, textureHeight);
+        *///?} else {
+        graphics.blit(texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
+        //?}
+    }
+
+    // Draws a child widget. Newer versions have widgets extract render state rather than draw.
+    public static void widget(Renderable child, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        //? if >=1.21.5 {
+        /*child.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        *///?} else {
+        child.render(graphics, mouseX, mouseY, partialTick);
         //?}
     }
 

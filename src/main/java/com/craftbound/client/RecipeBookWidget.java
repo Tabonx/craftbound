@@ -28,6 +28,11 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+//? if >=1.21.5 {
+/*import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
@@ -280,7 +285,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void placeShownRecipe()
     {
-        placeableRecipe().ifPresent(recipe -> placer.place(recipe, Screen.hasShiftDown()));
+        placeableRecipe().ifPresent(recipe -> placer.place(recipe, Input.shiftDown()));
     }
 
     // Browse and Recipe share the two page arrows; each step means "previous/next" in the active
@@ -594,8 +599,60 @@ public final class RecipeBookWidget extends AbstractWidget
         return getWidth() - 2 * BODY_X;
     }
 
+    // The vanilla hooks, which are all that differ between Minecraft versions: newer ones extract
+    // render state instead of drawing, and hand input over as event records. Everything below is
+    // the book itself and is shared.
+    //? if >=1.21.5 {
+    /*@Override
+    protected void extractWidgetRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        drawBook(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
+    {
+        return clicked(event.x(), event.y(), event.button());
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event)
+    {
+        return typed((char) event.codepoint(), 0);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event)
+    {
+        return pressed(event.key(), event.scancode(), event.modifiers());
+    }
+    *///?} else {
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        drawBook(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    {
+        return clicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers)
+    {
+        return typed(codePoint, modifiers);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    {
+        return pressed(keyCode, scanCode, modifiers);
+    }
+    //?}
+
+    private void drawBook(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         ensureLoaded();
         refreshUnlocksIfStale();
@@ -604,7 +661,7 @@ public final class RecipeBookWidget extends AbstractWidget
         int x = getX();
         int y = getY();
         // The panel texture is stretched horizontally to the current width (identity while browsing).
-        graphics.blit(BACKGROUND, x, y, getWidth(), HEIGHT, 1, 1, WIDTH, HEIGHT, 256, 256);
+        Canvas.texture(graphics, BACKGROUND, x, y, getWidth(), HEIGHT, 1, 1, WIDTH, HEIGHT, 256, 256);
 
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         filterHovered = false;
@@ -647,7 +704,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
     {
-        search.render(graphics, mouseX, mouseY, partialTick);
+        Canvas.widget(search, graphics, mouseX, mouseY, partialTick);
         renderFilterButton(graphics, x, y, mouseX, mouseY);
 
         int start = page * PER_PAGE;
@@ -725,7 +782,7 @@ public final class RecipeBookWidget extends AbstractWidget
         float coverScale = (float) getWidth() / WIDTH;
         int coverLeft = backX();
         int coverRight = x + (int) Math.floor((WIDTH - BACK_X) * coverScale);
-        graphics.blit(BACKGROUND, coverLeft, y + SEARCH_Y - 3, coverRight - coverLeft, SEARCH_H + 6,
+        Canvas.texture(graphics, BACKGROUND, coverLeft, y + SEARCH_Y - 3, coverRight - coverLeft, SEARCH_H + 6,
                 BACK_X + 1, GRID_Y + 1, WIDTH - 2 * BACK_X, SEARCH_H + 6, 256, 256);
 
         var font = Minecraft.getInstance().font;
@@ -854,7 +911,7 @@ public final class RecipeBookWidget extends AbstractWidget
             return;
 
         placeButton.active = placer.canPlace(recipe.get());
-        placeButton.render(graphics, mouseX, mouseY, partialTick);
+        Canvas.widget(placeButton, graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderPager(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
@@ -865,8 +922,8 @@ public final class RecipeBookWidget extends AbstractWidget
 
         backButton.visible = paged && index > 0;
         forwardButton.visible = paged && index < count - 1;
-        backButton.render(graphics, mouseX, mouseY, partialTick);
-        forwardButton.render(graphics, mouseX, mouseY, partialTick);
+        Canvas.widget(backButton, graphics, mouseX, mouseY, partialTick);
+        Canvas.widget(forwardButton, graphics, mouseX, mouseY, partialTick);
 
         if (paged)
         {
@@ -908,13 +965,12 @@ public final class RecipeBookWidget extends AbstractWidget
         return true;
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    private boolean clicked(double mouseX, double mouseY, int button)
     {
         if (!visible)
             return false;
 
-        if (placeButton.visible && placeButton.mouseClicked(mouseX, mouseY, button))
+        if (placeButton.visible && Input.click(placeButton, mouseX, mouseY, button))
             return true;
 
         if (railClicked(mouseX, mouseY, button))
@@ -934,7 +990,7 @@ public final class RecipeBookWidget extends AbstractWidget
                 closeRecipe();
                 return true;
             }
-            if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
+            if (Input.click(backButton, mouseX, mouseY, button) || Input.click(forwardButton, mouseX, mouseY, button))
                 return true;
             if (drillUnderMouse(mouseX, mouseY, roleFor(button)))
                 return true;
@@ -953,11 +1009,11 @@ public final class RecipeBookWidget extends AbstractWidget
         search.setFocused(onSearch);
         if (onSearch)
         {
-            search.mouseClicked(mouseX, mouseY, button);
+            Input.click(search, mouseX, mouseY, button);
             return true;
         }
 
-        if (backButton.mouseClicked(mouseX, mouseY, button) || forwardButton.mouseClicked(mouseX, mouseY, button))
+        if (Input.click(backButton, mouseX, mouseY, button) || Input.click(forwardButton, mouseX, mouseY, button))
             return true;
 
         // Left-click an item: how it is made. Right-click: where it is used.
@@ -1015,20 +1071,18 @@ public final class RecipeBookWidget extends AbstractWidget
         return true;
     }
 
-    @Override
-    public boolean charTyped(char codePoint, int modifiers)
+    private boolean typed(char codePoint, int modifiers)
     {
-        return visible && search.charTyped(codePoint, modifiers);
+        return visible && Input.charTyped(search, codePoint, modifiers);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    private boolean pressed(int keyCode, int scanCode, int modifiers)
     {
         if (!visible)
             return false;
         if (keyCode == 256) // let escape close the screen rather than being swallowed
             return false;
-        if (search.keyPressed(keyCode, scanCode, modifiers))
+        if (Input.keyPressed(search, keyCode, scanCode, modifiers))
             return true;
         return search.canConsumeInput(); // swallow other keys while the search box is focused
     }

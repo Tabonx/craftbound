@@ -6,11 +6,12 @@ import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
 
-import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 
@@ -18,11 +19,11 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 // down to borrowing vanilla's own tab icons, with All on top and Bookmarks closing the rail.
 public enum BrowseTab implements BookRail.Tab
 {
-    ALL(vanillaIcon(() -> RecipeBookCategories.CRAFTING_SEARCH), "tab.all"),
-    EQUIPMENT(vanillaIcon(() -> RecipeBookCategories.CRAFTING_EQUIPMENT), "tab.equipment"),
-    BUILDING(vanillaIcon(() -> RecipeBookCategories.CRAFTING_BUILDING_BLOCKS), "tab.building"),
-    MISC(vanillaIcon(() -> RecipeBookCategories.CRAFTING_MISC), "tab.misc"),
-    REDSTONE(vanillaIcon(() -> RecipeBookCategories.CRAFTING_REDSTONE), "tab.redstone"),
+    ALL(itemIcon(() -> Items.COMPASS), "tab.all"),
+    EQUIPMENT(itemIcon(() -> Items.IRON_AXE, () -> Items.GOLDEN_SWORD), "tab.equipment"),
+    BUILDING(itemIcon(() -> Items.BRICKS), "tab.building"),
+    MISC(itemIcon(() -> Items.LAVA_BUCKET, () -> Items.APPLE), "tab.misc"),
+    REDSTONE(itemIcon(() -> Items.REDSTONE), "tab.redstone"),
     BOOKMARKS(spriteIcon(ResourceLocation.fromNamespaceAndPath(Craftbound.MODID,
             "recipe_book/bookmark_tab")), "bookmarks");
 
@@ -93,20 +94,22 @@ public enum BrowseTab implements BookRail.Tab
         void draw(GuiGraphics graphics, int x, int y);
     }
 
-    // Held behind a supplier so naming a vanilla category here does not force its class (and the
-    // item stacks it builds) to load before the registries exist.
-    private static Icon vanillaIcon(Supplier<RecipeBookCategories> category)
+    // The same items vanilla puts on its own crafting tabs, named here rather than read off a
+    // vanilla category: newer versions keep the icons in their recipe book screen instead of on the
+    // category, and these five have not changed. Held behind suppliers so naming them does not force
+    // item stacks to be built before the registries exist.
+    @SafeVarargs
+    private static Icon itemIcon(Supplier<Item>... items)
     {
         return (graphics, x, y) ->
         {
-            List<ItemStack> icons = category.get().getIconItems();
-            if (icons.size() == 1)
-                graphics.renderFakeItem(icons.get(0), x, y);
-            else if (icons.size() >= 2)
+            if (items.length == 1)
+                graphics.renderFakeItem(new ItemStack(items[0].get()), x, y);
+            else if (items.length >= 2)
             {
                 // Vanilla's two-icon tabs sit 6px either side of where a lone icon would go.
-                graphics.renderFakeItem(icons.get(0), x - 6, y);
-                graphics.renderFakeItem(icons.get(1), x + 5, y);
+                graphics.renderFakeItem(new ItemStack(items[0].get()), x - 6, y);
+                graphics.renderFakeItem(new ItemStack(items[1].get()), x + 5, y);
             }
         };
     }
