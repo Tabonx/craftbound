@@ -37,13 +37,13 @@ public abstract class RecipeButtonMixin
             method = "extractWidgetRenderState",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"),
+                    target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/ResourceLocation;IIII)V"),
             index = 1)
-    private Identifier craftbound$swapUnlockingSprite(Identifier original)
+    private ResourceLocation craftbound$swapUnlockingSprite(ResourceLocation original)
     {
         ItemStack result = getDisplayStack();
         if (!result.isEmpty() && Progression.unlocksMore(BuiltInRegistries.ITEM.getKey(result.getItem())))
-            return Identifier.fromNamespaceAndPath(Craftbound.MODID, original.getPath());
+            return ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, original.getPath());
         return original;
     }
     *///?} else {

@@ -7,6 +7,8 @@ import java.util.Optional;
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
 //? if >=1.21.5 {
 /*import net.minecraft.util.context.ContextMap;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
+import net.minecraft.world.level.Level;
 *///?}
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotRichTooltipCallback;
@@ -268,12 +270,14 @@ final class IngredientSlot implements IRecipeSlotBuilder
     }
 
     //? if >=1.21.5 {
-    /*// Newer JEI resolves slot displays against a context; the index only reads what a slot
-    // accepts, so it has nothing of its own to put in one.
+    /*// Newer JEI hands slot contents over as displays, which only resolve to actual ingredients
+    // against the level's context. Without it every slot resolves to nothing and the index reads
+    // every recipe as requiring no inputs at all.
     @Override
     public ContextMap getContextMap()
     {
-        return ContextMap.EMPTY;
+        Level level = net.minecraft.client.Minecraft.getInstance().level;
+        return level == null ? ContextMap.EMPTY : SlotDisplayContext.fromLevel(level);
     }
     *///?} else {
     @SuppressWarnings("removal")

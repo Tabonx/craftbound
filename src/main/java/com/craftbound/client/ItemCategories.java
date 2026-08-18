@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft;
 /*import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.context.ContextMap;
-import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;

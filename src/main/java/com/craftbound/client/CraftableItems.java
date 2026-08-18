@@ -66,9 +66,8 @@ public final class CraftableItems
         return result;
     }
 
-    //? if >=1.21.5 {
-    /*// Newer versions have no client recipe manager to walk; craftableIn reads displays instead.
-    *///?} else {
+    // Newer versions have no client recipe manager to walk; craftableIn reads displays instead.
+    //? if <1.21.5 {
     // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime
     // from the menu, erase to a raw RecipeType and read each holder as a plain Recipe.
     @SuppressWarnings({"rawtypes", "unchecked"})

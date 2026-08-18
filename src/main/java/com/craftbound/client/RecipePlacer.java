@@ -105,9 +105,8 @@ public final class RecipePlacer
             return;
         }
 
-        //? if >=1.21.5 {
-        /*// Nothing to fall back to: canPlace already refuses this case.
-        *///?} else {
+        // Newer versions have nothing to fall back to, and canPlace already refuses that case.
+        //? if <1.21.5 {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null)
             connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
