@@ -5,7 +5,9 @@ import java.util.List;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.create.HeatRequirement;
 
+//? if create {
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+//?}
 
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.fml.ModList;
@@ -25,8 +27,10 @@ final class RecipeRequirements
 
     private static List<InputSlot> createHeatSlots(Object recipe)
     {
+        //? if create {
         if (recipe instanceof RecipeHolder<?> holder && holder.value() instanceof ProcessingRecipe<?, ?> processing)
             return HeatRequirement.slotsFor(processing.getRequiredHeat().name());
+        //?}
         return List.of();
     }
 

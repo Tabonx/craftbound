@@ -103,9 +103,6 @@ neoForge {
     }
 }
 
-// One compilation, two roots. Everything in common/ is loader-free: a file that imports
-// net.neoforged belongs in neoforge/ instead, which keeps the porting surface for another loader
-// down to that directory.
 // src/ is Stonecutter's shared source directory, linked into whichever version is active, so it is
 // left at the default and only the generated resources are added.
 sourceSets {
@@ -120,6 +117,24 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+// Create has no release above 1.21.1. Versions it does not cover build without it, the same way a
+// player without Create installed sees a book with no Create categories.
+def hasCreate = project.hasProperty('create_version')
+
+// Readable as `//? if create` in source, for the one place where Create code sits in a file that is
+// otherwise shared. Whole files that only exist for Create are excluded below instead.
+stonecutter.constants.put('create', hasCreate)
+
+// The Ponder integration is the one part of the mod that cannot exist without Create. PonderGate is
+// deliberately not in here: it only tracks whether the book is drawing a tooltip and touches nothing
+// Create owns, so the book keeps working with it on every version.
+if (!hasCreate) {
+    sourceSets.main.java.exclude 'com/craftbound/client/ponder/CraftboundPonderPlugin.java',
+            'com/craftbound/client/ponder/PonderVisibility.java',
+            'com/craftbound/client/ponder/mixin/**'
+    sourceSets.main.resources.exclude 'craftbound.ponder.mixins.json'
+}
+
 dependencies {
     // JEI, required at runtime. Only the api artifacts are on the compile classpath, so reaching
     // for a JEI internal is a compile error rather than something that breaks on the next JEI or
@@ -129,25 +144,28 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
-    // Create and its dependencies (NeoForge 1.21.1).
+    // Create and its dependencies, only on versions Create has a release for. A version whose
+    // properties declare no create_version simply builds without the Create integration.
     // See https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1
     // The ':slim' Create artifact is non-transitive, so Ponder/Flywheel/Registrate are declared explicitly.
     // Compiled against, never required at runtime: Create is an optional dependency of the mod.
-    compileOnly("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-    compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-    compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
-    compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
+    if (hasCreate) {
+        compileOnly("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+        compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+        compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
+        compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
 
-    // The same mods for the dev client to actually load. They have to sit on the project's runtime
-    // classpath: NeoGradle offers only that to FML as mod files, so a jar added to a run's own
-    // dependencies is a library on the classpath and never a loaded mod. localRuntime keeps them
-    // out of the published metadata, so the shipped jar still only suggests Create.
-    // Run with -PnoCreate to leave them out and exercise the mod without its optional dependency.
-    if (!project.hasProperty('noCreate')) {
-        localRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-        localRuntime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-        localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
-        localRuntime "com.tterrag.registrate:Registrate:${registrate_version}"
+        // The same mods for the dev client to actually load. They have to sit on the project's runtime
+        // classpath: FML is only offered that as mod files, so a jar added to a run's own
+        // dependencies is a library on the classpath and never a loaded mod. localRuntime keeps them
+        // out of the published metadata, so the shipped jar still only suggests Create.
+        // Run with -PnoCreate to leave them out and exercise the mod without its optional dependency.
+        if (!project.hasProperty('noCreate')) {
+            localRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+            localRuntime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+            localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+            localRuntime "com.tterrag.registrate:Registrate:${registrate_version}"
+        }
     }
 
 
@@ -172,7 +190,9 @@ tasks.withType(ProcessResources).configureEach {
             mod_version            : modVersion,
             mod_authors            : mod_authors,
             mod_description        : mod_description,
-            jei_version_range      : jei_version_range
+            jei_version_range      : jei_version_range,
+            pack_format            : pack_format,
+            ponder_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.ponder.mixins.json\"" : ''
     ]
     inputs.properties replaceProperties
 
@@ -240,7 +260,8 @@ publishMods {
             accessToken = providers.gradleProperty('modrinthToken')
             minecraftVersions.addAll publishMinecraftVersions
             environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
-            optional('create')
+            if (hasCreate)
+                optional('create')
             requires('jei')
         }
     }
@@ -253,7 +274,8 @@ publishMods {
             javaVersions.add(JavaVersion.VERSION_21)
             client = true
             server = false
-            optional('create')
+            if (hasCreate)
+                optional('create')
             requires('jei')
         }
     }

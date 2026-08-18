@@ -14,9 +14,9 @@ description='''${mod_description}'''
 [[mixins]]
 config="${mod_id}.mixins.json"
 
-# Ponder ships with Create. This config is not required, so its mixins are skipped when Create is absent.
-[[mixins]]
-config="${mod_id}.ponder.mixins.json"
+# Ponder ships with Create. This config is not required, so its mixins are skipped when Create is
+# absent, and it is left out entirely on Minecraft versions Create has no release for.
+${ponder_mixins}
 
 # Keeping JEI's own interface off screen is the one thing with no api behind it, so these reach into
 # JEI itself. Not required: a JEI that moved them should bring its interface back, not refuse to load.
