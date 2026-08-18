@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.5
+
+- Craftbound now requires Just Enough Items instead of refusing to run alongside it.
+  Install JEI 19.21.0 or newer next to Craftbound. In exchange, mods that hard-depend on
+  JEI now work in the same pack, and you get JEI's own screens alongside the book.
+- JEI stays out of sight. Its item list, bookmark list and recipe screen do not appear, so
+  the book remains the one place recipes are shown and nothing is spoiled ahead of time.
+  Your JEI settings are left alone.
+- The book itself is unchanged: the same recipes from the same mods, shown the same way.
+- Tag listings no longer count as recipes. They treated everything sharing a tag as made from
+  everything else in it, so a single block could reveal dozens of entries that then refused
+  to open.
+
 ## 0.1.4
 
 - Craftbound is now published on CurseForge as well as Modrinth. The 0.1.3 upload there

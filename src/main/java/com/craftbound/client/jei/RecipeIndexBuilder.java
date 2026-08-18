@@ -16,6 +16,7 @@ import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
 
+import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
@@ -41,18 +42,21 @@ final class RecipeIndexBuilder
     {
         IRecipeManager recipes = runtime.getRecipeManager();
         IIngredientManager manager = runtime.getIngredientManager();
+        IPlatformFluidHelper<?> fluids = runtime.getJeiHelpers().getPlatformFluidHelper();
         IFocusGroup noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
 
         Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
         Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
         Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
 
-        recipes.createRecipeCategoryLookup().get().forEach(category ->
+        recipes.createRecipeCategoryLookup().get()
+                .filter(BookCategories::isBrowsable)
+                .forEach(category ->
         {
             String categoryUid = category.getRecipeType().getUid().toString();
             catalysts.put(categoryUid, catalystItems(recipes, category));
             Map<Object, RecipeNode> nodes = new IdentityHashMap<>();
-            collect(recipes, manager, category, noFocus, categoryUid, nodes, representatives);
+            collect(recipes, manager, fluids, category, noFocus, categoryUid, nodes, representatives);
             byCategory.put(categoryUid, nodes);
         });
 
@@ -60,17 +64,18 @@ final class RecipeIndexBuilder
     }
 
     private static <T> void collect(IRecipeManager recipes, IIngredientManager manager,
-            IRecipeCategory<T> category, IFocusGroup noFocus, String categoryUid,
+            IPlatformFluidHelper<?> fluids, IRecipeCategory<T> category, IFocusGroup noFocus, String categoryUid,
             Map<Object, RecipeNode> out, Map<String, ITypedIngredient<?>> representatives)
     {
         recipes.createRecipeLookup(category.getRecipeType()).get().forEach(recipe ->
         {
-            SlotIngredientCollector collector = read(manager, category, recipe, noFocus, categoryUid);
+            SlotIngredientCollector collector = read(manager, fluids, category, recipe, noFocus, categoryUid);
             if (collector == null)
                 return;
 
             Map<String, ITypedIngredient<?>> outputs = collector.outputs();
-            outputs.forEach(representatives::putIfAbsent);
+            outputs.forEach((key, output) ->
+                    representatives.putIfAbsent(key, normalized(manager, output)));
 
             List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
             inputs.addAll(RecipeRequirements.extraSlots(recipe));
@@ -78,15 +83,26 @@ final class RecipeIndexBuilder
         });
     }
 
+    // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot
+    // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
+    // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
+    // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
+    private static <V> ITypedIngredient<V> normalized(IIngredientManager manager,
+            ITypedIngredient<V> ingredient)
+    {
+        return manager.normalizeTypedIngredient(ingredient);
+    }
+
     // A recipe whose category cannot lay it out is left out of the index entirely; the book treats
     // an unindexed recipe as unlocked, so a broken one stays visible rather than silently vanishing.
     private static <T> SlotIngredientCollector read(IIngredientManager manager,
-            IRecipeCategory<T> category, T recipe, IFocusGroup noFocus, String categoryUid)
+            IPlatformFluidHelper<?> fluids, IRecipeCategory<T> category, T recipe, IFocusGroup noFocus,
+            String categoryUid)
     {
         if (!category.isHandled(recipe))
             return null;
 
-        SlotIngredientCollector collector = new SlotIngredientCollector(manager);
+        SlotIngredientCollector collector = new SlotIngredientCollector(manager, fluids);
         try
         {
             category.setRecipe(collector, recipe, noFocus);

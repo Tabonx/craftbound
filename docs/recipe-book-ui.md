@@ -71,18 +71,55 @@ body; the panel first grows wider (see framing) so wide recipes need little or n
 replaces the earlier plan of a native crafting grid plus a hand-rolled vertical Create layout.
 One uniform path is simpler and covers every category, including fluids.
 
-## Why vendor JEI
-JEI's source is vendored (`vendor/jei/`) so we can render Create's registered recipe categories
-into **our own small rectangle** inside the book, instead of calling JEI's full-screen
-`RecipesGui`. We reuse two things: Create's `IRecipeCategory` renderers and JEI's ingredient
-drawables.
+## Why JEI
+JEI is a required dependency. It is what knows every mod's recipes: any mod with JEI support shows
+up in the book without being named in our source, because `CraftboundJeiPlugin` is an ordinary
+`@JeiPlugin` and JEI hands it the runtime like any other. We reuse two things from it, Create's
+`IRecipeCategory` renderers and JEI's ingredient drawables, and render them into **our own small
+rectangle** inside the book instead of calling JEI's full-screen `RecipesGui`.
 
-The embedded runtime finds plugins the way JEI does, with `ForgePluginFinder` scanning every loaded mod
-for `@JeiPlugin`, so any mod with JEI support shows up in the book without being named in our
-source. Only JEI's own GUI, internal and debug plugins are dropped, since they build the
-full-screen interface the book replaces. Note the flip side of embedding: `neoforge.mods.toml`
-declares the JEI mod itself `incompatible`, so a mod that *hard*-depends on JEI cannot be
-installed alongside Craftbound; optional JEI support (the common case) works fine.
+JEI is used as the recipe backend, not as a second interface, so its own UI is kept off screen.
+This matters for progression rather than for taste: JEI's views show the whole pack at once, which
+is the opposite of a book that reveals things as they are found.
+
+It takes three pieces, ordered by how well each survives a JEI update:
+
+- `JeiOverlayHider` registers a global gui handler claiming the whole screen. JEI shows a list only
+  where it has room, so this hides the ingredient list and the bookmark list through the api alone,
+  without touching the player's JEI settings.
+- `JeiScreenBlocker` cancels JEI's recipe screen as it opens, on vanilla's `ScreenEvent.Opening`.
+  The show-recipe and show-uses keys work off whatever the cursor is over, inventory slots
+  included, and JEI's key mappings are read-only in the api. The screen is matched by class name,
+  so JEI stays off the compile classpath.
+- The mixins in `client/mixin/jei` are the only part with no api behind it. JEI draws its two corner
+  buttons whenever the screen is valid, outside the check for whether its lists have room, so no
+  amount of denying it space will hide them. `JeiOverlayMixin` cancels the single call that draws
+  everything JEI puts on a screen, and `JeiInputMixin` turns away the clicks that would otherwise
+  land on buttons that are no longer drawn.
+
+`craftbound.jei.mixins.json` is deliberately not `required`. A JEI that renamed these should bring
+its own interface back, never stop the game from loading.
+
+Not everything JEI registers is a recipe. Its "Tag Info" entries take a whole tag in and hand the
+same tag back out, which read as recipes make every member of a tag reachable from any other, so
+one dirt block would reveal everything sharing a tag with it. `BookCategories` is the single answer
+to which categories the book is about, and both the display and the progression index ask it: a
+category counted by one and not the other is exactly what puts an entry in the book that cannot be
+opened.
+
+Only JEI's api artifacts are on the compile classpath, so reaching for a JEI internal is a compile
+error. That is deliberate: the api is the surface JEI keeps stable across Minecraft versions and
+loaders, and staying on it is what makes a port to another version a matter of the mixins and the
+vanilla recipe plumbing rather than of JEI.
+
+One internal is still unavoidable. JEI's shapeless marker has no api to suppress it, so
+`client/mixin/ShapelessIconMixin` names `mezz.jei.library.gui.recipes.ShapelessIcon` as a string
+and hides it only while `BookRecipeRender` says the book is the one drawing, leaving JEI's own
+screens as JEI drew them.
+
+Craftbound used to vendor JEI's source instead, which let it run without JEI installed at the cost
+of carrying a copy of JEI per Minecraft version. Depending on JEI trades that standalone operation
+for JEI's own multi-version, multi-loader support.
 
 ## Obtained items (already implemented)
 `ObtainedItemsTracker` records every item the player has ever held into the synced

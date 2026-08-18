@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.craftbound.client.mixin.jei",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "JeiInputMixin",
+    "JeiOverlayMixin",
+    "ShapelessIconMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

@@ -23,6 +23,7 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
@@ -42,15 +43,25 @@ public final class CraftboundJeiPlugin implements IModPlugin
     }
 
     @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration)
+    {
+        registration.addGlobalGuiHandler(new JeiOverlayHider());
+    }
+
+    // JEI hands the runtime over on every reload, and takes it back before rebuilding, so these two
+    // are also the moments the recipe index behind them stops being true.
+    @Override
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime)
     {
         runtime = jeiRuntime;
+        Progression.invalidate();
     }
 
     @Override
     public void onRuntimeUnavailable()
     {
         runtime = null;
+        Progression.invalidate();
     }
 
     public static boolean hasRuntime()
@@ -109,11 +120,6 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return BookIngredient.of(typed, manager.getIngredientRenderer(typed.getType()),
                 manager.getIngredientHelper(typed.getType()));
     }
-
-    // JEI's internal "Tag Info" categories (on by default in dev) list an item's tag memberships
-    // as pseudo-recipes. They are always registered under a "tag_recipes/" type path; the book
-    // shows how to make things, not what tags they belong to, so drop them.
-    private static final String TAG_RECIPE_PATH_PREFIX = "tag_recipes/";
 
     // Whether at least one real (non-tag) recipe produces this ingredient. JEI's category lookup
     // respects the focus role, so an OUTPUT focus yields exactly the categories that output it.
@@ -208,8 +214,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return recipes.createRecipeCategoryLookup()
                 .limitFocus(focuses)
                 .get()
-                .filter(category -> !category.getRecipeType().getUid().getPath()
-                        .startsWith(TAG_RECIPE_PATH_PREFIX));
+                .filter(BookCategories::isBrowsable);
     }
 
     private static <V> IFocus<V> focus(IFocusFactory focusFactory, RecipeIngredientRole role,

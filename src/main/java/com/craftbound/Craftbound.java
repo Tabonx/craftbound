@@ -1,6 +1,5 @@
 package com.craftbound;
 
-import com.craftbound.client.jei.CraftboundRecipeRuntime;
 import com.craftbound.client.ponder.CraftboundPonderPlugin;
 import com.craftbound.progression.ProgressionConfig;
 import com.mojang.logging.LogUtils;
@@ -31,7 +30,6 @@ public class Craftbound
 
         if (dist.isClient())
         {
-            CraftboundRecipeRuntime.register(modEventBus);
             // Resolving CraftboundPonderPlugin loads Ponder's classes, so it stays behind the check.
             if (ModList.get().isLoaded("ponder"))
                 registerPonderPlugin();
