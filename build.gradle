@@ -74,10 +74,8 @@ neoForge {
             systemProperty 'forge.logging.console.level', 'debug'
         }
 
-        // Every supported version generates its own runs, so the version is part of the IDE name.
         client {
             client()
-            ideName = "Client (${minecraft_version})"
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
 
@@ -87,20 +85,17 @@ neoForge {
 
         server {
             server()
-            ideName = "Server (${minecraft_version})"
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             programArgument '--nogui'
         }
 
         gameTestServer {
             type = 'gameTestServer'
-            ideName = "Game Tests (${minecraft_version})"
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
         }
 
         data {
             data()
-            ideName = "Data (${minecraft_version})"
             programArguments.addAll '--mod', mod_id, '--all',
                     '--output', rootProject.file('src/generated/resources/').absolutePath,
                     '--existing', rootProject.file('src/main/resources/').absolutePath
