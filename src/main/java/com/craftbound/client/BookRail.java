@@ -84,7 +84,7 @@ public final class BookRail
             int tabX = tabX(index);
             int tabY = tabY(row);
 
-            graphics.blitSprite(TAB_SPRITES.get(true, index == selected), tabX, tabY, TAB_W, TAB_H);
+            Canvas.sprite(graphics, TAB_SPRITES.get(true, index == selected), tabX, tabY, TAB_W, TAB_H);
             tabs.get(index).drawIcon(graphics, tabX + TAB_ICON_DX, tabY + TAB_ICON_DY);
 
             if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))

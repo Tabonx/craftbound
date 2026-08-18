@@ -18,7 +18,6 @@ import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.ponder.PonderGate;
 import com.craftbound.client.progression.Progression;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
@@ -643,7 +642,7 @@ public final class RecipeBookWidget extends AbstractWidget
         ResourceLocation sprite = on
                 ? (bookmarkHovered ? BOOKMARK_ON_HL : BOOKMARK_ON)
                 : (bookmarkHovered ? BOOKMARK_OFF_HL : BOOKMARK_OFF);
-        graphics.blitSprite(sprite, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);
+        Canvas.sprite(graphics, sprite, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);
     }
 
     private void renderBrowse(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick)
@@ -678,10 +677,7 @@ public final class RecipeBookWidget extends AbstractWidget
             float scale = 1f + 0.1f * (float) Math.sin(remaining / ANIMATION_TICKS * Math.PI);
             int centerX = cellX + ITEM_INSET + 8;
             int centerY = cellY + ITEM_INSET + 8;
-            graphics.pose().pushPose();
-            graphics.pose().translate(centerX, centerY, 0f);
-            graphics.pose().scale(scale, scale, 1f);
-            graphics.pose().translate(-centerX, -centerY, 0f);
+            Canvas.scaleAbout(graphics, centerX, centerY, scale);
 
             float left = remaining - partialTick;
             if (left > 0f)
@@ -690,11 +686,11 @@ public final class RecipeBookWidget extends AbstractWidget
                 highlights.remove(item.unlockKey());
         }
 
-        graphics.blitSprite(slotFor(item), cellX, cellY, CELL, CELL);
+        Canvas.sprite(graphics, slotFor(item), cellX, cellY, CELL, CELL);
         item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
 
         if (remaining != null)
-            graphics.pose().popPose();
+            Canvas.pop(graphics);
     }
 
     // Marked slots are the ones worth getting hold of: obtaining them opens recipes the book is
@@ -714,7 +710,7 @@ public final class RecipeBookWidget extends AbstractWidget
         ResourceLocation sprite = on
                 ? (filterHovered ? FILTER_ENABLED_HL : FILTER_ENABLED)
                 : (filterHovered ? FILTER_DISABLED_HL : FILTER_DISABLED);
-        graphics.blitSprite(sprite, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
+        Canvas.sprite(graphics, sprite, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
     }
 
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -735,7 +731,7 @@ public final class RecipeBookWidget extends AbstractWidget
         var font = Minecraft.getInstance().font;
         int backX = backX();
         boolean overBack = inRect(mouseX, mouseY, backX, y + BACK_Y, BACK_W, BACK_H);
-        graphics.blitSprite(BACKWARD_SPRITES.get(true, overBack), backX, y + BACK_Y, ARROW_W, ARROW_H);
+        Canvas.sprite(graphics, BACKWARD_SPRITES.get(true, overBack), backX, y + BACK_Y, ARROW_W, ARROW_H);
         graphics.drawString(font, BACK_LABEL, backX + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
                 0xFFFFFF, true);
 
@@ -762,11 +758,10 @@ public final class RecipeBookWidget extends AbstractWidget
 
         BookRecipeRender.whileDrawing(() ->
         {
-            PoseStack pose = graphics.pose();
-            pose.pushPose();
-            pose.translate(originX, originY, 0);
-            pose.scale(scale, scale, 1f);
-            pose.translate(-bounds.getX(), -bounds.getY(), 0);
+            Canvas.push(graphics);
+            Canvas.translate(graphics, (float) originX, (float) originY);
+            Canvas.scale(graphics, (float) scale);
+            Canvas.translate(graphics, -bounds.getX(), -bounds.getY());
             RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
 
             layout.drawRecipe(graphics, (int) localX, (int) localY);
@@ -777,12 +772,12 @@ public final class RecipeBookWidget extends AbstractWidget
                 layout.drawOverlays(graphics, (int) localX, (int) localY);
             else
             {
-                pose.pushPose();
-                pose.translate(slot.offset().x(), slot.offset().y(), 0);
+                Canvas.push(graphics);
+                Canvas.translate(graphics, slot.offset().x(), slot.offset().y());
                 slot.slot().drawHoverOverlays(graphics);
-                pose.popPose();
+                Canvas.pop(graphics);
             }
-            pose.popPose();
+            Canvas.pop(graphics);
 
             slotTooltip = slot == null ? List.of()
                     : PonderGate.whileBuildingBookTooltip(() -> slotTooltip(slot.slot()));
@@ -822,19 +817,19 @@ public final class RecipeBookWidget extends AbstractWidget
         BookRail.Tab hoveredTab = rail().hovered();
         if (hoveredTab != null)
         {
-            graphics.renderTooltip(minecraft.font, hoveredTab.title(), mouseX, mouseY);
+            Canvas.tooltip(graphics, minecraft.font, hoveredTab.title(), mouseX, mouseY);
             return;
         }
         if (bookmarkHovered && focused != null)
         {
-            graphics.renderTooltip(minecraft.font,
+            Canvas.tooltip(graphics, minecraft.font,
                     BookmarkStore.contains(focused.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
                     mouseX, mouseY);
             return;
         }
         if (filterHovered)
         {
-            graphics.renderTooltip(minecraft.font,
+            Canvas.tooltip(graphics, minecraft.font,
                     RecipeBookState.isFiltering() ? TOOLTIP_CRAFTABLE : TOOLTIP_ALL, mouseX, mouseY);
             return;
         }

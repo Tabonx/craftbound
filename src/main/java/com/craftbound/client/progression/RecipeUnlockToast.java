@@ -1,8 +1,10 @@
 package com.craftbound.client.progression;
 
+import com.craftbound.client.Canvas;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastComponent;
@@ -65,6 +67,48 @@ public final class RecipeUnlockToast implements Toast
         }
     }
 
+    //? if >=1.21.5 {
+    /*// Newer versions ask a toast what it wants, tick it, and draw it in three separate calls
+    // rather than one that both draws and decides.
+    private Toast.Visibility visibility = Toast.Visibility.SHOW;
+    private double displayTime = DISPLAY_TIME;
+
+    @Override
+    public Toast.Visibility getWantedVisibility()
+    {
+        return visibility;
+    }
+
+    @Override
+    public void update(ToastComponent toasts, long fullyVisibleForMs)
+    {
+        if (changed)
+        {
+            lastChanged = fullyVisibleForMs;
+            changed = false;
+        }
+
+        displayTime = DISPLAY_TIME * toasts.getNotificationDisplayTimeMultiplier();
+        visibility = fullyVisibleForMs - lastChanged >= displayTime ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
+        graphics.drawString(font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
+        graphics.drawString(font, DESCRIPTION_TEXT, 30, 18, DESCRIPTION_COLOR, false);
+
+        Canvas.push(graphics);
+        Canvas.scale(graphics, 0.6F);
+        graphics.renderFakeItem(new ItemStack(Items.CRAFTING_TABLE), 3, 3);
+        Canvas.pop(graphics);
+
+        // Drawn through JEI's own renderer, so a fluid shows here exactly as it does in the book.
+        if (!results.isEmpty())
+            results.get(cycleIndex(fullyVisibleForMs, displayTime)).render(graphics, 8, 8);
+    }
+    *///?} else {
     @Override
     public Toast.Visibility render(GuiGraphics graphics, ToastComponent toasts, long timeSinceLastVisible)
     {
@@ -75,14 +119,14 @@ public final class RecipeUnlockToast implements Toast
         }
 
         double displayTime = DISPLAY_TIME * toasts.getNotificationDisplayTimeMultiplier();
-        graphics.blitSprite(BACKGROUND_SPRITE, 0, 0, width(), height());
+        Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
         graphics.drawString(toasts.getMinecraft().font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
         graphics.drawString(toasts.getMinecraft().font, DESCRIPTION_TEXT, 30, 18, DESCRIPTION_COLOR, false);
 
-        graphics.pose().pushPose();
-        graphics.pose().scale(0.6F, 0.6F, 1.0F);
+        Canvas.push(graphics);
+        Canvas.scale(graphics, 0.6F);
         graphics.renderFakeItem(new ItemStack(Items.CRAFTING_TABLE), 3, 3);
-        graphics.pose().popPose();
+        Canvas.pop(graphics);
 
         // Drawn through JEI's own renderer, so a fluid shows here exactly as it does in the book.
         if (!results.isEmpty())
@@ -90,6 +134,7 @@ public final class RecipeUnlockToast implements Toast
 
         return timeSinceLastVisible - lastChanged >= displayTime ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
     }
+    //?}
 
     private int cycleIndex(long timeSinceLastVisible, double displayTime)
     {

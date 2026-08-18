@@ -6,7 +6,11 @@ import com.craftbound.client.upgrade.BookUpgradeToast;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+//? if >=1.21.5 {
+/*import net.minecraft.world.InteractionResult;
+*///?} else {
 import net.minecraft.world.InteractionResultHolder;
+//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,14 +25,15 @@ public class BookbindersLensItem extends Item
         super(properties);
     }
 
-    @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand)
+    //? if >=1.21.5 {
+    /*@Override
+    public InteractionResult use(Level level, Player player, InteractionHand hand)
     {
         ItemStack stack = player.getItemInHand(hand);
         if (player.getData(CraftboundAttachments.BOOK_UPGRADED))
-            return InteractionResultHolder.pass(stack);
+            return InteractionResult.PASS;
 
-        if (level.isClientSide)
+        if (level.isClientSide())
             announce();
         else
         {
@@ -37,8 +42,28 @@ public class BookbindersLensItem extends Item
         }
 
         level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
+    *///?} else {
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand)
+    {
+        ItemStack stack = player.getItemInHand(hand);
+        if (player.getData(CraftboundAttachments.BOOK_UPGRADED))
+            return InteractionResultHolder.pass(stack);
+
+        if (level.isClientSide())
+            announce();
+        else
+        {
+            player.setData(CraftboundAttachments.BOOK_UPGRADED, true);
+            stack.consume(1, player);
+        }
+
+        level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+    }
+    //?}
 
     // Kept in its own method so the client-only toast class is loaded on the client alone.
     private static void announce()

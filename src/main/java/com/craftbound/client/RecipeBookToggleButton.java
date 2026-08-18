@@ -39,7 +39,7 @@ public final class RecipeBookToggleButton extends ImageButton
         super.renderWidget(graphics, mouseX, mouseY, partialTick);
 
         if (ClientBookUpgrade.hintsActive())
-            graphics.blitSprite(UPGRADE_OVERLAY, getX(), getY(), WIDTH, HEIGHT);
+            Canvas.sprite(graphics, UPGRADE_OVERLAY, getX(), getY(), WIDTH, HEIGHT);
     }
 
     // Shift + right-click takes the lens back, which only the server can do; the book is only ever

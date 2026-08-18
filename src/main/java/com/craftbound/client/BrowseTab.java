@@ -113,6 +113,6 @@ public enum BrowseTab implements BookRail.Tab
 
     private static Icon spriteIcon(ResourceLocation sprite)
     {
-        return (graphics, x, y) -> graphics.blitSprite(sprite, x, y, 16, 16);
+        return (graphics, x, y) -> Canvas.sprite(graphics, sprite, x, y, 16, 16);
     }
 }

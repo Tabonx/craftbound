@@ -137,6 +137,34 @@ def hasCreate = project.hasProperty('create_version')
 // otherwise shared. Whole files that only exist for Create are excluded below instead.
 stonecutter.constants.put('create', hasCreate)
 
+// Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's
+// names and rewritten per version, which keeps a pure rename from turning into conditionals in
+// dozens of files. Anything whose behaviour actually changed does not belong here.
+def modern = stonecutter.eval(stonecutter.current.version, '>=1.21.2')
+stonecutter.replacements.string {
+    direction = modern
+    replace 'net.minecraft.resources.ResourceLocation', 'net.minecraft.resources.Identifier'
+    replace 'ResourceLocation', 'Identifier'
+    replace 'net.minecraft.client.gui.components.toasts.ToastComponent', 'net.minecraft.client.gui.components.toasts.ToastManager'
+    replace 'ToastComponent', 'ToastManager'
+    replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
+    replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
+
+    // Drawing calls that only changed name, not arguments. The ones that changed shape are written
+    // out in the drawing code instead.
+    replace '.drawString(', '.text('
+    replace '.renderFakeItem(', '.fakeItem('
+    replace '.renderComponentTooltip(', '.setComponentTooltipForNextFrame('
+}
+
+// Same package as GuiGraphics, so renaming the type covers its import and every use. The lookbehind
+// keeps NeoForge's own getGuiGraphics() event accessor out of it, and the methods on the type differ
+// and are handled in the drawing code rather than here.
+stonecutter.replacements.regex {
+    direction = modern
+    replace '(?<!get)\\bGuiGraphics\\b', 'GuiGraphicsExtractor', '\\bGuiGraphicsExtractor\\b', 'GuiGraphics'
+}
+
 // The Ponder integration is the one part of the mod that cannot exist without Create. PonderGate is
 // deliberately not in here: it only tracks whether the book is drawing a tooltip and touches nothing
 // Create owns, so the book keeps working with it on every version.

@@ -22,7 +22,11 @@ public final class CraftboundAttachments
 
     public static final Supplier<AttachmentType<Set<ResourceLocation>>> OBTAINED_ITEMS =
             ATTACHMENT_TYPES.register("obtained_items", () -> AttachmentType.<Set<ResourceLocation>>builder(() -> new HashSet<>())
+                    //? if >=1.21.5 {
+                    /*.serialize(ObtainedItems.CODEC.fieldOf("items"))
+                    *///?} else {
                     .serialize(ObtainedItems.CODEC)
+                    //?}
                     .copyOnDeath()
                     .sync(ObtainedItems.STREAM_CODEC)
                     .build());
@@ -32,7 +36,11 @@ public final class CraftboundAttachments
     // keepInventory is on.
     public static final Supplier<AttachmentType<Boolean>> BOOK_UPGRADED =
             ATTACHMENT_TYPES.register("book_upgraded", () -> AttachmentType.builder(() -> false)
+                    //? if >=1.21.5 {
+                    /*.serialize(Codec.BOOL.fieldOf("upgraded"))
+                    *///?} else {
                     .serialize(Codec.BOOL)
+                    //?}
                     .sync(ByteBufCodecs.BOOL)
                     .build());
 
