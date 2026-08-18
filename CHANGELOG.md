@@ -2,6 +2,13 @@
 
 ## 0.1.5
 
+- Craftbound now runs on Minecraft 26.2 as well as 1.21.1, with a separate download for each.
+  The book looks and behaves the same on both.
+- On 26.2 the book has no Create categories, because Create has no release for that version yet.
+  Nothing else is missing.
+- On 26.2, placing a recipe into the crafting grid from the book needs a server that also has
+  Craftbound. On a server without it the place button stays greyed out, since the game no longer
+  gives the client a way to ask for a recipe it has not already learned.
 - Craftbound now requires Just Enough Items instead of refusing to run alongside it.
   Install JEI 19.21.0 or newer next to Craftbound. In exchange, mods that hard-depend on
   JEI now work in the same pack, and you get JEI's own screens alongside the book.
