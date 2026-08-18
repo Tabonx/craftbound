@@ -47,7 +47,11 @@ base {
 java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
 
 neoForge {
-    version = neo_version
+    // -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
+    // where the two have drifted apart. Only for running the game locally, never for publishing.
+    version = project.hasProperty('jeiRuntime') && project.hasProperty('neo_version_jei_runtime')
+            ? neo_version_jei_runtime
+            : neo_version
 
     // Parchment lags new Minecraft versions and may never cover some of them. A version without it
     // builds against the plain official names.

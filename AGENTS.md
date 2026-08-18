@@ -29,6 +29,7 @@ Use fewer comments. Only add a comment when the code would be genuinely unclear 
 - Use `//? if >=<version> {` conditionals only where behaviour genuinely differs, and keep the version-specific parts small: the facades in `client/` (Canvas, Input, Net, Toasts, Screens) exist so the rest of the book reads the same everywhere.
 - Never let a conditional branch contain only a comment. Switching versions rewrites these blocks in place and a comment-only branch comes back as bare text that will not compile. Put the comment outside the conditional.
 - Run `Reset active project` before committing, so the tree is in the canonical version's form.
+- Build and publish against released loader versions. Where a dependency lags behind one, add a `_jei_runtime` style property for the older version and reach for it with a Gradle flag when running the game, rather than pinning what ships.
 
 ## Changelog
 - Record player-facing changes in `CHANGELOG.md` under an `## <version>` heading as part of the change itself, not at release time.
