@@ -2,6 +2,9 @@ package com.craftbound.upgrade;
 
 import com.craftbound.CraftboundAttachments;
 import com.craftbound.client.upgrade.BookUpgradeToast;
+import com.mojang.logging.LogUtils;
+
+import org.slf4j.Logger;
 
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -20,6 +23,8 @@ import net.minecraft.world.level.Level;
 // lens does nothing while one is already bound, so it is never spent for free.
 public class BookbindersLensItem extends Item
 {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public BookbindersLensItem(Properties properties)
     {
         super(properties);
@@ -65,9 +70,18 @@ public class BookbindersLensItem extends Item
     }
     //?}
 
-    // Kept in its own method so the client-only toast class is loaded on the client alone.
+    // Kept in its own method so the client-only toast class is loaded on the client alone. Binding
+    // the lens is the point of the item, and the toast only says so out loud, so a toast that
+    // cannot be loaded is dropped rather than taking the game down with it.
     private static void announce()
     {
-        BookUpgradeToast.show();
+        try
+        {
+            BookUpgradeToast.show();
+        }
+        catch (LinkageError e)
+        {
+            LOGGER.error("Book upgrade toast unavailable", e);
+        }
     }
 }
