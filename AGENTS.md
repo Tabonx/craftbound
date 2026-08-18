@@ -21,6 +21,7 @@ Use fewer comments. Only add a comment when the code would be genuinely unclear 
 ## Project layout
 - Organize code by feature/domain, not by technical layer.
 - Keep client-only code (rendering, client Mixins) under a `client` package, separate from common code that also runs on the dedicated server.
+- Prefer vanilla and JEI APIs over NeoForge ones. Every file that imports `net.neoforged` is a file another loader would have to reimplement, so keep those few files thin and keep the logic they wrap loader-free.
 
 ## Changelog
 - Record player-facing changes in `CHANGELOG.md` under an `## <version>` heading as part of the change itself, not at release time.

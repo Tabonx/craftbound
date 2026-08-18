@@ -6,12 +6,8 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.170'
+    id 'net.neoforged.moddev' version '2.0.144'
     id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
-}
-
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
 }
 
 // Releases take their version from the pushed tag. Every other build takes the version the
@@ -41,50 +37,81 @@ repositories {
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
 }
 
+// Every supported Minecraft version produces its own jar, so the version is part of the name.
 base {
-    archivesName = mod_id
+    archivesName = "${mod_id}-${minecraft_version}"
 }
 
 // Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
+neoForge {
+    version = neo_version
 
-runs {
-    configureEach {
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-
-        systemProperty 'forge.logging.console.level', 'debug'
-
-        modSource project.sourceSets.main
+    parchment {
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
     }
 
-    client {
-        // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+    accessTransformers.from rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
 
-        // Larger default dev window.
-        arguments.addAll '--width', '1600', '--height', '900'
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
     }
 
-    server {
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        argument '--nogui'
+    // Puts Minecraft on the test classpath. The tests themselves are plain logic and never touch a
+    // running game, they just name types like ResourceLocation.
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
     }
 
-    gameTestServer {
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-    }
+    runs {
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+        }
 
-    data {
-        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        client {
+            client()
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+
+            // Larger default dev window.
+            programArguments.addAll '--width', '1600', '--height', '900'
+        }
+
+        server {
+            server()
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            programArgument '--nogui'
+        }
+
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', rootProject.file('src/generated/resources/').absolutePath,
+                    '--existing', rootProject.file('src/main/resources/').absolutePath
+        }
     }
 }
 
+// One compilation, two roots. Everything in common/ is loader-free: a file that imports
+// net.neoforged belongs in neoforge/ instead, which keeps the porting surface for another loader
+// down to that directory.
+// src/ is Stonecutter's shared source directory, linked into whichever version is active, so it is
+// left at the default and only the generated resources are added.
 sourceSets {
     main {
         resources {
-            srcDir 'src/generated/resources'
+            srcDir rootProject.file('src/generated/resources')
         }
     }
 }
@@ -94,8 +121,6 @@ configurations {
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${neo_version}"
-
     // JEI, required at runtime. Only the api artifacts are on the compile classpath, so reaching
     // for a JEI internal is a compile error rather than something that breaks on the next JEI or
     // Minecraft version. The one internal Craftbound still needs (the shapeless icon it hides) is
@@ -185,6 +210,10 @@ def changelogFor(String released)
     section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
 }
 
+// Each jar is published against exactly the Minecraft versions it was built for, which the version
+// owns rather than the root: a jar for one version must never claim to cover the others.
+def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
+
 publishMods {
     // A rehearsal that builds and validates every payload without uploading, so a broken publish
     // shows up on a normal push instead of after a tag has been cut.
@@ -209,10 +238,7 @@ publishMods {
         modrinth {
             projectId = modrinth_id
             accessToken = providers.gradleProperty('modrinthToken')
-            minecraftVersionRange {
-                start = publish_minecraft_version_start
-                end = minecraft_version
-            }
+            minecraftVersions.addAll publishMinecraftVersions
             environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
             optional('create')
             requires('jei')
@@ -223,10 +249,7 @@ publishMods {
         curseforge {
             projectId = curseforge_id
             accessToken = providers.gradleProperty('curseforgeApikey')
-            minecraftVersionRange {
-                start = publish_minecraft_version_start
-                end = minecraft_version
-            }
+            minecraftVersions.addAll publishMinecraftVersions
             javaVersions.add(JavaVersion.VERSION_21)
             client = true
             server = false
