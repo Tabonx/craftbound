@@ -32,7 +32,7 @@ public final class RecipeBookScreenTweaks
     public static void onInit(ScreenEvent.Init.Post event)
     {
         if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)
-                || !(screen.getMenu() instanceof RecipeBookMenu<?, ?> menu))
+                || !(screen.getMenu() instanceof RecipeBookMenu menu))
             return;
 
         ImageButton vanillaButton = findRecipeButton(event);

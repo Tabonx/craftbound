@@ -15,8 +15,10 @@ public final class CraftboundItems
 {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Craftbound.MODID);
 
-    public static final DeferredItem<Item> BOOKBINDERS_LENS = ITEMS.register("bookbinders_lens",
-            () -> new BookbindersLensItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+    // Registered through registerItem so the properties are handed over already carrying the item's
+    // own id, which newer versions require before an item may be built.
+    public static final DeferredItem<Item> BOOKBINDERS_LENS = ITEMS.registerItem("bookbinders_lens",
+            props -> new BookbindersLensItem(props.stacksTo(1).rarity(Rarity.UNCOMMON)));
 
     public static void addToCreativeTabs(final BuildCreativeModeTabContentsEvent event)
     {

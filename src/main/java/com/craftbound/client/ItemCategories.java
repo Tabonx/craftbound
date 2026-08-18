@@ -1,11 +1,21 @@
 package com.craftbound.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.craftbound.client.jei.BookIngredient;
 
 import net.minecraft.client.Minecraft;
+//? if >=1.21.5 {
+/*import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.context.ContextMap;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
+*///?}
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -36,6 +46,25 @@ public final class ItemCategories
             return EMPTY;
 
         Map<Item, BrowseTab> byItem = new HashMap<>();
+        //? if >=1.21.5 {
+        /*// The client is no longer given the recipes themselves, only the displays its own recipe
+        // book was told about, and each of those already names the book category it belongs to.
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null)
+            return EMPTY;
+
+        ContextMap context = SlotDisplayContext.fromLevel(level);
+        for (RecipeCollection collection : player.getRecipeBook().getCollections())
+            for (RecipeDisplayEntry entry : collection.getRecipes())
+            {
+                BrowseTab tab = tabOf(entry.category());
+                if (tab == null)
+                    continue;
+                for (ItemStack result : resultsOf(entry, context))
+                    if (!result.isEmpty())
+                        byItem.putIfAbsent(result.getItem(), tab);
+            }
+        *///?} else {
         for (RecipeHolder<?> holder : level.getRecipeManager().getRecipes())
         {
             BrowseTab tab = tabOf(holder.value());
@@ -45,6 +74,7 @@ public final class ItemCategories
             if (!result.isEmpty())
                 byItem.putIfAbsent(result.getItem(), tab);
         }
+        //?}
         return new ItemCategories(byItem);
     }
 
@@ -53,6 +83,39 @@ public final class ItemCategories
         return ingredient.item().map(byItem::get).orElse(BrowseTab.MISC);
     }
 
+    //? if >=1.21.5 {
+    /*private static BrowseTab tabOf(RecipeBookCategory category)
+    {
+        if (category == RecipeBookCategories.CRAFTING_BUILDING_BLOCKS)
+            return BrowseTab.BUILDING;
+        if (category == RecipeBookCategories.CRAFTING_EQUIPMENT)
+            return BrowseTab.EQUIPMENT;
+        if (category == RecipeBookCategories.CRAFTING_REDSTONE)
+            return BrowseTab.REDSTONE;
+        if (category == RecipeBookCategories.CRAFTING_MISC)
+            return BrowseTab.MISC;
+        // The cooking categories all read as food and oddments rather than as a rail of their own.
+        if (category == RecipeBookCategories.FURNACE_BLOCKS)
+            return BrowseTab.BUILDING;
+        if (category == RecipeBookCategories.FURNACE_FOOD || category == RecipeBookCategories.FURNACE_MISC
+                || category == RecipeBookCategories.SMOKER_FOOD || category == RecipeBookCategories.CAMPFIRE)
+            return BrowseTab.MISC;
+        return null;
+    }
+
+    // A display can name several results, and asking for them can throw on a mod's own display.
+    private static List<ItemStack> resultsOf(RecipeDisplayEntry entry, ContextMap context)
+    {
+        try
+        {
+            return entry.resultItems(context);
+        }
+        catch (RuntimeException e)
+        {
+            return List.of();
+        }
+    }
+    *///?} else {
     private static BrowseTab tabOf(Recipe<?> recipe)
     {
         if (recipe instanceof CraftingRecipe crafting)
@@ -75,4 +138,5 @@ public final class ItemCategories
             return ItemStack.EMPTY;
         }
     }
+    //?}
 }

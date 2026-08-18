@@ -790,7 +790,7 @@ public final class RecipeBookWidget extends AbstractWidget
         boolean overBack = inRect(mouseX, mouseY, backX, y + BACK_Y, BACK_W, BACK_H);
         Canvas.sprite(graphics, BACKWARD_SPRITES.get(true, overBack), backX, y + BACK_Y, ARROW_W, ARROW_H);
         graphics.drawString(font, BACK_LABEL, backX + ARROW_W + 3, y + BACK_Y + (ARROW_H - 8) / 2,
-                0xFFFFFF, true);
+                0xFFFFFFFF, true);
 
         IRecipeLayoutDrawable<?> layout = currentRecipe();
         layout.setPosition(0, 0);
@@ -929,7 +929,7 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             var font = Minecraft.getInstance().font;
             String label = (index + 1) + "/" + count;
-            graphics.drawString(font, label, x + getWidth() / 2 - font.width(label) / 2, y + ARROW_Y + 5, 0xFFFFFF, true);
+            graphics.drawString(font, label, x + getWidth() / 2 - font.width(label) / 2, y + ARROW_Y + 5, 0xFFFFFFFF, true);
         }
     }
 
@@ -1085,6 +1085,15 @@ public final class RecipeBookWidget extends AbstractWidget
         if (Input.keyPressed(search, keyCode, scanCode, modifiers))
             return true;
         return search.canConsumeInput(); // swallow other keys while the search box is focused
+    }
+
+    // The book's clickable area is the page plus the rail beside it. Newer versions hand a click
+    // only to the widget this reports as being under the cursor, so leaving the rail out of it makes
+    // the ribbons unclickable.
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY)
+    {
+        return visible && (isMouseOverBook(mouseX, mouseY) || rail().isOver(mouseX, mouseY));
     }
 
     private boolean isMouseOverBook(double mouseX, double mouseY)

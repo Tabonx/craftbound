@@ -2,6 +2,11 @@ package com.craftbound;
 
 import com.craftbound.upgrade.UnbindLensPayload;
 
+//? if >=1.21.5 {
+/*import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.crafting.Recipe;
+*///?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.item.ItemStack;
@@ -48,11 +53,23 @@ public final class CraftboundNetwork
             return;
 
         player.resetLastActionTime();
-        if (!(player.containerMenu instanceof RecipeBookMenu<?, ?> menu)
+        if (!(player.containerMenu instanceof RecipeBookMenu menu)
                 || menu.containerId != payload.containerId()
                 || !menu.stillValid(player))
             return;
 
+        //? if >=1.21.5 {
+        /*// The recipe manager lives on the server alone now, and recipes are named by registry key.
+        ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, payload.recipeId());
+        RecipeHolder<?> recipe = player.level().getServer().getRecipeManager().byKey(key).orElse(null);
+        if (recipe == null || !RecipePlacement.canPlace(menu, recipe))
+            return;
+
+        // Vanilla placement refuses recipes the player's vanilla recipe book has not unlocked, but
+        // Craftbound offers every recipe, so placing one counts as learning it.
+        player.getRecipeBook().add(key);
+        menu.handlePlacement(payload.placeAll(), false, recipe, player.level(), player.getInventory());
+        *///?} else {
         RecipeHolder<?> recipe = player.level().getRecipeManager().byKey(payload.recipeId()).orElse(null);
         if (recipe == null || !RecipePlacement.canPlace(menu, recipe))
             return;
@@ -61,6 +78,7 @@ public final class CraftboundNetwork
         // Craftbound offers every recipe, so placing one counts as learning it.
         player.getRecipeBook().add(recipe);
         menu.handlePlacement(payload.placeAll(), recipe, player);
+        //?}
     }
 
     private CraftboundNetwork() {}

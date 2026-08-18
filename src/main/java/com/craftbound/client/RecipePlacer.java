@@ -13,19 +13,19 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 // Places a shown recipe into the open menu's input slots. The slots are server-owned, so the click
 // only asks; CraftboundNetwork does the moving.
 public final class RecipePlacer
 {
-    private final RecipeBookMenu<?, ?> menu;
+    private final RecipeBookMenu menu;
 
-    public RecipePlacer(RecipeBookMenu<?, ?> menu)
+    public RecipePlacer(RecipeBookMenu menu)
     {
         this.menu = menu;
     }
@@ -44,7 +44,9 @@ public final class RecipePlacer
                 : Optional.empty();
     }
 
-    private static RecipeType<?> categoryFor(RecipeBookType bookType)
+    // Typed as Object because it is only ever compared for identity, and JEI renamed the interface
+    // it returns between the versions the book supports.
+    private static Object categoryFor(RecipeBookType bookType)
     {
         return switch (bookType)
         {
@@ -65,13 +67,31 @@ public final class RecipePlacer
         if (player == null)
             return false;
 
+        //? if >=1.21.5 {
+        /*// The client is only told about recipe displays now, and vanilla's placement packet names
+        // a display rather than a recipe, so there is nothing the book can ask a plain server to
+        // place. Placement needs a server running Craftbound, and the button greys out otherwise.
+        if (!ServerSupport.installed())
+            return false;
+        *///?} else {
         if (!ServerSupport.installed() && !player.getRecipeBook().contains(recipe))
             return false;
+        //?}
 
         StackedContents contents = new StackedContents();
         player.getInventory().fillStackedContents(contents);
         menu.fillCraftSlotsStackedContents(contents);
         return contents.canCraft(recipe.value(), null);
+    }
+
+    // A recipe's own id, which newer versions wrap in a registry key.
+    private static ResourceLocation recipeId(RecipeHolder<?> recipe)
+    {
+        //? if >=1.21.5 {
+        /*return recipe.id().identifier();
+        *///?} else {
+        return recipe.id();
+        //?}
     }
 
     // A server without Craftbound cannot take our packet, so ask with vanilla's. That one only
@@ -81,12 +101,16 @@ public final class RecipePlacer
     {
         if (ServerSupport.installed())
         {
-            PacketDistributor.sendToServer(new PlaceRecipePayload(menu.containerId, recipe.id(), placeAll));
+            Net.toServer(new PlaceRecipePayload(menu.containerId, recipeId(recipe), placeAll));
             return;
         }
 
+        //? if >=1.21.5 {
+        /*// Nothing to fall back to: canPlace already refuses this case.
+        *///?} else {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null)
             connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
+        //?}
     }
 }

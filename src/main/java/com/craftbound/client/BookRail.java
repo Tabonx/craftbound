@@ -136,7 +136,7 @@ public final class BookRail
     {
         var font = Minecraft.getInstance().font;
         boolean over = enabled && inRect(mouseX, mouseY, x + TAB_X, arrowY, -TAB_X, ARROW_H);
-        int color = !enabled ? 0x808080 : over ? 0xFFFFA0 : 0xFFFFFF;
+        int color = !enabled ? 0xFF808080 : over ? 0xFFFFFFA0 : 0xFFFFFFFF;
         graphics.drawString(font, glyph, x + TAB_X + (-TAB_X - font.width(glyph)) / 2, arrowY + 2, color, true);
     }
 

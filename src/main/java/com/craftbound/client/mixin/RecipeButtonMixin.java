@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeButton;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // For recipes whose result would open up recipes the book is still hiding, swap the slot-background
@@ -23,6 +24,29 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 @Mixin(RecipeButton.class)
 public abstract class RecipeButtonMixin
 {
+    //? if >=1.21.5 {
+    /*// The button resolves its own displayed stack now, which is exactly the result the mark is
+    // about, so there is no need to walk the collection's recipes.
+    @Shadow
+    public ItemStack getDisplayStack()
+    {
+        throw new AssertionError();
+    }
+
+    @ModifyArg(
+            method = "extractWidgetRenderState",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"),
+            index = 1)
+    private Identifier craftbound$swapUnlockingSprite(Identifier original)
+    {
+        ItemStack result = getDisplayStack();
+        if (!result.isEmpty() && Progression.unlocksMore(BuiltInRegistries.ITEM.getKey(result.getItem())))
+            return Identifier.fromNamespaceAndPath(Craftbound.MODID, original.getPath());
+        return original;
+    }
+    *///?} else {
     // Shadow of RecipeButton's private helper. We use this instead of getRecipe() because,
     // at the blitSprite call, the button's currentIndex has not been recomputed yet and may
     // point past the end of a smaller, just-swapped-in collection (crash when paging).
@@ -59,4 +83,5 @@ public abstract class RecipeButtonMixin
         }
         return false;
     }
+    //?}
 }

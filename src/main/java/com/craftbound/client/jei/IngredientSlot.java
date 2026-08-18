@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Optional;
 
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
+//? if >=1.21.5 {
+/*import net.minecraft.util.context.ContextMap;
+*///?}
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotRichTooltipCallback;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
@@ -55,6 +58,88 @@ final class IngredientSlot implements IRecipeSlotBuilder
     {
         return add(type, ingredient);
     }
+
+    //? if >=1.21.5 {
+    /*@Override
+    public IRecipeSlotBuilder addItemStacks(List<net.minecraft.world.item.ItemStack> itemStacks)
+    {
+        for (net.minecraft.world.item.ItemStack stack : itemStacks)
+            add(stack);
+        return this;
+    }
+
+    @Override
+    public <I> IRecipeSlotBuilder add(mezz.jei.api.ingredients.ITypedIngredient<I> ingredient)
+    {
+        ingredients.add(ingredient);
+        return this;
+    }
+
+    // Newer JEI names every one of these "add". They all funnel into the same place: whatever the
+    // slot accepts, recorded as a typed ingredient.
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.item.crafting.Ingredient ingredient)
+    {
+        ingredient.items().forEach(item -> add(new net.minecraft.world.item.ItemStack(item)));
+        return this;
+    }
+
+    @Override
+    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, net.minecraft.world.item.crafting.Ingredient ingredient)
+    {
+        return add(ingredient);
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStack itemStack)
+    {
+        return add(mezz.jei.api.constants.VanillaTypes.ITEM_STACK, itemStack);
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.level.ItemLike itemLike)
+    {
+        return add(new net.minecraft.world.item.ItemStack(itemLike));
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
+    {
+        return add(itemStackTemplate.create());
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.item.crafting.display.SlotDisplay slotDisplay)
+    {
+        for (net.minecraft.world.item.ItemStack stack : slotDisplay.resolveForStacks(getContextMap()))
+            add(stack);
+        return this;
+    }
+
+    @Override
+    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, net.minecraft.world.item.crafting.display.SlotDisplay slotDisplay)
+    {
+        return add(slotDisplay);
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(Fluid fluid)
+    {
+        return addFluidStack(fluid);
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(Fluid fluid, long amount)
+    {
+        return addFluidStack(fluid, amount);
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(Fluid fluid, long amount, DataComponentPatch components)
+    {
+        return addFluidStack(fluid, amount, components);
+    }
+    *///?}
 
     @Override
     public IRecipeSlotBuilder addIngredientsUnsafe(List<?> ingredients)
@@ -115,7 +200,7 @@ final class IngredientSlot implements IRecipeSlotBuilder
         return add(type, helper.create(fluid.builtInRegistryHolder(), amount, components));
     }
 
-    private <I> IRecipeSlotBuilder add(IIngredientType<I> type, I ingredient)
+    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, I ingredient)
     {
         if (ingredient != null)
             manager.createTypedIngredient(type, ingredient).ifPresent(ingredients::add);
@@ -182,12 +267,22 @@ final class IngredientSlot implements IRecipeSlotBuilder
         return this;
     }
 
+    //? if >=1.21.5 {
+    /*// Newer JEI resolves slot displays against a context; the index only reads what a slot
+    // accepts, so it has nothing of its own to put in one.
+    @Override
+    public ContextMap getContextMap()
+    {
+        return ContextMap.EMPTY;
+    }
+    *///?} else {
     @SuppressWarnings("removal")
     @Override
     public IRecipeSlotBuilder addTooltipCallback(mezz.jei.api.gui.ingredient.IRecipeSlotTooltipCallback callback)
     {
         return this;
     }
+    //?}
 
     @Override
     public IRecipeSlotBuilder addRichTooltipCallback(IRecipeSlotRichTooltipCallback callback)
