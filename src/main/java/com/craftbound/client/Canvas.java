@@ -38,7 +38,7 @@ public final class Canvas
     // Draws a child widget. Newer versions have widgets extract render state rather than draw.
     public static void widget(Renderable child, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
-        //? if >=1.21.5 {
+        //? if >=26.1 {
         /*child.extractRenderState(graphics, mouseX, mouseY, partialTick);
         *///?} else {
         child.render(graphics, mouseX, mouseY, partialTick);

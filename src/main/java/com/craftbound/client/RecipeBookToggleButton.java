@@ -38,15 +38,24 @@ public final class RecipeBookToggleButton extends ImageButton
         super(x, y, WIDTH, HEIGHT, RecipeBookComponent.RECIPE_BUTTON_SPRITES, onPress, CommonComponents.EMPTY);
     }
 
-    //? if >=1.21.5 {
+    //? if >=26.1 {
     /*@Override
     public void extractContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         super.extractContents(graphics, mouseX, mouseY, partialTick);
         drawUpgradeHint(graphics);
     }
+    *///?} elif >=1.21.5 {
+    /*@Override
+    public void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        super.renderContents(graphics, mouseX, mouseY, partialTick);
+        drawUpgradeHint(graphics);
+    }
+    *///?}
 
-    @Override
+    //? if >=1.21.5 {
+    /*@Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
         return unbindOr(event.x(), event.y(), event.button(), () -> super.mouseClicked(event, doubleClick));

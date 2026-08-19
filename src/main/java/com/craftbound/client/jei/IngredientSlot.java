@@ -104,16 +104,18 @@ final class IngredientSlot implements IRecipeSlotBuilder
         return add(new net.minecraft.world.item.ItemStack(itemLike));
     }
 
+    //? if >=26.2 {
     @Override
     public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
     {
         return add(itemStackTemplate.create());
     }
+    //?}
 
     @Override
     public IRecipeSlotBuilder add(net.minecraft.world.item.crafting.display.SlotDisplay slotDisplay)
     {
-        for (net.minecraft.world.item.ItemStack stack : slotDisplay.resolveForStacks(getContextMap()))
+        for (net.minecraft.world.item.ItemStack stack : slotDisplay.resolveForStacks(contextMap()))
             add(stack);
         return this;
     }
@@ -273,8 +275,15 @@ final class IngredientSlot implements IRecipeSlotBuilder
     /*// Newer JEI hands slot contents over as displays, which only resolve to actual ingredients
     // against the level's context. Without it every slot resolves to nothing and the index reads
     // every recipe as requiring no inputs at all.
+    //? if >=26.2 {
     @Override
     public ContextMap getContextMap()
+    {
+        return contextMap();
+    }
+    //?}
+
+    private static ContextMap contextMap()
     {
         Level level = net.minecraft.client.Minecraft.getInstance().level;
         return level == null ? ContextMap.EMPTY : SlotDisplayContext.fromLevel(level);

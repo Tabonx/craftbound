@@ -8,7 +8,7 @@ public final class Screens
 {
     public static Screen current()
     {
-        //? if >=1.21.5 {
+        //? if >=26.2 {
         /*return Minecraft.getInstance().gui.screen();
         *///?} else {
         return Minecraft.getInstance().screen;

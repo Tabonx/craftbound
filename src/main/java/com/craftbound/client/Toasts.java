@@ -9,8 +9,10 @@ public final class Toasts
 {
     public static ToastComponent of(Minecraft minecraft)
     {
-        //? if >=1.21.5 {
+        //? if >=26.2 {
         /*return minecraft.gui.toastManager();
+        *///?} elif >=1.21.5 {
+        /*return minecraft.getToastManager();
         *///?} else {
         return minecraft.getToasts();
         //?}

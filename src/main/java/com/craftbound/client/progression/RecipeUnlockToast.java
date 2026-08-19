@@ -92,8 +92,7 @@ public final class RecipeUnlockToast implements Toast
         visibility = fullyVisibleForMs - lastChanged >= displayTime ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
     }
 
-    @Override
-    public void extractRenderState(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    private void draw(GuiGraphics graphics, Font font, long fullyVisibleForMs)
     {
         Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
         graphics.drawString(font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
@@ -107,6 +106,20 @@ public final class RecipeUnlockToast implements Toast
         // Drawn through JEI's own renderer, so a fluid shows here exactly as it does in the book.
         if (!results.isEmpty())
             results.get(cycleIndex(fullyVisibleForMs, displayTime)).render(graphics, 8, 8);
+    }
+    *///?}
+
+    //? if >=26.1 {
+    /*@Override
+    public void extractRenderState(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        draw(graphics, font, fullyVisibleForMs);
+    }
+    *///?} elif >=1.21.5 {
+    /*@Override
+    public void render(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        draw(graphics, font, fullyVisibleForMs);
     }
     *///?} else {
     @Override

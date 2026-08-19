@@ -153,20 +153,29 @@ stonecutter.replacements.string {
     replace 'ToastComponent', 'ToastManager'
     replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
     replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
-
-    // Drawing calls that only changed name, not arguments. The ones that changed shape are written
-    // out in the drawing code instead.
-    replace '.drawString(', '.text('
-    replace '.renderFakeItem(', '.fakeItem('
     replace '.renderComponentTooltip(', '.setComponentTooltipForNextFrame('
 }
 
 // Same package as GuiGraphics, so renaming the type covers its import and every use. The lookbehind
 // keeps NeoForge's own getGuiGraphics() event accessor out of it, and the methods on the type differ
 // and are handled in the drawing code rather than here.
+def extractor = stonecutter.eval(stonecutter.current.version, '>=26.1')
+stonecutter.replacements.regex {
+    direction = extractor
+    replace '(?<!get)\\bGuiGraphics\\b', 'GuiGraphicsExtractor', '\\bGuiGraphicsExtractor\\b', 'GuiGraphics'
+}
+
+// Drawing calls renamed alongside the type, with the same arguments. The ones that changed shape
+// are written out in the drawing code instead.
+stonecutter.replacements.string {
+    direction = extractor
+    replace '.drawString(', '.text('
+    replace '.renderFakeItem(', '.fakeItem('
+}
+
+// StackedContents was renamed with the recipe rewrite, well before the drawing changes.
 stonecutter.replacements.regex {
     direction = modern
-    replace '(?<!get)\\bGuiGraphics\\b', 'GuiGraphicsExtractor', '\\bGuiGraphicsExtractor\\b', 'GuiGraphics'
     // The type alone, never the fill methods named after it, which kept their names.
     replace '(?<![A-Za-z])StackedContents\\b', 'StackedItemContents', '(?<![A-Za-z])StackedItemContents\\b', 'StackedContents'
 }

@@ -36,8 +36,10 @@ public final class Input
 
     public static boolean charTyped(GuiEventListener target, char codePoint, int modifiers)
     {
-        //? if >=1.21.5 {
+        //? if >=26.1 {
         /*return target.charTyped(new CharacterEvent(codePoint));
+        *///?} elif >=1.21.5 {
+        /*return target.charTyped(new CharacterEvent(codePoint, modifiers));
         *///?} else {
         return target.charTyped(codePoint, modifiers);
         //?}

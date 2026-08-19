@@ -602,14 +602,22 @@ public final class RecipeBookWidget extends AbstractWidget
     // The vanilla hooks, which are all that differ between Minecraft versions: newer ones extract
     // render state instead of drawing, and hand input over as event records. Everything below is
     // the book itself and is shared.
-    //? if >=1.21.5 {
+    //? if >=26.1 {
     /*@Override
     protected void extractWidgetRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         drawBook(graphics, mouseX, mouseY, partialTick);
     }
+    *///?} elif >=1.21.5 {
+    /*@Override
+    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        drawBook(graphics, mouseX, mouseY, partialTick);
+    }
+    *///?}
 
-    @Override
+    //? if >=1.21.5 {
+    /*@Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
         return clicked(event.x(), event.y(), event.button());

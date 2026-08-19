@@ -34,10 +34,10 @@ public final class BookUpgradeToast implements Toast
         Toasts.of(Minecraft.getInstance()).addToast(new BookUpgradeToast());
     }
 
+    // Newer versions ask a toast what it wants, tick it, and draw it in three separate calls rather
+    // than one that both draws and decides. The draw call is named after render state from 26.x on.
     //? if >=1.21.5 {
-    /*// Newer versions ask a toast what it wants, tick it, and draw it in three separate calls
-    // rather than one that both draws and decides.
-    private Toast.Visibility visibility = Toast.Visibility.SHOW;
+    /*private Toast.Visibility visibility = Toast.Visibility.SHOW;
 
     @Override
     public Toast.Visibility getWantedVisibility()
@@ -53,13 +53,26 @@ public final class BookUpgradeToast implements Toast
                 : Toast.Visibility.SHOW;
     }
 
-    @Override
-    public void extractRenderState(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    private void draw(GuiGraphics graphics, Font font)
     {
         Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
         graphics.drawString(font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
         graphics.drawString(font, DESCRIPTION_TEXT, 30, 18, DESCRIPTION_COLOR, false);
         graphics.renderFakeItem(new ItemStack(CraftboundItems.BOOKBINDERS_LENS.get()), 8, 8);
+    }
+    *///?}
+
+    //? if >=26.1 {
+    /*@Override
+    public void extractRenderState(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        draw(graphics, font);
+    }
+    *///?} elif >=1.21.5 {
+    /*@Override
+    public void render(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        draw(graphics, font);
     }
     *///?} else {
     @Override
