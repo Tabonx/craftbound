@@ -5,9 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21.5 {
-/*import net.minecraft.client.renderer.RenderPipelines;
-*///?}
 
 // The handful of drawing calls whose shape, not just their name, changed between Minecraft
 // versions. Everything else the book draws is a straight rename and is mapped by the build. Keeping
@@ -16,80 +13,46 @@ public final class Canvas
 {
     public static void sprite(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height)
     {
-        //? if >=1.21.5 {
-        /*graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height);
-        *///?} else {
         graphics.blitSprite(sprite, x, y, width, height);
-        //?}
     }
 
     // A region of a texture file, as opposed to a stitched gui sprite.
     public static void texture(GuiGraphics graphics, ResourceLocation texture, int x, int y, int width, int height,
             float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight)
     {
-        //? if >=1.21.5 {
-        /*graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height,
-                regionWidth, regionHeight, textureWidth, textureHeight);
-        *///?} else {
         graphics.blit(texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
-        //?}
     }
 
-    // Draws a child widget. Newer versions have widgets extract render state rather than draw.
     public static void widget(Renderable child, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
-        //? if >=26.1 {
-        /*child.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        *///?} else {
         child.render(graphics, mouseX, mouseY, partialTick);
-        //?}
     }
 
     public static void tooltip(GuiGraphics graphics, Font font, Component text, int mouseX, int mouseY)
     {
-        //? if >=1.21.5 {
-        /*graphics.setTooltipForNextFrame(text, mouseX, mouseY);
-        *///?} else {
         graphics.renderTooltip(font, text, mouseX, mouseY);
-        //?}
     }
 
-    // Transforms. Newer versions carry a plain 2D matrix stack for these, older ones a full pose
-    // stack, and the book only ever moves and scales in two dimensions.
+    // Transforms. This generation carries a full pose stack, and the book only ever moves and
+    // scales in two dimensions.
     public static void push(GuiGraphics graphics)
     {
-        //? if >=1.21.5 {
-        /*graphics.pose().pushMatrix();
-        *///?} else {
         graphics.pose().pushPose();
-        //?}
     }
 
     public static void pop(GuiGraphics graphics)
     {
-        //? if >=1.21.5 {
-        /*graphics.pose().popMatrix();
-        *///?} else {
         graphics.pose().popPose();
-        //?}
     }
 
     public static void translate(GuiGraphics graphics, float x, float y)
     {
-        //? if >=1.21.5 {
-        /*graphics.pose().translate(x, y);
-        *///?} else {
         graphics.pose().translate(x, y, 0f);
-        //?}
     }
 
     public static void scale(GuiGraphics graphics, float scale)
     {
-        //? if >=1.21.5 {
-        /*graphics.pose().scale(scale, scale);
-        *///?} else {
         graphics.pose().scale(scale, scale, 1f);
-        //?}
     }
 
     // Scales what follows about a point, until pop().

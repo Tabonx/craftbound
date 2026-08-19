@@ -7,13 +7,6 @@ import java.util.Set;
 import com.craftbound.RecipePlacement;
 
 import net.minecraft.client.Minecraft;
-//? if >=1.21.5 {
-/*import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
-import net.minecraft.util.context.ContextMap;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
-import net.minecraft.world.item.crafting.display.SlotDisplayContext;
-*///?}
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
@@ -48,26 +41,12 @@ public final class CraftableItems
         menu.fillCraftSlotsStackedContents(contents);
 
         Set<Item> result = new HashSet<>();
-        //? if >=1.21.5 {
-        /*// The client holds recipe displays rather than recipes now, and each display answers for
-        // itself whether the given inventory can craft it.
-        ContextMap context = SlotDisplayContext.fromLevel(minecraft.level);
-        for (RecipeCollection collection : minecraft.player.getRecipeBook().getCollections())
-            for (RecipeDisplayEntry entry : collection.getRecipes())
-                if (entry.canCraft(contents))
-                    for (ItemStack stack : entry.resultItems(context))
-                        if (!stack.isEmpty())
-                            result.add(stack.getItem());
-        *///?} else {
         collect(minecraft.level.getRecipeManager(), RecipePlacement.recipeTypeFor(menu.getRecipeBookType()),
                 contents, menu.getGridWidth(), menu.getGridHeight(),
                 minecraft.level.registryAccess(), result);
-        //?}
         return result;
     }
 
-    // Newer versions have no client recipe manager to walk; craftableIn reads displays instead.
-    //? if <1.21.5 {
     // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime
     // from the menu, erase to a raw RecipeType and read each holder as a plain Recipe.
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -88,5 +67,4 @@ public final class CraftableItems
                 result.add(recipe.getResultItem(registries).getItem());
         }
     }
-    //?}
 }

@@ -180,10 +180,64 @@ stonecutter.replacements.regex {
     replace '(?<![A-Za-z])StackedContents\\b', 'StackedItemContents', '(?<![A-Za-z])StackedItemContents\\b', 'StackedContents'
 }
 
+// A file whose whole body changed at some Minecraft version lives in src/main/<kind>-since-<version>
+// under its usual name and package, rather than as one file interleaving every variant. A build
+// takes every such directory up to its own version, newest last, so the newest copy of each file is
+// the one that counts and a directory only has to hold the files that actually changed there.
+//
+// Boundaries are per file, not per project: a class that changed at 1.21.6 needs a directory for
+// 1.21.6 holding only itself, and leaves everything split at an earlier version alone. Adding a
+// boundary is making the directory, which is why they are discovered rather than listed.
+def sinceRoots(String kind)
+{
+    rootProject.file('src/main')
+            .listFiles({ file -> file.directory && file.name.startsWith("$kind-since-") } as FileFilter)
+            .collect { [version: it.name.substring("$kind-since-".length()), dir: it] }
+            .findAll { stonecutter.eval(stonecutter.current.version, ">=${it.version}") }
+            .sort { a, b -> compareVersions(a.version, b.version) }
+}
+
+// Compared number by number rather than as text, so 1.21.10 sorts after 1.21.5.
+static int compareVersions(String left, String right)
+{
+    def a = left.split(/\./).collect { it as int }
+    def b = right.split(/\./).collect { it as int }
+    for (int i = 0; i < Math.max(a.size(), b.size()); i++)
+    {
+        int difference = (i < a.size() ? a[i] : 0) - (i < b.size() ? b[i] : 0)
+        if (difference != 0)
+            return difference
+    }
+    return 0
+}
+
 // Resources that had to change shape rather than just move: recipe ingredients became plain ids,
-// and an item now needs a model definition of its own. Each version takes one directory or the
-// other, so neither has to be excluded from the other's build.
-sourceSets.main.resources.srcDir rootProject.file(modern ? 'src/main/resources-modern' : 'src/main/resources-legacy')
+// and an item now needs a model definition of its own. Later directories are read last, and the
+// duplicate strategy is what lets one of them replace a file an earlier one supplied.
+sinceRoots('resources').each { sourceSets.main.resources.srcDir it.dir }
+tasks.withType(ProcessResources).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+// Java has no such per-file precedence, so the directories are stacked into one staged tree and
+// that is what gets compiled. Stonecutter preprocesses everything under src/ whether or not it is
+// compiled, so these files are still written in 1.21.1's names and may still hold a conditional for
+// a later boundary; the version being built takes its own processed copy of each, except the active
+// one, whose sources are already in their final form.
+def stageVersionedSources = tasks.register('stageVersionedSources', Sync) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    sinceRoots('java').each {
+        from stonecutter.current.isActive
+                ? it.dir
+                : layout.buildDirectory.dir("generated/stonecutter/main/java-since-${it.version}")
+    }
+    into layout.buildDirectory.dir('generated/versioned/java')
+
+    if (!stonecutter.current.isActive)
+        dependsOn tasks.matching { it.name == 'stonecutterGenerate' }
+}
+
+sourceSets.main.java.srcDir stageVersionedSources
 
 // The Ponder integration is the one part of the mod that cannot exist without Create. PonderGate is
 // deliberately not in here: it only tracks whether the book is drawing a tooltip and touches nothing

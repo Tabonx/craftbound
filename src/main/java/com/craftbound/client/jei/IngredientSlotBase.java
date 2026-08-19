@@ -5,11 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
-//? if >=1.21.5 {
-/*import net.minecraft.util.context.ContextMap;
-import net.minecraft.world.item.crafting.display.SlotDisplayContext;
-import net.minecraft.world.level.Level;
-*///?}
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotRichTooltipCallback;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
@@ -28,15 +23,18 @@ import net.minecraft.world.level.material.Fluid;
 //
 // Ingredients go through createTypedIngredient, which is also what drops the invalid ones, so a
 // category that offers an unregistered item contributes nothing rather than a broken entry.
-final class IngredientSlot implements IRecipeSlotBuilder
+//
+// Everything JEI has asked of a slot on every version lives here. The methods newer JEI added, and
+// the one it removed, are on IngredientSlot, which each generation supplies its own.
+abstract class IngredientSlotBase implements IRecipeSlotBuilder
 {
     private static final int SLOT_SIZE = 16;
 
     private final IIngredientManager manager;
     private final IPlatformFluidHelper<?> fluids;
-    private final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
+    protected final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
 
-    IngredientSlot(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
+    IngredientSlotBase(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
     {
         this.manager = manager;
         this.fluids = fluids;
@@ -60,90 +58,6 @@ final class IngredientSlot implements IRecipeSlotBuilder
     {
         return add(type, ingredient);
     }
-
-    //? if >=1.21.5 {
-    /*@Override
-    public IRecipeSlotBuilder addItemStacks(List<net.minecraft.world.item.ItemStack> itemStacks)
-    {
-        for (net.minecraft.world.item.ItemStack stack : itemStacks)
-            add(stack);
-        return this;
-    }
-
-    @Override
-    public <I> IRecipeSlotBuilder add(mezz.jei.api.ingredients.ITypedIngredient<I> ingredient)
-    {
-        ingredients.add(ingredient);
-        return this;
-    }
-
-    // Newer JEI names every one of these "add". They all funnel into the same place: whatever the
-    // slot accepts, recorded as a typed ingredient.
-    @Override
-    public IRecipeSlotBuilder add(net.minecraft.world.item.crafting.Ingredient ingredient)
-    {
-        ingredient.items().forEach(item -> add(new net.minecraft.world.item.ItemStack(item)));
-        return this;
-    }
-
-    @Override
-    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, net.minecraft.world.item.crafting.Ingredient ingredient)
-    {
-        return add(ingredient);
-    }
-
-    @Override
-    public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStack itemStack)
-    {
-        return add(mezz.jei.api.constants.VanillaTypes.ITEM_STACK, itemStack);
-    }
-
-    @Override
-    public IRecipeSlotBuilder add(net.minecraft.world.level.ItemLike itemLike)
-    {
-        return add(new net.minecraft.world.item.ItemStack(itemLike));
-    }
-
-    //? if >=26.2 {
-    @Override
-    public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
-    {
-        return add(itemStackTemplate.create());
-    }
-    //?}
-
-    @Override
-    public IRecipeSlotBuilder add(net.minecraft.world.item.crafting.display.SlotDisplay slotDisplay)
-    {
-        for (net.minecraft.world.item.ItemStack stack : slotDisplay.resolveForStacks(contextMap()))
-            add(stack);
-        return this;
-    }
-
-    @Override
-    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, net.minecraft.world.item.crafting.display.SlotDisplay slotDisplay)
-    {
-        return add(slotDisplay);
-    }
-
-    @Override
-    public IRecipeSlotBuilder add(Fluid fluid)
-    {
-        return addFluidStack(fluid);
-    }
-
-    @Override
-    public IRecipeSlotBuilder add(Fluid fluid, long amount)
-    {
-        return addFluidStack(fluid, amount);
-    }
-
-    @Override
-    public IRecipeSlotBuilder add(Fluid fluid, long amount, DataComponentPatch components)
-    {
-        return addFluidStack(fluid, amount, components);
-    }
-    *///?}
 
     @Override
     public IRecipeSlotBuilder addIngredientsUnsafe(List<?> ingredients)
@@ -270,32 +184,6 @@ final class IngredientSlot implements IRecipeSlotBuilder
     {
         return this;
     }
-
-    //? if >=1.21.5 {
-    /*// Newer JEI hands slot contents over as displays, which only resolve to actual ingredients
-    // against the level's context. Without it every slot resolves to nothing and the index reads
-    // every recipe as requiring no inputs at all.
-    //? if >=26.2 {
-    @Override
-    public ContextMap getContextMap()
-    {
-        return contextMap();
-    }
-    //?}
-
-    private static ContextMap contextMap()
-    {
-        Level level = net.minecraft.client.Minecraft.getInstance().level;
-        return level == null ? ContextMap.EMPTY : SlotDisplayContext.fromLevel(level);
-    }
-    *///?} else {
-    @SuppressWarnings("removal")
-    @Override
-    public IRecipeSlotBuilder addTooltipCallback(mezz.jei.api.gui.ingredient.IRecipeSlotTooltipCallback callback)
-    {
-        return this;
-    }
-    //?}
 
     @Override
     public IRecipeSlotBuilder addRichTooltipCallback(IRecipeSlotRichTooltipCallback callback)
