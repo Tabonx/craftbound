@@ -1,8 +1,11 @@
 package com.craftbound;
 
+import com.craftbound.client.progression.ClientObtainedItems;
+import com.craftbound.client.upgrade.ClientBookUpgrade;
+import com.craftbound.upgrade.BookUpgradePayload;
 import com.craftbound.upgrade.UnbindLensPayload;
 
-//? if >=1.21.5 {
+//? if >=1.21.4 {
 /*import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.crafting.Recipe;
@@ -29,7 +32,23 @@ public final class CraftboundNetwork
                 .playToServer(PlaceRecipePayload.TYPE, PlaceRecipePayload.STREAM_CODEC,
                         CraftboundNetwork::placeRecipe)
                 .playToServer(UnbindLensPayload.TYPE, UnbindLensPayload.STREAM_CODEC,
-                        CraftboundNetwork::unbindLens);
+                        CraftboundNetwork::unbindLens)
+                .playToClient(ObtainedItemsPayload.TYPE, ObtainedItemsPayload.STREAM_CODEC,
+                        CraftboundNetwork::receiveObtainedItems)
+                .playToClient(BookUpgradePayload.TYPE, BookUpgradePayload.STREAM_CODEC,
+                        CraftboundNetwork::receiveBookUpgrade);
+    }
+
+    // The client classes are named inside a method rather than by the registration itself, so a
+    // dedicated server never loads them.
+    private static void receiveObtainedItems(ObtainedItemsPayload payload, IPayloadContext context)
+    {
+        ClientObtainedItems.accept(payload.items());
+    }
+
+    private static void receiveBookUpgrade(BookUpgradePayload payload, IPayloadContext context)
+    {
+        ClientBookUpgrade.accept(payload.bound());
     }
 
     // The lens is not held while bound, so it is handed back here rather than taken from a slot.
@@ -43,6 +62,7 @@ public final class CraftboundNetwork
             return;
 
         player.setData(CraftboundAttachments.BOOK_UPGRADED, false);
+        PlayerState.sendBookUpgrade(player);
         player.getInventory().placeItemBackInInventory(
                 new ItemStack(CraftboundItems.BOOKBINDERS_LENS.get()));
     }
@@ -58,19 +78,19 @@ public final class CraftboundNetwork
                 || !menu.stillValid(player))
             return;
 
-        //? if >=1.21.5 {
+        //? if >=1.21.4 {
         /*// The recipe manager lives on the server alone now, and recipes are named by registry key.
         ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, payload.recipeId());
-        RecipeHolder<?> recipe = player.level().getServer().getRecipeManager().byKey(key).orElse(null);
+        RecipeHolder<?> recipe = ServerLevels.of(player).getServer().getRecipeManager().byKey(key).orElse(null);
         if (recipe == null || !RecipePlacement.canPlace(menu, recipe))
             return;
 
         // Vanilla placement refuses recipes the player's vanilla recipe book has not unlocked, but
         // Craftbound offers every recipe, so placing one counts as learning it.
         player.getRecipeBook().add(key);
-        menu.handlePlacement(payload.placeAll(), false, recipe, player.level(), player.getInventory());
+        menu.handlePlacement(payload.placeAll(), false, recipe, ServerLevels.of(player), player.getInventory());
         *///?} else {
-        RecipeHolder<?> recipe = player.level().getRecipeManager().byKey(payload.recipeId()).orElse(null);
+        RecipeHolder<?> recipe = ServerLevels.of(player).getRecipeManager().byKey(payload.recipeId()).orElse(null);
         if (recipe == null || !RecipePlacement.canPlace(menu, recipe))
             return;
 

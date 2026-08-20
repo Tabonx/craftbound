@@ -36,6 +36,12 @@ public final class ClientObtainedItems
     private static ObtainedItemsFile file = null;
     private static ObtainedItemsByWorld tracked = null;
     private static boolean dirty = false;
+    private static Set<ResourceLocation> synced = Set.of();
+
+    public static void accept(Set<ResourceLocation> items)
+    {
+        synced = Set.copyOf(items);
+    }
 
     public static Set<ResourceLocation> current()
     {
@@ -43,9 +49,7 @@ public final class ClientObtainedItems
         if (player == null)
             return Set.of();
 
-        return ServerSupport.installed()
-                ? player.getData(CraftboundAttachments.OBTAINED_ITEMS)
-                : load().of(WorldKey.current());
+        return ServerSupport.installed() ? synced : load().of(WorldKey.current());
     }
 
     @SubscribeEvent
@@ -67,6 +71,7 @@ public final class ClientObtainedItems
     {
         flush();
         tracked = null;
+        synced = Set.of();
     }
 
     private static void flush()

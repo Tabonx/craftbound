@@ -1,11 +1,14 @@
 package com.craftbound.upgrade;
 
 import com.craftbound.CraftboundAttachments;
+import com.craftbound.PlayerState;
 import com.craftbound.client.upgrade.BookUpgradeToast;
+import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -27,9 +30,17 @@ public abstract class BookbindersLensItemBase extends Item
         super(properties);
     }
 
+    // The attachment only exists on the server, so the client answers from what it was last told.
     protected static boolean alreadyBound(Player player)
     {
-        return player.getData(CraftboundAttachments.BOOK_UPGRADED);
+        return player.level().isClientSide()
+                ? boundOnClient()
+                : player.getData(CraftboundAttachments.BOOK_UPGRADED);
+    }
+
+    private static boolean boundOnClient()
+    {
+        return ClientBookUpgrade.bound();
     }
 
     protected static void bind(Level level, Player player, ItemStack stack)
@@ -40,6 +51,8 @@ public abstract class BookbindersLensItemBase extends Item
         {
             player.setData(CraftboundAttachments.BOOK_UPGRADED, true);
             stack.consume(1, player);
+            if (player instanceof ServerPlayer serverPlayer)
+                PlayerState.sendBookUpgrade(serverPlayer);
         }
 
         level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
