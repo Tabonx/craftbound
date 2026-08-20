@@ -2,11 +2,11 @@
 
 ## 0.1.5
 
-- Craftbound now runs on Minecraft 26.2 as well as 1.21.1, with a separate download for each.
-  The book looks and behaves the same on both.
-- On 26.2 the book has no Create categories, because Create has no release for that version yet.
-  Nothing else is missing.
-- On 26.2, placing a recipe into the crafting grid from the book needs a server that also has
+- Craftbound now runs on Minecraft 1.21.1, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1 and
+  26.2, with a separate download for each. The book looks and behaves the same on all of them.
+- Above 1.21.1 the book has no Create categories, because Create has no release for those
+  versions yet. Nothing else is missing.
+- Above 1.21.1, placing a recipe into the crafting grid from the book needs a server that also has
   Craftbound. On a server without it the place button stays greyed out, since the game no longer
   gives the client a way to ask for a recipe it has not already learned.
 - Craftbound now requires Just Enough Items instead of refusing to run alongside it.
