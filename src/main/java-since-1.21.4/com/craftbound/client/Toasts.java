@@ -9,7 +9,7 @@ public final class Toasts
 {
     public static ToastComponent of(Minecraft minecraft)
     {
-        return minecraft.getToastManager();
+        return minecraft.getToastComponent();
     }
 
     private Toasts() {}

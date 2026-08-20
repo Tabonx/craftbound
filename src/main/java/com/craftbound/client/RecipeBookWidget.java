@@ -28,7 +28,7 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-//? if >=1.21.5 {
+//? if >=1.21.10 {
 /*import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -608,15 +608,15 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         drawBook(graphics, mouseX, mouseY, partialTick);
     }
-    *///?} elif >=1.21.5 {
-    /*@Override
+    *///?} else {
+    @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         drawBook(graphics, mouseX, mouseY, partialTick);
     }
-    *///?}
+    //?}
 
-    //? if >=1.21.5 {
+    //? if >=1.21.10 {
     /*@Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
@@ -635,12 +635,6 @@ public final class RecipeBookWidget extends AbstractWidget
         return pressed(event.key(), event.scancode(), event.modifiers());
     }
     *///?} else {
-    @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
-    {
-        drawBook(graphics, mouseX, mouseY, partialTick);
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button)
     {

@@ -18,7 +18,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 @Mixin(targets = "mezz.jei.gui.events.GuiEventHandler", remap = false)
 public class JeiOverlayMixin
 {
-    //? if >=1.21.5 {
+    //? if >=1.21.8 {
     /*// Newer JEI draws through two entry points, and the container-screen one is what covers an
     // open inventory, which is exactly where the book lives.
     @Inject(method = "drawForScreen", at = @At("HEAD"), cancellable = true)

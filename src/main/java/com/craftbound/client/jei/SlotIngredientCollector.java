@@ -108,7 +108,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
         return addSlot(role);
     }
 
-    //? if <1.21.5 {
+    //? if <1.21.4 {
     @SuppressWarnings("removal")
     @Override
     public IRecipeSlotBuilder addSlotToWidget(RecipeIngredientRole role,

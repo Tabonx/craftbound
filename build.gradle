@@ -144,16 +144,30 @@ stonecutter.constants.put('create', hasCreate)
 // Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's
 // names and rewritten per version, which keeps a pure rename from turning into conditionals in
 // dozens of files. Anything whose behaviour actually changed does not belong here.
+// Each rename gets the version it actually landed in. Grouping them by a single boundary only
+// worked while the supported versions jumped straight from 1.21.1 to 26.x.
 def modern = stonecutter.eval(stonecutter.current.version, '>=1.21.2')
 stonecutter.replacements.string {
     direction = modern
-    replace 'net.minecraft.resources.ResourceLocation', 'net.minecraft.resources.Identifier'
-    replace 'ResourceLocation', 'Identifier'
     replace 'net.minecraft.client.gui.components.toasts.ToastComponent', 'net.minecraft.client.gui.components.toasts.ToastManager'
     replace 'ToastComponent', 'ToastManager'
-    replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
     replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
+}
+
+// Drawing moved to deferred calls, which renamed the tooltip method without changing its arguments.
+stonecutter.replacements.string {
+    direction = stonecutter.eval(stonecutter.current.version, '>=1.21.6')
     replace '.renderComponentTooltip(', '.setComponentTooltipForNextFrame('
+}
+
+// The mappings rename, one version before the 26.x renumbering.
+stonecutter.replacements.string {
+    direction = stonecutter.eval(stonecutter.current.version, '>=1.21.11')
+    replace 'net.minecraft.resources.ResourceLocation', 'net.minecraft.resources.Identifier'
+    replace 'ResourceLocation', 'Identifier'
+    replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
+    // A registry key's own accessor, renamed with the type it returns.
+    replace '.id().location()', '.id().identifier()'
 }
 
 // Same package as GuiGraphics, so renaming the type covers its import and every use. The lookbehind

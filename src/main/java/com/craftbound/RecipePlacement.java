@@ -26,7 +26,7 @@ public final class RecipePlacement
     public static boolean canPlace(RecipeBookMenu menu, RecipeHolder<?> recipe)
     {
         Recipe<?> value = recipe.value();
-        //? if >=1.21.5 {
+        //? if >=1.21.4 {
         /*// Menus no longer report their grid size, and a recipe no longer answers whether it fits
         // one. A recipe that declares itself unplaceable is still refused here; anything that turns
         // out not to fit is refused by the menu when it handles the placement.

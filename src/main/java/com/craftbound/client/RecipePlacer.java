@@ -67,7 +67,7 @@ public final class RecipePlacer
         if (player == null)
             return false;
 
-        //? if >=1.21.5 {
+        //? if >=1.21.4 {
         /*// The client is only told about recipe displays now, and vanilla's placement packet names
         // a display rather than a recipe, so there is nothing the book can ask a plain server to
         // place. Placement needs a server running Craftbound, and the button greys out otherwise.
@@ -87,8 +87,8 @@ public final class RecipePlacer
     // A recipe's own id, which newer versions wrap in a registry key.
     private static ResourceLocation recipeId(RecipeHolder<?> recipe)
     {
-        //? if >=1.21.5 {
-        /*return recipe.id().identifier();
+        //? if >=1.21.4 {
+        /*return recipe.id().location();
         *///?} else {
         return recipe.id();
         //?}
@@ -106,7 +106,7 @@ public final class RecipePlacer
         }
 
         // Newer versions have nothing to fall back to, and canPlace already refuses that case.
-        //? if <1.21.5 {
+        //? if <1.21.4 {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null)
             connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
