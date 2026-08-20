@@ -29,7 +29,11 @@ public abstract class RecipeButtonMixin
     }
 
     @ModifyArg(
-            method = "extractWidgetRenderState",
+            //? if >=26.1 {
+            /*method = "extractWidgetRenderState",
+            *///?} else {
+            method = "renderWidget",
+            //?}
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/ResourceLocation;IIII)V"),
