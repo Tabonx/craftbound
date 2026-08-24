@@ -400,6 +400,7 @@ def changelogFor(String released)
 // Each jar is published against exactly the Minecraft versions it was built for, which the version
 // owns rather than the root: a jar for one version must never claim to cover the others.
 def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
+def githubParentVersion = '1.21.1'
 
 publishMods {
     // A rehearsal that builds and validates every payload without uploading, so a broken publish
@@ -415,10 +416,15 @@ publishMods {
     changelog = providers.provider { changelogFor(modVersion) }
 
     github {
-        repository = github_repository
         accessToken = providers.environmentVariable('GITHUB_TOKEN')
-        commitish = providers.environmentVariable('GITHUB_SHA').orElse('main')
-        tagName = "v${modVersion}"
+        if (minecraft_version == githubParentVersion) {
+            repository = github_repository
+            commitish = providers.environmentVariable('GITHUB_SHA').orElse('main')
+            tagName = "v${modVersion}"
+            displayName = "${mod_name} ${modVersion}"
+        } else {
+            parent project(":${githubParentVersion}").tasks.named('publishGithub')
+        }
     }
 
     if (modrinth_id) {
