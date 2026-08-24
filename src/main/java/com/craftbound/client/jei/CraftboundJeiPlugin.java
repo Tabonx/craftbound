@@ -14,6 +14,9 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.drawable.IDrawable;
+//? if >=1.21.5 {
+/*import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+*///?}
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.neoforge.NeoForgeTypes;
@@ -27,6 +30,10 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
+//? if >=1.21.5 {
+/*import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
+*///?}
 
 @JeiPlugin
 public final class CraftboundJeiPlugin implements IModPlugin
@@ -103,9 +110,30 @@ public final class CraftboundJeiPlugin implements IModPlugin
         var renderer = manager.getIngredientRenderer(type);
         var helper = manager.getIngredientHelper(type);
         for (V ingredient : manager.getAllIngredients(type))
+            //? if >=1.21.5 {
+            /*manager.createTypedIngredient(type, ingredient, false)
+            *///?} else {
             manager.createTypedIngredient(type, ingredient)
+            //?}
                     .ifPresent(typed -> out.add(BookIngredient.of(typed, renderer, helper)));
     }
+
+    //? if >=1.21.5 {
+    /*public static List<Component> getTooltip(IRecipeSlotView slot, TooltipFlag flag)
+    {
+        if (runtime == null)
+            return List.of();
+        return slot.getDisplayedIngredient()
+                .map(ingredient -> getTooltip(runtime.getIngredientManager(), ingredient, flag))
+                .orElseGet(List::of);
+    }
+
+    private static <V> List<Component> getTooltip(IIngredientManager manager,
+            ITypedIngredient<V> ingredient, TooltipFlag flag)
+    {
+        return manager.getIngredientRenderer(ingredient.getType()).getTooltip(ingredient.getIngredient(), flag);
+    }
+    *///?}
 
     // Wrap an ingredient (e.g. one clicked inside a shown recipe) so its own recipe can be opened.
     public static Optional<BookIngredient> toBookIngredient(ITypedIngredient<?> typed)
@@ -191,7 +219,11 @@ public final class CraftboundJeiPlugin implements IModPlugin
         if (icon != null)
             return icon::draw;
 
+        //? if >=1.21.4 {
+        /*return recipes.createCraftingStationLookup(category.getRecipeType())
+        *///?} else {
         return recipes.createRecipeCatalystLookup(category.getRecipeType())
+        //?}
                 .get()
                 .findFirst()
                 .map(catalyst -> catalystIcon(manager, catalyst))

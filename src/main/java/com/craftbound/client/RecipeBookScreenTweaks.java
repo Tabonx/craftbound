@@ -41,7 +41,12 @@ public final class RecipeBookScreenTweaks
 
         // Capture the vanilla toggle's placement (relative to the GUI's left edge) so our own sits
         // exactly where it did, on this screen and any other crafting screen alike.
-        int buttonOffsetX = vanillaButton.getX() - screen.getGuiLeft();
+        int buttonOffsetX = vanillaButton.getX() -
+                //? if >=26.1.2 {
+                /*screen.getLeftPos();
+                *///?} else {
+                screen.getGuiLeft();
+                //?}
         int buttonY = vanillaButton.getY();
         event.removeListener(vanillaButton);
 
@@ -101,7 +106,12 @@ public final class RecipeBookScreenTweaks
         button.setPosition(leftPos + buttonOffsetX, buttonY);
 
         book.visible = open;
-        book.setPosition(RecipeBookLayout.bookRight(leftPos) - RecipeBookWidget.WIDTH, screen.getGuiTop());
+        book.setPosition(RecipeBookLayout.bookRight(leftPos) - RecipeBookWidget.WIDTH,
+                //? if >=26.1.2 {
+                /*screen.getTopPos());
+                *///?} else {
+                screen.getGuiTop());
+                //?}
     }
 
     // The recipe-book toggle is the only 20x18 ImageButton these screens add.

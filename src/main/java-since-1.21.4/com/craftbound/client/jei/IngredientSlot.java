@@ -82,19 +82,19 @@ final class IngredientSlot extends IngredientSlotBase
     @Override
     public IRecipeSlotBuilder add(Fluid fluid)
     {
-        return addFluidStack(fluid);
+        return addFluidIngredient(fluid);
     }
 
     @Override
     public IRecipeSlotBuilder add(Fluid fluid, long amount)
     {
-        return addFluidStack(fluid, amount);
+        return addFluidIngredient(fluid, amount, DataComponentPatch.EMPTY);
     }
 
     @Override
     public IRecipeSlotBuilder add(Fluid fluid, long amount, DataComponentPatch components)
     {
-        return addFluidStack(fluid, amount, components);
+        return addFluidIngredient(fluid, amount, components);
     }
 
     private static ContextMap contextMap()

@@ -56,18 +56,24 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
+    //? if <1.21.4 {
     @Override
     public <I> IRecipeSlotBuilder addIngredient(IIngredientType<I> type, I ingredient)
     {
         return add(type, ingredient);
     }
+    //?}
 
     @Override
     public IRecipeSlotBuilder addIngredientsUnsafe(List<?> ingredients)
     {
         for (Object ingredient : ingredients)
             if (ingredient != null)
+                //? if >=1.21.5 {
+                /*manager.createTypedIngredient(ingredient, false).ifPresent(this.ingredients::add);
+                *///?} else {
                 manager.createTypedIngredient(ingredient).ifPresent(this.ingredients::add);
+                //?}
         return this;
     }
 
@@ -95,22 +101,34 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
+    //? if <1.21.4 {
     @Override
     public IRecipeSlotBuilder addFluidStack(Fluid fluid)
     {
-        return addFluidStack(fluid, fluids.bucketVolume());
+        return addFluidIngredient(fluid, fluids.bucketVolume(), DataComponentPatch.EMPTY);
     }
 
     @Override
     public IRecipeSlotBuilder addFluidStack(Fluid fluid, long amount)
     {
-        return addFluidStack(fluid, amount, DataComponentPatch.EMPTY);
+        return addFluidIngredient(fluid, amount, DataComponentPatch.EMPTY);
     }
 
     @Override
     public IRecipeSlotBuilder addFluidStack(Fluid fluid, long amount, DataComponentPatch components)
     {
+        return addFluidIngredient(fluid, amount, components);
+    }
+    //?}
+
+    protected final IRecipeSlotBuilder addFluidIngredient(Fluid fluid, long amount, DataComponentPatch components)
+    {
         return addFluid(fluids, fluid, amount, components);
+    }
+
+    protected final IRecipeSlotBuilder addFluidIngredient(Fluid fluid)
+    {
+        return addFluidIngredient(fluid, fluids.bucketVolume(), DataComponentPatch.EMPTY);
     }
 
     @SuppressWarnings("deprecation")
@@ -121,10 +139,17 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return add(type, helper.create(fluid.builtInRegistryHolder(), amount, components));
     }
 
+    //? if >=1.21.4 {
+    /*@Override
+    *///?}
     public <I> IRecipeSlotBuilder add(IIngredientType<I> type, I ingredient)
     {
         if (ingredient != null)
+            //? if >=1.21.5 {
+            /*manager.createTypedIngredient(type, ingredient, false).ifPresent(ingredients::add);
+            *///?} else {
             manager.createTypedIngredient(type, ingredient).ifPresent(ingredients::add);
+            //?}
         return this;
     }
 
