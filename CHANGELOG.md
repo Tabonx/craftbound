@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6
+
+- Downloads for every supported Minecraft version are now published together on GitHub, Modrinth
+  and CurseForge. The 0.1.5 release stopped after only some versions reached each platform.
+
 ## 0.1.5
 
 - Craftbound now runs on Minecraft 1.21.1, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11 and
