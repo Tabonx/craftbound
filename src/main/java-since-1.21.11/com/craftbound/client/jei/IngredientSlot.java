@@ -69,7 +69,7 @@ final class IngredientSlot extends IngredientSlotBase
         return add(new ItemStack(itemLike));
     }
 
-    //? if >=26.2 {
+    //? if >=26.1.2 {
     /*@Override
     public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
     {

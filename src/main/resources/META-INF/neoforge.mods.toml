@@ -36,14 +36,7 @@ config="${mod_id}.jei.mixins.json"
     ordering="NONE"
     side="BOTH"
 
-# Create is optional: without it the book simply has no Create categories to show. It must still
-# load first, so its recipe categories are registered before the book reads them.
-[[dependencies.${mod_id}]]
-    modId="create"
-    type="optional"
-    versionRange="[6.0.0,)"
-    ordering="AFTER"
-    side="BOTH"
+${create_dependency}
 
 # The book is built on JEI's plugin system: JEI is what knows every mod's recipes, so it must load
 # first and be present for the book to have anything to show.

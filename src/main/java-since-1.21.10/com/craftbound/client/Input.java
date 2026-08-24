@@ -24,7 +24,6 @@ public final class Input
         return target.keyPressed(new KeyEvent(keyCode, scanCode, modifiers));
     }
 
-    // The modifiers were dropped from the character event once it stopped carrying them.
     public static boolean charTyped(GuiEventListener target, char codePoint, int modifiers)
     {
         //? if >=26.1 {

@@ -37,6 +37,29 @@ repositories {
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
 }
 
+def muteClient = tasks.register('muteClient') {
+    doLast {
+        def optionsFile = project.file('run/options.txt')
+        def options = optionsFile.exists() ? optionsFile.readLines() : []
+        def mutedOptions = [
+                narrator             : '0',
+                onboardAccessibility : 'false',
+                soundCategory_music  : '0.0'
+        ]
+
+        mutedOptions.each { key, value ->
+            def index = options.findIndexOf { it.startsWith("${key}:") }
+            if (index >= 0)
+                options[index] = "${key}:${value}"
+            else
+                options.add("${key}:${value}")
+        }
+
+        optionsFile.parentFile.mkdirs()
+        optionsFile.text = options.join(System.lineSeparator()) + System.lineSeparator()
+    }
+}
+
 // Every supported Minecraft version produces its own jar, so the version is part of the name.
 base {
     archivesName = "${mod_id}-${minecraft_version}"
@@ -87,6 +110,7 @@ neoForge {
             client()
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            taskBefore muteClient
 
             // Larger default dev window.
             programArguments.addAll '--width', '1600', '--height', '900'
@@ -324,6 +348,16 @@ tasks.withType(ProcessResources).configureEach {
                     ? "\"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
                     : "\"pack_format\": ${pack_format}",
             ponder_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.ponder.mixins.json\"" : '',
+            create_dependency      : hasCreate ? [
+                    '# Create is optional: without it the book simply has no Create categories to show. It must still',
+                    '# load first, so its recipe categories are registered before the book reads them.',
+                    "[[dependencies.${mod_id}]]",
+                    '    modId="create"',
+                    '    type="optional"',
+                    '    versionRange="[6.0.0,)"',
+                    '    ordering="AFTER"',
+                    '    side="BOTH"'
+            ].join('\n') : '',
             // The square icon shown in the mod list, whose key was renamed.
             mod_icon               : modern ? 'iconFile="craftbound-icon.png"' : 'logoFile="craftbound-icon.png"\nlogoBlur=false'
     ]

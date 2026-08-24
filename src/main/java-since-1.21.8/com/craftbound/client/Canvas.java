@@ -25,7 +25,6 @@ public final class Canvas
                 regionWidth, regionHeight, textureWidth, textureHeight);
     }
 
-    // Draws a child widget. Newest versions have widgets extract render state rather than draw.
     public static void widget(Renderable child, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         //? if >=26.1 {

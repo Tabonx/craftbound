@@ -5,8 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastComponent;
 
-// The toast is asked what it wants, ticked, and drawn in three separate calls, the drawing one
-// named after the render state it now extracts.
 public final class BookUpgradeToast extends BookUpgradeToastBase
 {
     @Override
