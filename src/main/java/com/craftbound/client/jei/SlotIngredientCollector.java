@@ -108,6 +108,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
         return addSlot(role);
     }
 
+    //? if <1.21.4 {
     @SuppressWarnings("removal")
     @Override
     public IRecipeSlotBuilder addSlotToWidget(RecipeIngredientRole role,
@@ -115,6 +116,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     {
         return addSlot(role);
     }
+    //?}
 
     // Invisible ingredients are dropped rather than treated as another required slot: a category
     // that declares one the player can never hold would lock the recipe forever, and showing a

@@ -7,16 +7,15 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
-logoFile="craftbound-icon.png"
-logoBlur=false
+${mod_icon}
 description='''${mod_description}'''
 
 [[mixins]]
 config="${mod_id}.mixins.json"
 
-# Ponder ships with Create. This config is not required, so its mixins are skipped when Create is absent.
-[[mixins]]
-config="${mod_id}.ponder.mixins.json"
+# Ponder ships with Create. This config is not required, so its mixins are skipped when Create is
+# absent, and it is left out entirely on Minecraft versions Create has no release for.
+${ponder_mixins}
 
 # Keeping JEI's own interface off screen is the one thing with no api behind it, so these reach into
 # JEI itself. Not required: a JEI that moved them should bring its interface back, not refuse to load.
@@ -37,14 +36,7 @@ config="${mod_id}.jei.mixins.json"
     ordering="NONE"
     side="BOTH"
 
-# Create is optional: without it the book simply has no Create categories to show. It must still
-# load first, so its recipe categories are registered before the book reads them.
-[[dependencies.${mod_id}]]
-    modId="create"
-    type="optional"
-    versionRange="[6.0.0,)"
-    ordering="AFTER"
-    side="BOTH"
+${create_dependency}
 
 # The book is built on JEI's plugin system: JEI is what knows every mod's recipes, so it must load
 # first and be present for the book to have anything to show.

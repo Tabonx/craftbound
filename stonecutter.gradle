@@ -1,0 +1,26 @@
+plugins {
+    id 'dev.kikugie.stonecutter'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+// The version the IDE and plain `./gradlew build` work against. Switch with
+// `./gradlew "Set active project to <version>"`.
+stonecutter.active '1.21.1'
+
+// Builds every supported version, which is what CI runs: a change that breaks one target has to
+// fail here rather than in a bug report.
+tasks.register('buildAll') {
+    group = 'project'
+    description = 'Builds the mod for every supported Minecraft version.'
+    dependsOn stonecutter.tasks.named('build').map { it.values() }
+}
+
+// A release is one file per supported Minecraft version, so publishing aggregates the same way.
+tasks.register('publishAllMods') {
+    group = 'project'
+    description = 'Publishes the mod for every supported Minecraft version.'
+    dependsOn stonecutter.tasks.named('publishMods').map { it.values() }
+}

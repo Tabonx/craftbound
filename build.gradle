@@ -6,12 +6,8 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.170'
+    id 'net.neoforged.moddev' version '2.0.144'
     id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
-}
-
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
 }
 
 // Releases take their version from the pushed tag. Every other build takes the version the
@@ -41,50 +37,111 @@ repositories {
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
 }
 
+def muteClient = tasks.register('muteClient') {
+    doLast {
+        def optionsFile = project.file('run/options.txt')
+        def options = optionsFile.exists() ? optionsFile.readLines() : []
+        def mutedOptions = [
+                narrator             : '0',
+                onboardAccessibility : 'false',
+                soundCategory_music  : '0.0'
+        ]
+
+        mutedOptions.each { key, value ->
+            def index = options.findIndexOf { it.startsWith("${key}:") }
+            if (index >= 0)
+                options[index] = "${key}:${value}"
+            else
+                options.add("${key}:${value}")
+        }
+
+        optionsFile.parentFile.mkdirs()
+        optionsFile.text = options.join(System.lineSeparator()) + System.lineSeparator()
+    }
+}
+
+// Every supported Minecraft version produces its own jar, so the version is part of the name.
 base {
-    archivesName = mod_id
+    archivesName = "${mod_id}-${minecraft_version}"
 }
 
-// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Each Minecraft version targets the Java that Mojang ships with it, which moved from 21 to 25.
+// Gradle provisions the toolchain itself, so no local JDK has to match.
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
 
-minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
+neoForge {
+    // -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
+    // where the two have drifted apart. Only for running the game locally, never for publishing.
+    version = project.hasProperty('jeiRuntime') && project.hasProperty('neo_version_jei_runtime')
+            ? neo_version_jei_runtime
+            : neo_version
 
-runs {
-    configureEach {
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-
-        systemProperty 'forge.logging.console.level', 'debug'
-
-        modSource project.sourceSets.main
+    // Parchment lags new Minecraft versions and may never cover some of them. A version without it
+    // builds against the plain official names.
+    if (project.hasProperty('parchment_mappings_version')) {
+        parchment {
+            minecraftVersion = parchment_minecraft_version
+            mappingsVersion = parchment_mappings_version
+        }
     }
 
-    client {
-        // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+    accessTransformers.from rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
 
-        // Larger default dev window.
-        arguments.addAll '--width', '1600', '--height', '900'
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
     }
 
-    server {
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        argument '--nogui'
+    // Puts Minecraft on the test classpath. The tests themselves are plain logic and never touch a
+    // running game, they just name types like ResourceLocation.
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
     }
 
-    gameTestServer {
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-    }
+    runs {
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+        }
 
-    data {
-        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        client {
+            client()
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            taskBefore muteClient
+
+            // Larger default dev window.
+            programArguments.addAll '--width', '1600', '--height', '900'
+        }
+
+        server {
+            server()
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            programArgument '--nogui'
+        }
+
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', rootProject.file('src/generated/resources/').absolutePath,
+                    '--existing', rootProject.file('src/main/resources/').absolutePath
+        }
     }
 }
 
+// src/ is Stonecutter's shared source directory, linked into whichever version is active, so it is
+// left at the default and only the generated resources are added.
 sourceSets {
     main {
         resources {
-            srcDir 'src/generated/resources'
+            srcDir rootProject.file('src/generated/resources')
         }
     }
 }
@@ -93,9 +150,144 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-dependencies {
-    implementation "net.neoforged:neoforge:${neo_version}"
+// A version that is not the active one has its sources preprocessed into the build directory, and
+// ModDevGradle reads that same directory while collecting the mod's folders. Gradle 9 wants the
+// ordering between the two spelled out rather than inferred.
+tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
+    dependsOn tasks.matching { it.name == 'stonecutterGenerate' }
+}
 
+// Create has no release above 1.21.1. Versions it does not cover build without it, the same way a
+// player without Create installed sees a book with no Create categories.
+def hasCreate = project.hasProperty('create_version')
+
+// Readable as `//? if create` in source, for the one place where Create code sits in a file that is
+// otherwise shared. Whole files that only exist for Create are excluded below instead.
+stonecutter.constants.put('create', hasCreate)
+
+// Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's
+// names and rewritten per version, which keeps a pure rename from turning into conditionals in
+// dozens of files. Anything whose behaviour actually changed does not belong here.
+// Each rename gets the version it actually landed in. Grouping them by a single boundary only
+// worked while the supported versions jumped straight from 1.21.1 to 26.x.
+def modern = stonecutter.eval(stonecutter.current.version, '>=1.21.2')
+stonecutter.replacements.string {
+    direction = modern
+    replace 'net.minecraft.client.gui.components.toasts.ToastComponent', 'net.minecraft.client.gui.components.toasts.ToastManager'
+    replace 'ToastComponent', 'ToastManager'
+    replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
+}
+
+// Drawing moved to deferred calls, which renamed the tooltip method without changing its arguments.
+stonecutter.replacements.string {
+    direction = stonecutter.eval(stonecutter.current.version, '>=1.21.6')
+    replace '.renderComponentTooltip(', '.setComponentTooltipForNextFrame('
+}
+
+// The mappings rename, one version before the 26.x renumbering.
+stonecutter.replacements.string {
+    direction = stonecutter.eval(stonecutter.current.version, '>=1.21.11')
+    replace 'net.minecraft.resources.ResourceLocation', 'net.minecraft.resources.Identifier'
+    replace 'ResourceLocation', 'Identifier'
+    replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
+    // A registry key's own accessor, renamed with the type it returns.
+    replace '.id().location()', '.id().identifier()'
+}
+
+// Same package as GuiGraphics, so renaming the type covers its import and every use. The lookbehind
+// keeps NeoForge's own getGuiGraphics() event accessor out of it, and the methods on the type differ
+// and are handled in the drawing code rather than here.
+def extractor = stonecutter.eval(stonecutter.current.version, '>=26.1')
+stonecutter.replacements.regex {
+    direction = extractor
+    replace '(?<!get)\\bGuiGraphics\\b', 'GuiGraphicsExtractor', '\\bGuiGraphicsExtractor\\b', 'GuiGraphics'
+}
+
+// Drawing calls renamed alongside the type, with the same arguments. The ones that changed shape
+// are written out in the drawing code instead.
+stonecutter.replacements.string {
+    direction = extractor
+    replace '.drawString(', '.text('
+    replace '.renderFakeItem(', '.fakeItem('
+}
+
+// StackedContents was renamed with the recipe rewrite, well before the drawing changes.
+stonecutter.replacements.regex {
+    direction = modern
+    // The type alone, never the fill methods named after it, which kept their names.
+    replace '(?<![A-Za-z])StackedContents\\b', 'StackedItemContents', '(?<![A-Za-z])StackedItemContents\\b', 'StackedContents'
+}
+
+// A file whose whole body changed at some Minecraft version lives in src/main/<kind>-since-<version>
+// under its usual name and package, rather than as one file interleaving every variant. A build
+// takes every such directory up to its own version, newest last, so the newest copy of each file is
+// the one that counts and a directory only has to hold the files that actually changed there.
+//
+// Boundaries are per file, not per project: a class that changed at 1.21.6 needs a directory for
+// 1.21.6 holding only itself, and leaves everything split at an earlier version alone. Adding a
+// boundary is making the directory, which is why they are discovered rather than listed.
+def sinceRoots(String kind)
+{
+    rootProject.file('src/main')
+            .listFiles({ file -> file.directory && file.name.startsWith("$kind-since-") } as FileFilter)
+            .collect { [version: it.name.substring("$kind-since-".length()), dir: it] }
+            .findAll { stonecutter.eval(stonecutter.current.version, ">=${it.version}") }
+            .sort { a, b -> compareVersions(a.version, b.version) }
+}
+
+// Compared number by number rather than as text, so 1.21.10 sorts after 1.21.5.
+static int compareVersions(String left, String right)
+{
+    def a = left.split(/\./).collect { it as int }
+    def b = right.split(/\./).collect { it as int }
+    for (int i = 0; i < Math.max(a.size(), b.size()); i++)
+    {
+        int difference = (i < a.size() ? a[i] : 0) - (i < b.size() ? b[i] : 0)
+        if (difference != 0)
+            return difference
+    }
+    return 0
+}
+
+// Resources that had to change shape rather than just move: recipe ingredients became plain ids,
+// and an item now needs a model definition of its own. Later directories are read last, and the
+// duplicate strategy is what lets one of them replace a file an earlier one supplied.
+sinceRoots('resources').each { sourceSets.main.resources.srcDir it.dir }
+tasks.withType(ProcessResources).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+// Java has no such per-file precedence, so the directories are stacked into one staged tree and
+// that is what gets compiled. Stonecutter preprocesses everything under src/ whether or not it is
+// compiled, so these files are still written in 1.21.1's names and may still hold a conditional for
+// a later boundary; the version being built takes its own processed copy of each, except the active
+// one, whose sources are already in their final form.
+def stageVersionedSources = tasks.register('stageVersionedSources', Sync) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    sinceRoots('java').each {
+        from stonecutter.current.isActive
+                ? it.dir
+                : layout.buildDirectory.dir("generated/stonecutter/main/java-since-${it.version}")
+    }
+    into layout.buildDirectory.dir('generated/versioned/java')
+
+    if (!stonecutter.current.isActive)
+        dependsOn tasks.matching { it.name == 'stonecutterGenerate' }
+}
+
+sourceSets.main.java.srcDir stageVersionedSources
+
+// The Ponder integration is the one part of the mod that cannot exist without Create. PonderGate is
+// deliberately not in here: it only tracks whether the book is drawing a tooltip and touches nothing
+// Create owns, so the book keeps working with it on every version.
+if (!hasCreate) {
+    sourceSets.main.java.exclude 'com/craftbound/client/ponder/CraftboundPonderPlugin.java',
+            'com/craftbound/client/ponder/PonderVisibility.java',
+            'com/craftbound/client/ponder/mixin/**'
+    sourceSets.main.resources.exclude 'craftbound.ponder.mixins.json'
+}
+
+dependencies {
     // JEI, required at runtime. Only the api artifacts are on the compile classpath, so reaching
     // for a JEI internal is a compile error rather than something that breaks on the next JEI or
     // Minecraft version. The one internal Craftbound still needs (the shapeless icon it hides) is
@@ -104,25 +296,28 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
-    // Create and its dependencies (NeoForge 1.21.1).
+    // Create and its dependencies, only on versions Create has a release for. A version whose
+    // properties declare no create_version simply builds without the Create integration.
     // See https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1
     // The ':slim' Create artifact is non-transitive, so Ponder/Flywheel/Registrate are declared explicitly.
     // Compiled against, never required at runtime: Create is an optional dependency of the mod.
-    compileOnly("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-    compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-    compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
-    compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
+    if (hasCreate) {
+        compileOnly("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+        compileOnly "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+        compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
+        compileOnly "com.tterrag.registrate:Registrate:${registrate_version}"
 
-    // The same mods for the dev client to actually load. They have to sit on the project's runtime
-    // classpath: NeoGradle offers only that to FML as mod files, so a jar added to a run's own
-    // dependencies is a library on the classpath and never a loaded mod. localRuntime keeps them
-    // out of the published metadata, so the shipped jar still only suggests Create.
-    // Run with -PnoCreate to leave them out and exercise the mod without its optional dependency.
-    if (!project.hasProperty('noCreate')) {
-        localRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-        localRuntime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-        localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
-        localRuntime "com.tterrag.registrate:Registrate:${registrate_version}"
+        // The same mods for the dev client to actually load. They have to sit on the project's runtime
+        // classpath: FML is only offered that as mod files, so a jar added to a run's own
+        // dependencies is a library on the classpath and never a loaded mod. localRuntime keeps them
+        // out of the published metadata, so the shipped jar still only suggests Create.
+        // Run with -PnoCreate to leave them out and exercise the mod without its optional dependency.
+        if (!project.hasProperty('noCreate')) {
+            localRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+            localRuntime "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+            localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+            localRuntime "com.tterrag.registrate:Registrate:${registrate_version}"
+        }
     }
 
 
@@ -147,7 +342,24 @@ tasks.withType(ProcessResources).configureEach {
             mod_version            : modVersion,
             mod_authors            : mod_authors,
             mod_description        : mod_description,
-            jei_version_range      : jei_version_range
+            jei_version_range      : jei_version_range,
+            // Newer versions require the supported range to be spelled out alongside the format.
+            pack_formats           : modern
+                    ? "\"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
+                    : "\"pack_format\": ${pack_format}",
+            ponder_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.ponder.mixins.json\"" : '',
+            create_dependency      : hasCreate ? [
+                    '# Create is optional: without it the book simply has no Create categories to show. It must still',
+                    '# load first, so its recipe categories are registered before the book reads them.',
+                    "[[dependencies.${mod_id}]]",
+                    '    modId="create"',
+                    '    type="optional"',
+                    '    versionRange="[6.0.0,)"',
+                    '    ordering="AFTER"',
+                    '    side="BOTH"'
+            ].join('\n') : '',
+            // The square icon shown in the mod list, whose key was renamed.
+            mod_icon               : modern ? 'iconFile="craftbound-icon.png"' : 'logoFile="craftbound-icon.png"\nlogoBlur=false'
     ]
     inputs.properties replaceProperties
 
@@ -185,6 +397,10 @@ def changelogFor(String released)
     section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
 }
 
+// Each jar is published against exactly the Minecraft versions it was built for, which the version
+// owns rather than the root: a jar for one version must never claim to cover the others.
+def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
+
 publishMods {
     // A rehearsal that builds and validates every payload without uploading, so a broken publish
     // shows up on a normal push instead of after a tag has been cut.
@@ -209,12 +425,10 @@ publishMods {
         modrinth {
             projectId = modrinth_id
             accessToken = providers.gradleProperty('modrinthToken')
-            minecraftVersionRange {
-                start = publish_minecraft_version_start
-                end = minecraft_version
-            }
+            minecraftVersions.addAll publishMinecraftVersions
             environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
-            optional('create')
+            if (hasCreate)
+                optional('create')
             requires('jei')
         }
     }
@@ -223,14 +437,12 @@ publishMods {
         curseforge {
             projectId = curseforge_id
             accessToken = providers.gradleProperty('curseforgeApikey')
-            minecraftVersionRange {
-                start = publish_minecraft_version_start
-                end = minecraft_version
-            }
-            javaVersions.add(JavaVersion.VERSION_21)
+            minecraftVersions.addAll publishMinecraftVersions
+            javaVersions.add(JavaVersion.toVersion(java_version))
             client = true
             server = false
-            optional('create')
+            if (hasCreate)
+                optional('create')
             requires('jei')
         }
     }

@@ -51,8 +51,9 @@ public class ObtainedItemsTracker
         Set<ResourceLocation> obtained = player.getData(CraftboundAttachments.OBTAINED_ITEMS);
         if (ObtainedItems.recordAll(obtained, ids))
         {
-            // Re-set the attachment so NeoForge marks it dirty and syncs it to the client.
+            // Re-set the attachment so NeoForge marks it dirty and saves it.
             player.setData(CraftboundAttachments.OBTAINED_ITEMS, obtained);
+            PlayerState.sendObtainedItems(player);
         }
     }
 }

@@ -23,12 +23,21 @@ public final class RecipePlacement
 
     // Special recipes (firework variants, leather dyeing) declare no ingredients, so there is
     // nothing to place; the recipe type must match or the menu would cast it to the wrong type.
-    public static boolean canPlace(RecipeBookMenu<?, ?> menu, RecipeHolder<?> recipe)
+    public static boolean canPlace(RecipeBookMenu menu, RecipeHolder<?> recipe)
     {
         Recipe<?> value = recipe.value();
+        //? if >=1.21.4 {
+        /*// Menus no longer report their grid size, and a recipe no longer answers whether it fits
+        // one. A recipe that declares itself unplaceable is still refused here; anything that turns
+        // out not to fit is refused by the menu when it handles the placement.
+        return !value.isSpecial()
+                && value.getType() == recipeTypeFor(menu.getRecipeBookType())
+                && !value.placementInfo().isImpossibleToPlace();
+        *///?} else {
         return !value.isSpecial()
                 && value.getType() == recipeTypeFor(menu.getRecipeBookType())
                 && value.canCraftInDimensions(menu.getGridWidth(), menu.getGridHeight());
+        //?}
     }
 
     private RecipePlacement() {}

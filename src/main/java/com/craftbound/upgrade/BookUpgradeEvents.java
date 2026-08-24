@@ -3,6 +3,7 @@ package com.craftbound.upgrade;
 import com.craftbound.Craftbound;
 import com.craftbound.CraftboundAttachments;
 import com.craftbound.CraftboundItems;
+import com.craftbound.ServerLevels;
 import com.craftbound.upgrade.BookUpgrade.DeathOutcome;
 
 import net.minecraft.server.level.ServerPlayer;
@@ -30,7 +31,7 @@ public final class BookUpgradeEvents
         if (!outcome.dropLens())
             return;
 
-        event.getDrops().add(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(),
+        event.getDrops().add(new ItemEntity(ServerLevels.of(player), player.getX(), player.getY(), player.getZ(),
                 new ItemStack(CraftboundItems.BOOKBINDERS_LENS.get())));
     }
 
@@ -52,7 +53,11 @@ public final class BookUpgradeEvents
     private static DeathOutcome outcomeFor(ServerPlayer player)
     {
         return BookUpgrade.onDeath(player.getData(CraftboundAttachments.BOOK_UPGRADED),
-                player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY));
+                //? if >=1.21.11 {
+                /*ServerLevels.of(player).getGameRules().get(GameRules.KEEP_INVENTORY));
+                *///?} else {
+                ServerLevels.of(player).getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY));
+                //?}
     }
 
     private BookUpgradeEvents() {}

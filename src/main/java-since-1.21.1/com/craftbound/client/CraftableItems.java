@@ -30,7 +30,7 @@ public final class CraftableItems
     {
     }
 
-    public static Set<Item> craftableIn(RecipeBookMenu<?, ?> menu)
+    public static Set<Item> craftableIn(RecipeBookMenu menu)
     {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null)

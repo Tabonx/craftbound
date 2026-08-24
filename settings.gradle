@@ -3,9 +3,24 @@ pluginManagement {
         mavenLocal()
         gradlePluginPortal()
         maven { url = 'https://maven.neoforged.net/releases' }
+        maven { url = 'https://maven.kikugie.dev/releases' }  // Stonecutter
     }
 }
 
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    id 'dev.kikugie.stonecutter' version '0.9.7'
+}
+
+// One source tree, one build script, one Gradle project per supported Minecraft version. Each
+// version's own values live in versions/<version>/gradle.properties. A second loader would be added
+// here as a branch, without moving any sources.
+stonecutter {
+    kotlinController = false
+    centralScript = 'build.gradle'
+
+    create(rootProject) {
+        versions('1.21.1', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2')
+        vcsVersion = '1.21.1'
+    }
 }

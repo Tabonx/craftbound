@@ -1,6 +1,8 @@
 package com.craftbound;
 
+//? if create {
 import com.craftbound.client.ponder.CraftboundPonderPlugin;
+//?}
 import com.craftbound.progression.ProgressionConfig;
 import com.mojang.logging.LogUtils;
 
@@ -28,17 +30,20 @@ public class Craftbound
         modEventBus.addListener(CraftboundItems::addToCreativeTabs);
         modContainer.registerConfig(ModConfig.Type.SERVER, ProgressionConfig.SPEC);
 
+        //? if create {
         if (dist.isClient())
         {
             // Resolving CraftboundPonderPlugin loads Ponder's classes, so it stays behind the check.
             if (ModList.get().isLoaded("ponder"))
                 registerPonderPlugin();
         }
+        //?}
     }
 
     // Create is optional and its version range has no upper bound, so a Create that moved its
     // Ponder API turns the first touch of these classes into a link error. The book itself does not
     // need Ponder, so the integration is dropped and the mod loads on.
+    //? if create {
     private static void registerPonderPlugin()
     {
         try
@@ -50,4 +55,5 @@ public class Craftbound
             LOGGER.error("Ponder integration disabled: this version of Create no longer fits it", e);
         }
     }
+    //?}
 }

@@ -118,7 +118,11 @@ final class RecipeIndexBuilder
     private static Set<ResourceLocation> catalystItems(IRecipeManager recipes, IRecipeCategory<?> category)
     {
         Set<ResourceLocation> items = new HashSet<>();
+        //? if >=1.21.4 {
+        /*recipes.createCraftingStationLookup(category.getRecipeType()).get()
+        *///?} else {
         recipes.createRecipeCatalystLookup(category.getRecipeType()).get()
+        //?}
                 .map(ITypedIngredient::getItemStack)
                 .forEach(stack -> stack
                         .map(ItemStack::getItem)

@@ -84,7 +84,7 @@ public final class BookRail
             int tabX = tabX(index);
             int tabY = tabY(row);
 
-            graphics.blitSprite(TAB_SPRITES.get(true, index == selected), tabX, tabY, TAB_W, TAB_H);
+            Canvas.sprite(graphics, TAB_SPRITES.get(true, index == selected), tabX, tabY, TAB_W, TAB_H);
             tabs.get(index).drawIcon(graphics, tabX + TAB_ICON_DX, tabY + TAB_ICON_DY);
 
             if (inRect(mouseX, mouseY, tabX, tabY, x - tabX, TAB_H))
@@ -136,7 +136,7 @@ public final class BookRail
     {
         var font = Minecraft.getInstance().font;
         boolean over = enabled && inRect(mouseX, mouseY, x + TAB_X, arrowY, -TAB_X, ARROW_H);
-        int color = !enabled ? 0x808080 : over ? 0xFFFFA0 : 0xFFFFFF;
+        int color = !enabled ? 0xFF808080 : over ? 0xFFFFFFA0 : 0xFFFFFFFF;
         graphics.drawString(font, glyph, x + TAB_X + (-TAB_X - font.width(glyph)) / 2, arrowY + 2, color, true);
     }
 

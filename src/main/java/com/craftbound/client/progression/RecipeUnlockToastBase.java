@@ -3,11 +3,13 @@ package com.craftbound.client.progression;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.craftbound.client.Canvas;
+import com.craftbound.client.jei.BookIngredient;
+
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastComponent;
-import com.craftbound.client.jei.BookIngredient;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -18,25 +20,30 @@ import net.minecraft.world.item.Items;
 // RecipeToast. Same sprite, same strings and the same cycling layout, so it reads as the popup
 // players know, and each result is drawn with the renderer the book itself uses, so a fluid looks
 // the same in both places.
-public final class RecipeUnlockToast implements Toast
+//
+// What the toast holds and how long it stays are here; how a version asks it to draw and to decide
+// is on RecipeUnlockToast.
+public abstract class RecipeUnlockToastBase implements Toast
 {
-    private static final ResourceLocation BACKGROUND_SPRITE =
+    protected static final ResourceLocation BACKGROUND_SPRITE =
             ResourceLocation.withDefaultNamespace("toast/recipe");
-    private static final Component TITLE_TEXT = Component.translatable("recipe.toast.title");
-    private static final Component DESCRIPTION_TEXT = Component.translatable("recipe.toast.description");
-    private static final long DISPLAY_TIME = 5000L;
-    private static final int TITLE_COLOR = -11534256;
-    private static final int DESCRIPTION_COLOR = -16777216;
+    protected static final Component TITLE_TEXT = Component.translatable("recipe.toast.title");
+    protected static final Component DESCRIPTION_TEXT = Component.translatable("recipe.toast.description");
+    protected static final long DISPLAY_TIME = 5000L;
+    protected static final int TITLE_COLOR = -11534256;
+    protected static final int DESCRIPTION_COLOR = -16777216;
 
     // Unlocking a whole branch at once can produce hundreds of results; past a handful the cycle is
     // a flicker rather than information, so the toast only ever shows the first few.
     private static final int MAX_ICONS = 8;
 
+    protected Toast.Visibility visibility = Toast.Visibility.SHOW;
     private final List<BookIngredient> results = new ArrayList<>();
+    private double displayTime = DISPLAY_TIME;
     private long lastChanged;
     private boolean changed;
 
-    private RecipeUnlockToast(List<BookIngredient> results)
+    protected RecipeUnlockToastBase(List<BookIngredient> results)
     {
         addAll(results);
         changed = true;
@@ -54,7 +61,7 @@ public final class RecipeUnlockToast implements Toast
             existing.addAll(results);
     }
 
-    private void addAll(List<BookIngredient> results)
+    void addAll(List<BookIngredient> results)
     {
         for (BookIngredient result : results)
         {
@@ -65,34 +72,38 @@ public final class RecipeUnlockToast implements Toast
         }
     }
 
-    @Override
-    public Toast.Visibility render(GuiGraphics graphics, ToastComponent toasts, long timeSinceLastVisible)
+    protected void advance(double displayTimeMultiplier, long fullyVisibleForMs)
     {
         if (changed)
         {
-            lastChanged = timeSinceLastVisible;
+            lastChanged = fullyVisibleForMs;
             changed = false;
         }
 
-        double displayTime = DISPLAY_TIME * toasts.getNotificationDisplayTimeMultiplier();
-        graphics.blitSprite(BACKGROUND_SPRITE, 0, 0, width(), height());
-        graphics.drawString(toasts.getMinecraft().font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
-        graphics.drawString(toasts.getMinecraft().font, DESCRIPTION_TEXT, 30, 18, DESCRIPTION_COLOR, false);
+        displayTime = DISPLAY_TIME * displayTimeMultiplier;
+        visibility = fullyVisibleForMs - lastChanged >= displayTime
+                ? Toast.Visibility.HIDE
+                : Toast.Visibility.SHOW;
+    }
 
-        graphics.pose().pushPose();
-        graphics.pose().scale(0.6F, 0.6F, 1.0F);
+    protected void draw(GuiGraphics graphics, Font font, long fullyVisibleForMs)
+    {
+        Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
+        graphics.drawString(font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);
+        graphics.drawString(font, DESCRIPTION_TEXT, 30, 18, DESCRIPTION_COLOR, false);
+
+        Canvas.push(graphics);
+        Canvas.scale(graphics, 0.6F);
         graphics.renderFakeItem(new ItemStack(Items.CRAFTING_TABLE), 3, 3);
-        graphics.pose().popPose();
+        Canvas.pop(graphics);
 
         // Drawn through JEI's own renderer, so a fluid shows here exactly as it does in the book.
         if (!results.isEmpty())
-            results.get(cycleIndex(timeSinceLastVisible, displayTime)).render(graphics, 8, 8);
-
-        return timeSinceLastVisible - lastChanged >= displayTime ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
+            results.get(cycleIndex(fullyVisibleForMs)).render(graphics, 8, 8);
     }
 
-    private int cycleIndex(long timeSinceLastVisible, double displayTime)
+    private int cycleIndex(long fullyVisibleForMs)
     {
-        return (int) (timeSinceLastVisible / Math.max(1.0, displayTime / results.size()) % results.size());
+        return (int) (fullyVisibleForMs / Math.max(1.0, displayTime / results.size()) % results.size());
     }
 }
