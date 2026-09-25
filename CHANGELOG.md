@@ -10,6 +10,9 @@
   iron nuggets.
 - Above 1.21.1, the craftable filter in a furnace, smoker or blast furnace only looks at that
   block's own recipes, not at crafting recipes.
+- Ponder's index and category pages now only list what you have held, the same rule the book
+  already used for its own entries. Before, you could open the scenes of every machine whose
+  recipe you had unlocked.
 
 ## 0.1.6
 

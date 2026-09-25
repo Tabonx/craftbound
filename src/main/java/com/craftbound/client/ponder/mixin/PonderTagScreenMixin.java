@@ -12,9 +12,9 @@ import net.createmod.ponder.foundation.ui.PonderTagScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-// Hides undiscovered entries from a Ponder category's item grid. The category's own item set is
-// filtered as it is read, before the screen counts rows from it, so the grid closes up instead of
-// leaving holes where the hidden entries would have been.
+// Hides entries the player cannot ponder yet from a Ponder category's item grid. The category's own
+// item set is filtered as it is read, before the screen counts rows from it, so the grid closes up
+// instead of leaving holes where the hidden entries would have been.
 @Mixin(PonderTagScreen.class)
 public class PonderTagScreenMixin
 {
@@ -22,7 +22,7 @@ public class PonderTagScreenMixin
             method = "init",
             at = @At(value = "INVOKE",
                     target = "Lnet/createmod/ponder/api/registration/TagRegistryAccess;getItems(Lnet/createmod/ponder/foundation/PonderTag;)Ljava/util/Set;"))
-    private Set<ResourceLocation> craftbound$hideUndiscovered(Set<ResourceLocation> items)
+    private Set<ResourceLocation> craftbound$hideUnponderable(Set<ResourceLocation> items)
     {
         return PonderVisibility.visible(items);
     }
@@ -34,7 +34,7 @@ public class PonderTagScreenMixin
             method = "init",
             at = @At(value = "INVOKE",
                     target = "Lnet/createmod/ponder/foundation/PonderTag;getMainItem()Lnet/minecraft/world/item/ItemStack;"))
-    private ItemStack craftbound$hideUndiscoveredMainItem(ItemStack mainItem)
+    private ItemStack craftbound$hideUnponderableMainItem(ItemStack mainItem)
     {
         return mainItem.isEmpty() || !PonderVisibility.isHidden(mainItem.getItem())
                 ? mainItem

@@ -129,7 +129,7 @@ public final class Progression
         return ClientBookUpgrade.hintsUnlocked() && unlockingItems.contains(itemId);
     }
 
-    // Whether an item may be named outside the book: Ponder's listings ask this. Fails open while
+    // Whether an item may be named outside the book: Ponder's scenes ask this. Fails open while
     // the index is still empty: a screen opened before JEI has built it must show everything rather
     // than pretend the game is empty.
     public static boolean isDiscovered(ResourceLocation itemId)
@@ -139,11 +139,12 @@ public final class Progression
         return Unlocks.discovered(unlockedOutputs, obtained(), itemId);
     }
 
-    // Whether the player has ever held this item, which is a narrower question than isDiscovered:
-    // the book shows recipes for things the player has not made yet.
-    public static boolean isObtained(ResourceLocation itemId)
+    // Whether Ponder may show this item's scenes, which is a narrower question than isDiscovered:
+    // the book shows recipes for things the player has not made yet, but a tour of a machine waits
+    // until they have held one.
+    public static boolean canPonder(ResourceLocation itemId)
     {
-        return obtained().contains(itemId);
+        return !rules.enabled() || obtained().contains(itemId);
     }
 
     public static boolean isUnlocked(BookIngredient ingredient)

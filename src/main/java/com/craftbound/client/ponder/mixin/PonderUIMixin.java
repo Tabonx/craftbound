@@ -29,7 +29,7 @@ public class PonderUIMixin
     private void craftbound$hideUndiscoveredName(GuiGraphics graphics, Font font, ItemStack stack,
             int x, int y, Operation<Void> original)
     {
-        if (PonderVisibility.isHidden(stack.getItem()))
+        if (PonderVisibility.isUnnamed(stack.getItem()))
             graphics.renderTooltip(font, UNKNOWN, x, y);
         else
             original.call(graphics, font, stack, x, y);
