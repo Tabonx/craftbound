@@ -14,7 +14,6 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -78,10 +77,7 @@ public final class RecipePlacer
             return false;
         //?}
 
-        StackedContents contents = new StackedContents();
-        player.getInventory().fillStackedContents(contents);
-        menu.fillCraftSlotsStackedContents(contents);
-        return contents.canCraft(recipe.value(), null);
+        return RecipePlacement.available(player, menu).canCraft(recipe.value(), null);
     }
 
     // A recipe's own id, which newer versions wrap in a registry key.

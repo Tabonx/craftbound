@@ -16,9 +16,9 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 
-// Which item results the player can make right now in the open menu, from the player inventory plus
-// whatever sits in the input slots. Follows the menu's recipe book: a crafting screen checks
-// crafting recipes against its grid, a furnace/smoker/blast screen checks its smelting family.
+// Which item results the player can make right now in the open menu, from what
+// RecipePlacement.available counts as theirs. Follows the menu's recipe book: a crafting screen
+// checks crafting recipes against its grid, a furnace/smoker/blast screen its smelting family.
 // Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
 // which are not made through any of these menus.
 //
@@ -36,9 +36,7 @@ public final class CraftableItems
         if (minecraft.player == null || minecraft.level == null)
             return Set.of();
 
-        StackedContents contents = new StackedContents();
-        minecraft.player.getInventory().fillStackedContents(contents);
-        menu.fillCraftSlotsStackedContents(contents);
+        StackedContents contents = RecipePlacement.available(minecraft.player, menu);
 
         Set<Item> result = new HashSet<>();
         collect(minecraft.level.getRecipeManager(), RecipePlacement.recipeTypeFor(menu.getRecipeBookType()),

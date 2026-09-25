@@ -5,6 +5,9 @@
 - Above 1.21.1, the place button no longer offers a 3x3 recipe in the inventory's 2x2 grid.
   Placing one used to lay out only part of the recipe and pull its ingredients out of your
   inventory. The craftable filter now also leaves these recipes out.
+- Items sitting in a furnace, smoker or blast furnace no longer count as yours. Smelting raw
+  iron no longer marks iron ingots as craftable, and ingots in the output slot no longer mark
+  iron nuggets.
 
 ## 0.1.6
 

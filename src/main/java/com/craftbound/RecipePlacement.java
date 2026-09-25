@@ -1,5 +1,7 @@
 package com.craftbound;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
 //? if >=1.21.4 {
@@ -25,6 +27,18 @@ public final class RecipePlacement
             case BLAST_FURNACE -> RecipeType.BLASTING;
             case SMOKER -> RecipeType.SMOKING;
         };
+    }
+
+    // What the player can make a recipe from: the inventory, plus a crafting grid's contents, which
+    // go back to the player when the grid is cleared. A furnace keeps what it holds, so an item
+    // already smelting, or already smelted, is not something the player still has.
+    public static StackedContents available(Player player, RecipeBookMenu menu)
+    {
+        StackedContents contents = new StackedContents();
+        player.getInventory().fillStackedContents(contents);
+        if (menu.getRecipeBookType() == RecipeBookType.CRAFTING)
+            menu.fillCraftSlotsStackedContents(contents);
+        return contents;
     }
 
     // Special recipes (firework variants, leather dyeing) declare no ingredients, so there is
