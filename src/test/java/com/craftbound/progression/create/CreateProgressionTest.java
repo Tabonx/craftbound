@@ -105,7 +105,7 @@ class CreateProgressionTest
     @Test
     void theChocolateBarWaitsForTheChocolateItself()
     {
-        Set<String> withMachinesOnly = chocolateUnlocked("create:basin", "create:mechanical_press",
+        Set<String> withMachinesOnly = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner");
 
         assertFalse(withMachinesOnly.contains(CHOCOLATE), "the fluid needs its ingredients");
@@ -115,7 +115,7 @@ class CreateProgressionTest
     @Test
     void sugarAndCocoaUnlockTheFluidAndTheBarTogether()
     {
-        Set<String> unlocked = chocolateUnlocked("create:basin", "create:mechanical_press",
+        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner", "minecraft:sugar", "minecraft:cocoa_beans");
 
         assertTrue(unlocked.contains(CHOCOLATE));
@@ -125,7 +125,7 @@ class CreateProgressionTest
     @Test
     void halfTheChocolateIngredientsUnlockNeither()
     {
-        Set<String> unlocked = chocolateUnlocked("create:basin", "create:mechanical_press",
+        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner", "minecraft:sugar");
 
         assertFalse(unlocked.contains(CHOCOLATE));
@@ -136,7 +136,7 @@ class CreateProgressionTest
     @Test
     void theBarInheritsTheFluidsHeatRequirement()
     {
-        Set<String> unlocked = chocolateUnlocked("create:basin", "create:mechanical_press",
+        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "minecraft:sugar", "minecraft:cocoa_beans");
 
         assertFalse(unlocked.contains(CHOCOLATE));
@@ -188,7 +188,7 @@ class CreateProgressionTest
         RecipeIndex brewing = brewingIndex();
 
         Set<String> withWart = Unlocks.unlockedOutputs(RULES, brewing,
-                obtained("create:basin", "create:blaze_burner", "minecraft:nether_wart"));
+                obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:nether_wart"));
 
         assertTrue(withWart.contains(POTION_AWKWARD), "the step whose ingredient is in hand");
         assertFalse(withWart.contains(POTION_STRONG), "the step beyond it is still out of reach");
@@ -202,12 +202,12 @@ class CreateProgressionTest
         RecipeIndex brewing = brewingIndex();
 
         Set<String> glowstoneOnly = Unlocks.unlockedOutputs(RULES, brewing,
-                obtained("create:basin", "create:blaze_burner", "minecraft:glowstone_dust"));
+                obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:glowstone_dust"));
         assertFalse(glowstoneOnly.contains(POTION_STRONG), "awkward potion is not reachable yet");
         assertFalse(glowstoneOnly.contains(POTION_AWKWARD));
 
         Set<String> both = Unlocks.unlockedOutputs(RULES, brewing,
-                obtained("create:basin", "create:blaze_burner", "minecraft:nether_wart",
+                obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:nether_wart",
                         "minecraft:glowstone_dust"));
         assertTrue(both.contains(POTION_AWKWARD));
         assertTrue(both.contains(POTION_STRONG));
@@ -219,7 +219,7 @@ class CreateProgressionTest
         RecipeIndex brewing = brewingIndex();
 
         assertEquals(Set.of(), Unlocks.unlockedOutputs(RULES, brewing,
-                obtained("create:basin", "create:blaze_burner", "minecraft:water_bucket")));
+                obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:water_bucket")));
     }
 
     // Two brewing steps over the same base fluid, each keyed by its own potion subtype.
@@ -288,22 +288,28 @@ class CreateProgressionTest
     }
 
     @Test
-    void eitherTheBasinOrTheMixerOpensTheMixingCategory()
+    void theMixerOpensTheMixingCategoryButTheBasinAloneDoesNot()
     {
         RecipeIndex index = createIndex();
 
-        assertTrue(Unlocks.categoryUnlocked(RULES, MIXING, index.catalystsFor(MIXING),
+        assertFalse(Unlocks.categoryUnlocked(RULES, MIXING, index.catalystsFor(MIXING),
                 obtained("create:basin")));
         assertTrue(Unlocks.categoryUnlocked(RULES, MIXING, index.catalystsFor(MIXING),
                 obtained("create:mechanical_mixer")));
     }
 
     @Test
-    void obtainingTheBasinUnlocksTheMixingRecipesTheIngredientsAllow()
+    void aCategoryWithOnlyCompanionsKeepsThem()
+    {
+        assertEquals(obtained("create:basin"), CompanionCatalysts.machinesOf(obtained("create:basin")));
+    }
+
+    @Test
+    void obtainingTheMixerUnlocksTheMixingRecipesTheIngredientsAllow()
     {
         RecipeIndex index = createIndex();
         Set<ResourceLocation> holdings =
-                obtained("minecraft:andesite", "minecraft:iron_nugget", "create:basin");
+                obtained("minecraft:andesite", "minecraft:iron_nugget", "create:mechanical_mixer");
 
         assertTrue(Unlocks.recipeUnlocked(RULES, index, index.node(MIXING, "andesite_alloy_mixing"), holdings, Set.of()));
         // The heated and superheated recipes must not come along for the ride.
@@ -314,9 +320,9 @@ class CreateProgressionTest
     @Test
     void aHeatedRecipeNeedsABlazeBurnerOnTopOfItsIngredients()
     {
-        assertFalse(unlocked("create:basin", "minecraft:copper_ingot", "create:zinc_ingot")
+        assertFalse(unlocked("create:mechanical_mixer", "minecraft:copper_ingot", "create:zinc_ingot")
                 .contains(BRASS_INGOT));
-        assertTrue(unlocked("create:basin", "minecraft:copper_ingot", "create:zinc_ingot",
+        assertTrue(unlocked("create:mechanical_mixer", "minecraft:copper_ingot", "create:zinc_ingot",
                 "create:blaze_burner").contains(BRASS_INGOT));
     }
 
@@ -325,9 +331,9 @@ class CreateProgressionTest
     @Test
     void aSuperheatedRecipeNeedsBlazeCakeAsWellAsTheBurner()
     {
-        assertFalse(unlocked("create:basin", "minecraft:cobblestone").contains(LAVA));
-        assertFalse(unlocked("create:basin", "minecraft:cobblestone", "create:blaze_burner").contains(LAVA));
-        assertTrue(unlocked("create:basin", "minecraft:cobblestone", "create:blaze_burner",
+        assertFalse(unlocked("create:mechanical_mixer", "minecraft:cobblestone").contains(LAVA));
+        assertFalse(unlocked("create:mechanical_mixer", "minecraft:cobblestone", "create:blaze_burner").contains(LAVA));
+        assertTrue(unlocked("create:mechanical_mixer", "minecraft:cobblestone", "create:blaze_burner",
                 "create:blaze_cake").contains(LAVA));
     }
 
@@ -371,7 +377,7 @@ class CreateProgressionTest
     @Test
     void unlockingIsMonotonicAsItemsAccumulate()
     {
-        List<String> pickups = List.of("minecraft:andesite", "minecraft:iron_nugget", "create:basin",
+        List<String> pickups = List.of("minecraft:andesite", "minecraft:iron_nugget", "create:mechanical_mixer",
                 "minecraft:copper_ingot", "create:zinc_ingot", "create:blaze_burner",
                 "minecraft:cobblestone", "create:blaze_cake");
 
@@ -439,7 +445,7 @@ class CreateProgressionTest
 
         Index catalysts(String category, String... items)
         {
-            catalysts.put(category, obtained(items));
+            catalysts.put(category, CompanionCatalysts.machinesOf(obtained(items)));
             return this;
         }
 

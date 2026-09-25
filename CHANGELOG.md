@@ -13,6 +13,9 @@
 - Ponder's index and category pages now only list what you have held, the same rule the book
   already used for its own entries. Before, you could open the scenes of every machine whose
   recipe you had unlocked.
+- Create's mixing, packing and brewing categories now unlock with the Mechanical Mixer or
+  Mechanical Press, and deploying with the Deployer. Holding a Basin or a Depot alone no longer
+  opens them.
 
 ## 0.1.6
 

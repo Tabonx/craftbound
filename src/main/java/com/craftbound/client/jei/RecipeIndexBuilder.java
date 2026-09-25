@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.create.CompanionCatalysts;
 
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
@@ -128,7 +129,7 @@ final class RecipeIndexBuilder
                         .map(ItemStack::getItem)
                         .map(BuiltInRegistries.ITEM::getKey)
                         .ifPresent(items::add));
-        return items;
+        return CompanionCatalysts.machinesOf(items);
     }
 
     private RecipeIndexBuilder() {}
