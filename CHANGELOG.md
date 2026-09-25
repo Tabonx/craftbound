@@ -8,6 +8,8 @@
 - Items sitting in a furnace, smoker or blast furnace no longer count as yours. Smelting raw
   iron no longer marks iron ingots as craftable, and ingots in the output slot no longer mark
   iron nuggets.
+- Above 1.21.1, the craftable filter in a furnace, smoker or blast furnace only looks at that
+  block's own recipes, not at crafting recipes.
 
 ## 0.1.6
 
