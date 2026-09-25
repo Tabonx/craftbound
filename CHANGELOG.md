@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7
+
+- Above 1.21.1, the place button no longer offers a 3x3 recipe in the inventory's 2x2 grid.
+  Placing one used to lay out only part of the recipe and pull its ingredients out of your
+  inventory. The craftable filter now also leaves these recipes out.
+
 ## 0.1.6
 
 - Downloads for every supported Minecraft version are now published together on GitHub, Modrinth

@@ -3,6 +3,8 @@ package com.craftbound.client;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.craftbound.RecipePlacement;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
 import net.minecraft.util.context.ContextMap;
@@ -43,7 +45,7 @@ public final class CraftableItems
         ContextMap context = SlotDisplayContext.fromLevel(minecraft.level);
         for (RecipeCollection collection : minecraft.player.getRecipeBook().getCollections())
             for (RecipeDisplayEntry entry : collection.getRecipes())
-                if (entry.canCraft(contents))
+                if (RecipePlacement.fits(menu, entry.display()) && entry.canCraft(contents))
                     for (ItemStack stack : entry.resultItems(context))
                         if (!stack.isEmpty())
                             result.add(stack.getItem());
