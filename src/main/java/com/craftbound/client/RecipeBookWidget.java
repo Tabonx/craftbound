@@ -178,15 +178,15 @@ public final class RecipeBookWidget extends AbstractWidget
     private int groupIndex = 0;
 
     // The rail left of the book: recipe categories while a recipe is open, and while browsing the
-    // ribbons that choose what fills the grid. The ingredient whose recipes are shown is kept so the
-    // bookmark button can toggle it.
+    // ribbons that choose what fills the grid. The bookmark button toggles what the shown recipe
+    // makes, read as it is drawn so it follows every step to another recipe.
     private final BookRail categoryRail = new BookRail();
     private final BookRail browseRail = new BookRail();
     private List<BookIngredient> bookmarked = List.of();
     private List<BrowseTab> browseTabs = List.of();
     private BrowseTab activeTab = BrowseTab.ALL;
     private ItemCategories categories = ItemCategories.EMPTY;
-    private BookIngredient focused = null;
+    private BookIngredient bookmarkTarget = null;
     private boolean bookmarkHovered = false;
 
     // The recipes currently filling the body (one category's, focused or full), built lazily via
@@ -313,7 +313,6 @@ public final class RecipeBookWidget extends AbstractWidget
         if (groups.isEmpty())
             return false;
         recipeGroups = groups;
-        focused = ingredient;
         hovered = null;
         search.setFocused(false);
         categoryRail.setTabs(recipeGroups, 0);
@@ -328,7 +327,6 @@ public final class RecipeBookWidget extends AbstractWidget
         bodyCache = new ArrayList<>();
         groupIndex = 0;
         recipeIndex = 0;
-        focused = null;
         categoryRail.setTabs(List.of(), -1);
         relayout();
     }
@@ -442,10 +440,19 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void toggleBookmark()
     {
-        if (focused == null)
-            return;
-        BookmarkStore.toggle(focused.uid());
+        BookmarkStore.toggle(bookmarkTarget.uid());
         refreshBookmarks();
+    }
+
+    // A recipe with several outputs is bookmarked by its first; one with none (fuel, info pages)
+    // has nothing to bookmark.
+    private Optional<BookIngredient> shownOutput()
+    {
+        return currentRecipe().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT).stream()
+                .map(IRecipeSlotView::getDisplayedIngredient)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .flatMap(CraftboundJeiPlugin::toBookIngredient);
     }
 
     private void selectBrowseTab(int index)
@@ -668,6 +675,7 @@ public final class RecipeBookWidget extends AbstractWidget
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         filterHovered = false;
         bookmarkHovered = false;
+        bookmarkTarget = null;
         slotTooltip = List.of();
         if (inRecipeMode())
         {
@@ -692,12 +700,13 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void renderBookmarkButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
-        if (focused == null)
+        bookmarkTarget = shownOutput().orElse(null);
+        if (bookmarkTarget == null)
             return;
 
         int buttonX = bookmarkX();
         bookmarkHovered = inRect(mouseX, mouseY, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);
-        boolean on = BookmarkStore.contains(focused.uid());
+        boolean on = BookmarkStore.contains(bookmarkTarget.uid());
         ResourceLocation sprite = on
                 ? (bookmarkHovered ? BOOKMARK_ON_HL : BOOKMARK_ON)
                 : (bookmarkHovered ? BOOKMARK_OFF_HL : BOOKMARK_OFF);
@@ -889,10 +898,10 @@ public final class RecipeBookWidget extends AbstractWidget
             Canvas.tooltip(graphics, minecraft.font, hoveredTab.title(), mouseX, mouseY);
             return;
         }
-        if (bookmarkHovered && focused != null)
+        if (bookmarkHovered)
         {
             Canvas.tooltip(graphics, minecraft.font,
-                    BookmarkStore.contains(focused.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
+                    BookmarkStore.contains(bookmarkTarget.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
                     mouseX, mouseY);
             return;
         }
@@ -990,7 +999,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
         if (inRecipeMode())
         {
-            if (focused != null && inRect(mouseX, mouseY, bookmarkX(), getY() + FILTER_Y, BOOKMARK_W, BOOKMARK_H))
+            if (bookmarkTarget != null && inRect(mouseX, mouseY, bookmarkX(), getY() + FILTER_Y, BOOKMARK_W, BOOKMARK_H))
             {
                 playClickSound();
                 toggleBookmark();

@@ -16,6 +16,9 @@
 - Create's mixing, packing and brewing categories now unlock with the Mechanical Mixer or
   Mechanical Press, and deploying with the Deployer. Holding a Basin or a Depot alone no longer
   opens them.
+- The bookmark button now bookmarks what the shown recipe makes. Before, it bookmarked the item
+  you opened, so after moving on to a recipe that uses that item, the button still showed it as
+  bookmarked.
 
 ## 0.1.6
 
