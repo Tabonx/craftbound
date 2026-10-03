@@ -25,6 +25,8 @@
 - Shift-click an item in the book to fill the crafting grid or furnace with as many crafts as
   your inventory allows. If you cannot make the item right now, the click opens its recipes as
   before.
+- An item's recipes now open on the tab of the block you are using. In a furnace, copper ingots
+  open on smelting rather than on crafting from nuggets.
 
 ## 0.1.6
 

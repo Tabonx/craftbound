@@ -332,7 +332,7 @@ public final class RecipeBookWidget extends AbstractWidget
         hovered = null;
         search.setFocused(false);
         categoryRail.setTabs(recipeGroups, 0);
-        selectGroup(0);
+        selectGroup(placer == null ? 0 : placer.menuGroup(recipeGroups));
         return true;
     }
 

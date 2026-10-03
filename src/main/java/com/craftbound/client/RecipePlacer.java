@@ -10,6 +10,7 @@ import com.craftbound.client.jei.RecipeGroup;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.category.IRecipeCategory;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -37,7 +38,7 @@ public final class RecipePlacer
     // the recipe is meant for a mechanical crafter, not for the grid.
     public Optional<RecipeHolder<?>> placeable(IRecipeLayoutDrawable<?> layout)
     {
-        if (layout.getRecipeCategory().getRecipeType() != categoryFor(menu.getRecipeBookType()))
+        if (!isMenuCategory(layout.getRecipeCategory()))
             return Optional.empty();
 
         return layout.getRecipe() instanceof RecipeHolder<?> recipe && RecipePlacement.canPlace(menu, recipe)
@@ -54,6 +55,21 @@ public final class RecipePlacer
                 .flatMap(layout -> placeable(layout).stream())
                 .filter(this::canPlace)
                 .findFirst();
+    }
+
+    // The tab a recipe opens on: the open menu's own category, so a furnace shows how copper is
+    // smelted rather than crafted from nuggets. The first tab when the item has none there.
+    public int menuGroup(List<RecipeGroup> groups)
+    {
+        for (int i = 0; i < groups.size(); i++)
+            if (isMenuCategory(groups.get(i).category()))
+                return i;
+        return 0;
+    }
+
+    private boolean isMenuCategory(IRecipeCategory<?> category)
+    {
+        return category.getRecipeType() == categoryFor(menu.getRecipeBookType());
     }
 
     // Typed as Object because it is only ever compared for identity, and JEI renamed the interface
