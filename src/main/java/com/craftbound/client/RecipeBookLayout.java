@@ -1,17 +1,13 @@
 package com.craftbound.client;
 
-// Pure layout math for docking the book left of the inventory. When the book is open we reserve a
-// fixed column on the left, sized for the widened recipe panel, not the narrow browse panel, and
-// shift the inventory right by that constant, keeping the book+inventory pair centered. Because the
-// reservation is constant the inventory never moves between browse and recipe states, nor per
-// recipe; it only moves when the book opens or closes. Kept free of Minecraft types so it can be
-// unit-tested.
+// Pure layout math for docking the book left of the inventory. The open book shifts the inventory
+// right so the browsing book and the inventory sit centered as a pair, as vanilla does. The recipe
+// panel widens leftward from there, so the inventory moves only when the book opens or closes. Kept
+// free of Minecraft types so it can be unit-tested.
 public final class RecipeBookLayout
 {
     public static final int BOOK_WIDTH = 147;
-    // The width the book occupies in the recipe state; the reserved column is sized for this so the
-    // panel can widen to it without shifting the inventory. Browsing, the book stays BOOK_WIDTH and
-    // simply sits right-anchored in the same reserved column.
+    // The width the book widens to while showing a recipe, growing leftward from its right edge.
     public static final int RECIPE_WIDTH = 200;
     public static final int GAP = 8;
 
@@ -19,16 +15,16 @@ public final class RecipeBookLayout
     {
     }
 
-    // The inventory's left edge (leftPos). Centered normally; when the book is open it is shifted
-    // right by the fixed reserved column so the widened recipe panel always fits beside it.
+    // The inventory's left edge (leftPos). Never closer to the screen edge than the widened recipe
+    // panel needs, so a narrow window pushes the pair off center rather than the panel off screen.
     public static int inventoryLeftPos(int screenWidth, int imageWidth, boolean bookOpen)
     {
         if (!bookOpen)
             return (screenWidth - imageWidth) / 2;
 
-        int reserved = RECIPE_WIDTH + GAP;
-        int clusterLeft = Math.max(0, (screenWidth - (reserved + imageWidth)) / 2);
-        return clusterLeft + reserved;
+        int browsing = BOOK_WIDTH + GAP;
+        int centered = (screenWidth - (browsing + imageWidth)) / 2 + browsing;
+        return Math.max(RECIPE_WIDTH + GAP, centered);
     }
 
     // Right edge that book content is aligned to: just left of the inventory, across the gap.
