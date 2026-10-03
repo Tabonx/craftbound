@@ -460,15 +460,15 @@ public final class RecipeBookWidget extends AbstractWidget
         refreshBookmarks();
     }
 
-    // A recipe with several outputs is bookmarked by its first; one with none (fuel, info pages)
-    // has nothing to bookmark.
-    private Optional<BookIngredient> shownOutput()
+    // Empty for recipes that make nothing, such as fuel and info pages.
+    private List<BookIngredient> shownOutputs()
     {
         return currentRecipe().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT).stream()
                 .map(IRecipeSlotView::getDisplayedIngredient)
                 .flatMap(Optional::stream)
-                .findFirst()
-                .flatMap(CraftboundJeiPlugin::toBookIngredient);
+                .map(CraftboundJeiPlugin::toBookIngredient)
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     private void selectBrowseTab(int index)
@@ -697,7 +697,11 @@ public final class RecipeBookWidget extends AbstractWidget
         {
             categoryRail.render(graphics, mouseX, mouseY);
             renderRecipe(graphics, x, y, mouseX, mouseY);
-            renderBookmarkButton(graphics, x, y, mouseX, mouseY);
+            // Seeing the recipe that makes an unlock is seeing the unlock, so the grid does not
+            // replay its highlight later.
+            List<BookIngredient> outputs = shownOutputs();
+            outputs.forEach(Progression::takeHighlight);
+            renderBookmarkButton(graphics, outputs, y, mouseX, mouseY);
         }
         else
         {
@@ -714,11 +718,12 @@ public final class RecipeBookWidget extends AbstractWidget
         return inRecipeMode() ? categoryRail : browseRail;
     }
 
-    private void renderBookmarkButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
+    // A recipe with several outputs is bookmarked by its first.
+    private void renderBookmarkButton(GuiGraphics graphics, List<BookIngredient> outputs, int y, int mouseX, int mouseY)
     {
-        bookmarkTarget = shownOutput().orElse(null);
-        if (bookmarkTarget == null)
+        if (outputs.isEmpty())
             return;
+        bookmarkTarget = outputs.get(0);
 
         int buttonX = bookmarkX();
         bookmarkHovered = inRect(mouseX, mouseY, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);

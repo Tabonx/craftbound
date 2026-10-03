@@ -27,6 +27,8 @@
   before.
 - An item's recipes now open on the tab of the block you are using. In a furnace, copper ingots
   open on smelting rather than on crafting from nuggets.
+- A newly unlocked recipe stops waiting to play its highlight once you have seen it in a recipe
+  view. Before, the item still played it when you later found it in the book.
 
 ## 0.1.6
 
