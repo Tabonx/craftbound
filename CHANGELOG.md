@@ -21,6 +21,7 @@
   bookmarked.
 - With the book open, the book and the inventory now sit centered on the screen. Before, the
   pair sat a little to the right.
+- Newer JEI releases no longer show their bookmark and config buttons in the bottom corners.
 - Shift-click an item in the book to fill the crafting grid or furnace with as many crafts as
   your inventory allows. If you cannot make the item right now, the click opens its recipes as
   before.
