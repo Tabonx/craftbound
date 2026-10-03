@@ -288,6 +288,22 @@ public final class RecipeBookWidget extends AbstractWidget
         placeableRecipe().ifPresent(recipe -> placer.place(recipe, Input.shiftDown()));
     }
 
+    // Places as many sets as the inventory allows, as shift on the place button does.
+    private boolean quickPlace(BookIngredient ingredient)
+    {
+        if (placer == null)
+            return false;
+
+        Optional<RecipeHolder<?>> recipe =
+                placer.firstPlaceable(CraftboundJeiPlugin.recipeGroupsFor(ingredient, RecipeIngredientRole.OUTPUT));
+        recipe.ifPresent(found ->
+        {
+            playClickSound();
+            placer.place(found, true);
+        });
+        return recipe.isPresent();
+    }
+
     // Browse and Recipe share the two page arrows; each step means "previous/next" in the active
     // state: another page of the grid, or another recipe within the shown category.
     private void stepBack()
@@ -1037,11 +1053,13 @@ public final class RecipeBookWidget extends AbstractWidget
         if (Input.click(backButton, mouseX, mouseY, button) || Input.click(forwardButton, mouseX, mouseY, button))
             return true;
 
-        // Left-click an item: how it is made. Right-click: where it is used.
+        // Left-click an item: how it is made. Right-click: where it is used. Shift-left-click places
+        // it straight into the grid, or opens it like a plain click when nothing can be placed.
         BookIngredient clicked = ingredientAt(mouseX, mouseY);
         if (clicked != null)
         {
-            showRecipes(clicked, roleFor(button));
+            if (isRightClick(button) || !Input.shiftDown() || !quickPlace(clicked))
+                showRecipes(clicked, roleFor(button));
             return true;
         }
 

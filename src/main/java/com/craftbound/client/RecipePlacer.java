@@ -1,9 +1,11 @@
 package com.craftbound.client;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.craftbound.PlaceRecipePayload;
 import com.craftbound.RecipePlacement;
+import com.craftbound.client.jei.RecipeGroup;
 
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -41,6 +43,17 @@ public final class RecipePlacer
         return layout.getRecipe() instanceof RecipeHolder<?> recipe && RecipePlacement.canPlace(menu, recipe)
                 ? Optional.of(recipe)
                 : Optional.empty();
+    }
+
+    // What shift-clicking an item places: the first recipe the menu can lay out and the player can
+    // make now, in the order the book lists them, so it is the one the player would see on opening.
+    public Optional<RecipeHolder<?>> firstPlaceable(List<RecipeGroup> groups)
+    {
+        return groups.stream()
+                .flatMap(group -> group.recipes().stream())
+                .flatMap(layout -> placeable(layout).stream())
+                .filter(this::canPlace)
+                .findFirst();
     }
 
     // Typed as Object because it is only ever compared for identity, and JEI renamed the interface

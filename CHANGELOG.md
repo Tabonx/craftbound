@@ -19,6 +19,9 @@
 - The bookmark button now bookmarks what the shown recipe makes. Before, it bookmarked the item
   you opened, so after moving on to a recipe that uses that item, the button still showed it as
   bookmarked.
+- Shift-click an item in the book to fill the crafting grid or furnace with as many crafts as
+  your inventory allows. If you cannot make the item right now, the click opens its recipes as
+  before.
 
 ## 0.1.6
 
