@@ -49,6 +49,7 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -220,6 +221,8 @@ public final class RecipeBookWidget extends AbstractWidget
 
     // Fills the open menu's input slots with the shown recipe; absent until the host binds a menu.
     private RecipePlacer placer = null;
+    // The recipe whose greyed place button was clicked, to mark what it is missing.
+    private IRecipeLayoutDrawable<?> markedRecipe = null;
 
     public RecipeBookWidget()
     {
@@ -832,6 +835,28 @@ public final class RecipeBookWidget extends AbstractWidget
         Canvas.sprite(graphics, sprite, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
     }
 
+    // The inputs the player cannot fill from what they have. Only asked of recipes the book can
+    // place: elsewhere an input may be a tool the machine holds rather than one it consumes, and
+    // JEI cannot tell the two apart.
+    private static Set<IRecipeSlotView> missingInputs(IRecipeLayoutDrawable<?> layout)
+    {
+        var player = Minecraft.getInstance().player;
+        if (player == null)
+            return Set.of();
+
+        List<IRecipeSlotView> inputs = layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT).stream()
+                .filter(view -> view.getItemStacks().findAny().isPresent())
+                .toList();
+        List<MissingInputs.Slot<Item>> slots = inputs.stream()
+                .map(view -> new MissingInputs.Slot<>(
+                        view.getItemStacks().map(ItemStack::getItem).distinct().toList(),
+                        view.getItemStacks().findFirst().map(ItemStack::getCount).orElse(1)))
+                .toList();
+        return MissingInputs.of(slots, OwnedItems.of(player)).stream()
+                .map(inputs::get)
+                .collect(Collectors.toSet());
+    }
+
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
         // The search bar and its magnifier are baked into the book texture. Cover that strip with a
@@ -875,7 +900,9 @@ public final class RecipeBookWidget extends AbstractWidget
         double localX = (mouseX - originX) / scale + bounds.getX();
         double localY = (mouseY - originY) / scale + bounds.getY();
 
-        BookRecipeRender.whileDrawing(() ->
+        Set<IRecipeSlotView> missing = layout == markedRecipe && placeableRecipe().isPresent()
+                ? missingInputs(layout) : Set.of();
+        BookRecipeRender.whileDrawing(missing, () ->
         {
             Canvas.push(graphics);
             Canvas.translate(graphics, (float) originX, (float) originY);
@@ -1044,6 +1071,15 @@ public final class RecipeBookWidget extends AbstractWidget
 
         if (placeButton.visible && Input.click(placeButton, mouseX, mouseY, button))
             return true;
+
+        // An inactive button takes no clicks, so the greyed one is hit-tested here.
+        if (placeButton.visible && !placeButton.active
+                && inRect(mouseX, mouseY, placeButton.getX(), placeButton.getY(), placeButton.getWidth(), placeButton.getHeight()))
+        {
+            playClickSound();
+            markedRecipe = currentRecipe();
+            return true;
+        }
 
         if (railClicked(mouseX, mouseY, button))
             return true;
