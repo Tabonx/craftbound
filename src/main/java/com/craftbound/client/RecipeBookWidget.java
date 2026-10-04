@@ -554,7 +554,7 @@ public final class RecipeBookWidget extends AbstractWidget
     private static boolean matches(BookIngredient item, String needle)
     {
         return item.displayName().toLowerCase(Locale.ROOT).contains(needle)
-                || SearchAliases.matches(item.unlockKey(), needle);
+                || SearchAliases.matches(item.registryKey(), needle);
     }
 
     private boolean inActiveTab(BookIngredient item)

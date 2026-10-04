@@ -222,13 +222,15 @@ class CreateProgressionTest
                 obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:water_bucket")));
     }
 
-    // Two brewing steps over the same base fluid, each keyed by its own potion subtype.
+    // Two brewing steps, each keyed by its own potion subtype. The first brews from plain water,
+    // which is what Create turns a water bottle into, not a potion fluid.
     private static RecipeIndex brewingIndex()
     {
         return new Index()
                 .catalysts(BREWING, "create:mechanical_mixer", "create:basin")
                 .recipe("awkward", BREWING, POTION_AWKWARD,
-                        basin(HeatRequirement.HEATED, potion(""), any("minecraft:nether_wart")))
+                        basin(HeatRequirement.HEATED, fluid("minecraft:water", "minecraft:water_bucket"),
+                                any("minecraft:nether_wart")))
                 .recipe("strong", BREWING, POTION_STRONG,
                         basin(HeatRequirement.HEATED, potion("awkward"), any("minecraft:glowstone_dust")))
                 .build();

@@ -85,6 +85,46 @@ class UnlocksTest
         assertTrue(Unlocks.inputsSatisfied(STRICT, waterSlot, Set.of(), Set.of(), Set.of()));
     }
 
+    // A Potion of Luck's fluid: no recipe makes it and no bucket carries it, so nothing filled from
+    // it can ever be made.
+    @Test
+    void aFluidNothingMakesOrCarriesIsAGateThatNeverOpens()
+    {
+        List<InputSlot> luck = List.of(new InputSlot(Set.of(), Set.of("fluid|create:potion|luck")),
+                items("minecraft:glass_bottle"));
+
+        assertFalse(Unlocks.inputsSatisfied(STRICT, luck, obtained("minecraft:glass_bottle"), Set.of(), Set.of()));
+    }
+
+    // A water bottle is a minecraft:potion too, yet a slot asking for a Potion of Strength wants
+    // that potion and nothing else.
+    @Test
+    void aVariantSlotWantsThatVariant()
+    {
+        List<InputSlot> strength = List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:potion|strength")));
+
+        assertFalse(Unlocks.inputsSatisfied(STRICT, strength, obtained("minecraft:potion"),
+                Set.of("item|minecraft:potion|water"), Set.of()));
+        assertTrue(Unlocks.inputsSatisfied(STRICT, strength, Set.of(),
+                Set.of("item|minecraft:potion|strength"), Set.of()));
+    }
+
+    // Holding a potion opens what brews from it, but gives the potion no entry of its own.
+    @Test
+    void aHeldVariantCountsAsAnInputButNotAsAnOutput()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of("arrow", new RecipeNode(CRAFTING,
+                        List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:lingering_potion|strength"))),
+                        Set.of("item|minecraft:tipped_arrow|strength")))),
+                Map.of());
+
+        Set<String> unlocked = Unlocks.unlockedOutputs(STRICT, index, Set.of(),
+                Set.of("item|minecraft:lingering_potion|strength"));
+
+        assertEquals(Set.of("item|minecraft:tipped_arrow|strength"), unlocked);
+    }
+
     @Test
     void aProducedFluidGatesUntilItIsUnlocked()
     {

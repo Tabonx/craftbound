@@ -50,6 +50,7 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
             {
                 slot.items().forEach(item -> keys.add(UnlockKey.ofItem(item)));
                 keys.addAll(slot.fluids());
+                keys.addAll(slot.variants());
             }
             keys.forEach(key -> usedBy.computeIfAbsent(key, unused -> new ArrayList<>()).add(node));
         }));

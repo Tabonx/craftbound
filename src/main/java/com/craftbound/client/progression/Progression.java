@@ -1,10 +1,12 @@
 package com.craftbound.client.progression;
 
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
@@ -14,6 +16,7 @@ import com.craftbound.progression.ProgressionConfig;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.UnlockKey;
 import com.craftbound.progression.Unlocks;
 import com.craftbound.progression.VariantGroups;
 
@@ -33,6 +36,13 @@ public final class Progression
     private static Map<String, String> variantGroups = Map.of();
     private static ProgressionRules rules = ProgressionRules.OPEN;
     private static Set<String> unlockedOutputs = Set.of();
+    // The same with subtypes dropped, for questions asked of a whole item: one unlocked potion is
+    // enough to know potions exist.
+    private static Set<String> unlockedRegistryKeys = Set.of();
+    // What recipe inputs are checked against: the unlocked outputs plus the variants held, so a held
+    // water bottle satisfies the slots that ask for one without giving it an entry of its own.
+    private static Set<String> available = Set.of();
+    private static int heldVariantsSize = -1;
     private static Set<ResourceLocation> unlockingItems = Set.of();
     private static int obtainedSize = -1;
 
@@ -50,10 +60,12 @@ public final class Progression
     public static boolean refresh()
     {
         Set<ResourceLocation> obtained = obtained();
+        Set<String> heldVariants = ClientHeldVariants.current();
         ProgressionRules current = ProgressionConfig.rules();
         boolean indexStale = index.isEmpty() && CraftboundJeiPlugin.hasRuntime();
 
-        if (!indexStale && obtained.size() == obtainedSize && current.equals(rules))
+        if (!indexStale && obtained.size() == obtainedSize && heldVariants.size() == heldVariantsSize
+                && current.equals(rules))
             return false;
 
         if (indexStale)
@@ -65,10 +77,14 @@ public final class Progression
 
         rules = current;
         obtainedSize = obtained.size();
+        heldVariantsSize = heldVariants.size();
 
         Set<String> previous = unlockedOutputs;
-        unlockedOutputs = rules.enabled() ? Unlocks.unlockedOutputs(rules, index, obtained) : Set.of();
-        unlockingItems = Unlocks.unlockingItems(rules, index, obtained, unlockedOutputs);
+        unlockedOutputs = rules.enabled() ? Unlocks.unlockedOutputs(rules, index, obtained, heldVariants) : Set.of();
+        unlockedRegistryKeys = unlockedOutputs.stream().map(UnlockKey::withoutSubtype).collect(Collectors.toSet());
+        available = new HashSet<>(unlockedOutputs);
+        available.addAll(heldVariants);
+        unlockingItems = Unlocks.unlockingItems(rules, index, obtained, available);
         recordNewlyUnlocked(previous);
         return true;
     }
@@ -140,7 +156,7 @@ public final class Progression
     {
         if (!rules.enabled() || index.isEmpty())
             return true;
-        return Unlocks.discovered(unlockedOutputs, obtained(), itemId);
+        return Unlocks.discovered(unlockedRegistryKeys, obtained(), itemId);
     }
 
     // Whether Ponder may show this item's scenes, which is a narrower question than isDiscovered:
@@ -167,7 +183,7 @@ public final class Progression
         if (!rules.enabled())
             return true;
         RecipeNode node = index.node(categoryUid, recipe);
-        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained(), unlockedOutputs);
+        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained(), available);
     }
 
     // The group of variants an entry belongs to, or null when it stands alone.
@@ -178,7 +194,7 @@ public final class Progression
 
     public static Set<String> outputsUsing(Set<String> inputKeys)
     {
-        return Unlocks.outputsUsing(rules, index, inputKeys, obtained(), unlockedOutputs);
+        return Unlocks.outputsUsing(rules, index, inputKeys, obtained(), available);
     }
 
     public static boolean isCategoryUnlocked(String categoryUid)
@@ -195,6 +211,9 @@ public final class Progression
         index = RecipeIndex.EMPTY;
         variantGroups = Map.of();
         unlockedOutputs = Set.of();
+        unlockedRegistryKeys = Set.of();
+        available = Set.of();
+        heldVariantsSize = -1;
         unlockingItems = Set.of();
         obtainedSize = -1;
         newlyUnlocked.clear();

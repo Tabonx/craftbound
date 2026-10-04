@@ -41,6 +41,12 @@
   see. Once one chest boat is in the book, the other boats stop being marked.
 - On 1.21.10 and newer, double-clicking a word in the search field selects it, and shift-clicking
   extends the selection, as in vanilla's recipe book.
+- Potions, tipped arrows and other items that come in many kinds now unlock one kind at a time.
+  Before, getting a Spout unlocked the water bottle and with it every potion in the game. A recipe
+  that asks for one potion now wants that potion, so a water bottle no longer counts as every
+  potion, and searching a potion's name shows only what it is used for.
+- Recipes filled from a fluid nothing can make, such as a Spout filling a Potion of Luck, stay
+  hidden.
 - Click the greyed-out place button to see what a recipe is missing. The ingredients you do not
   have turn red, as in vanilla's recipe book.
 

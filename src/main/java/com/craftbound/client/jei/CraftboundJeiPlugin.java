@@ -30,6 +30,7 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 //? if >=1.21.5 {
 /*import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
@@ -149,6 +150,20 @@ public final class CraftboundJeiPlugin implements IModPlugin
         if (runtime == null)
             return Optional.empty();
         return Optional.of(build(runtime.getIngredientManager(), typed));
+    }
+
+    // The unlock key of a held stack, the same one a recipe slot asking for it would carry.
+    public static Optional<String> unlockKeyOf(ItemStack stack)
+    {
+        if (runtime == null || stack.isEmpty())
+            return Optional.empty();
+        IIngredientManager manager = runtime.getIngredientManager();
+        //? if >=1.21.5 {
+        /*return manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack, false)
+        *///?} else {
+        return manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
+        //?}
+                .map(typed -> BookIngredient.unlockKey(manager, typed));
     }
 
     private static <V> BookIngredient build(IIngredientManager manager, ITypedIngredient<V> typed)
