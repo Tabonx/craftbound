@@ -1,7 +1,9 @@
 package com.craftbound.progression;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -117,6 +119,20 @@ public final class Unlocks
         Set<ResourceLocation> candidates = new HashSet<>(index.catalystsFor(node.categoryUid()));
         node.inputSlots().forEach(slot -> candidates.addAll(slot.items()));
         return candidates;
+    }
+
+    // What the unlocked recipes taking any of these inputs make. A locked recipe is left out even
+    // when its output is reachable another way, since opening that output would not show it.
+    public static Set<String> outputsUsing(ProgressionRules rules, RecipeIndex index, Set<String> inputKeys,
+            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+    {
+        Set<RecipeNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<String> outputs = new HashSet<>();
+        for (String key : inputKeys)
+            for (RecipeNode node : index.recipesUsing(key))
+                if (seen.add(node) && recipeUnlocked(rules, index, node, obtained, unlockedOutputs))
+                    outputs.addAll(node.outputKeys());
+        return outputs;
     }
 
     // The output keys of every unlocked recipe: what the browse grid is allowed to show.

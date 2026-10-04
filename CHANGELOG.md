@@ -29,6 +29,9 @@
   open on smelting rather than on crafting from nuggets.
 - A newly unlocked recipe stops waiting to play its highlight once you have seen it in a recipe
   view. Before, the item still played it when you later found it in the book.
+- Search now also finds what you can make from the items you name. Type "oak log" and the book
+  lists items named oak log first, then what you craft from them, such as planks. This works for
+  items no recipe makes, which the book does not list on their own.
 
 ## 0.1.6
 

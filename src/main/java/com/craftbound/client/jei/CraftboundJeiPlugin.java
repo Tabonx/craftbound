@@ -86,8 +86,6 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static final List<IIngredientType<?>> BROWSABLE_TYPES =
             List.of(VanillaTypes.ITEM_STACK, NeoForgeTypes.FLUID_STACK);
 
-    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
-    // but has no recipe producing it, so it would just be dead weight in the browse grid.
     public static List<BookIngredient> getAllIngredients()
     {
         if (runtime == null)
@@ -97,11 +95,21 @@ public final class CraftboundJeiPlugin implements IModPlugin
         List<BookIngredient> result = new ArrayList<>();
         for (IIngredientType<?> type : BROWSABLE_TYPES)
             collect(manager, type, result);
+        return result;
+    }
+
+    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
+    // but has no recipe producing it, so it would just be dead weight in the browse grid.
+    public static List<BookIngredient> producible(List<BookIngredient> ingredients)
+    {
+        if (runtime == null)
+            return List.of();
 
         IRecipeManager recipes = runtime.getRecipeManager();
         IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
-        result.removeIf(item -> !isProducible(recipes, focusFactory, item));
-        return result;
+        return ingredients.stream()
+                .filter(item -> isProducible(recipes, focusFactory, item))
+                .toList();
     }
 
     private static <V> void collect(IIngredientManager manager, IIngredientType<V> type,

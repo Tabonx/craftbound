@@ -304,6 +304,40 @@ class UnlocksTest
         assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
     }
 
+    @Test
+    void outputsUsing_findsWhatAnInputMakes()
+    {
+        Set<ResourceLocation> hasLog = obtained("minecraft:oak_log");
+
+        assertEquals(Set.of("item|minecraft:oak_planks"), Unlocks.outputsUsing(STRICT, index(),
+                Set.of("item|minecraft:oak_log"), hasLog, Unlocks.unlockedOutputs(STRICT, index(), hasLog)));
+    }
+
+    // Brass sheets need the mixer, so searching brass must not reveal them before the player has one.
+    @Test
+    void outputsUsing_leavesOutLockedRecipes()
+    {
+        Set<String> brass = Set.of("item|create:brass_ingot");
+        Set<ResourceLocation> hasBrass = obtained("create:brass_ingot");
+
+        assertEquals(Set.of(), Unlocks.outputsUsing(STRICT, index(), brass, hasBrass, Set.of()));
+        assertEquals(Set.of("item|create:brass_sheet"),
+                Unlocks.outputsUsing(ProgressionRules.OPEN, index(), brass, Set.of(), Set.of()));
+    }
+
+    @Test
+    void outputsUsing_matchesFluidInputs()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(MIXING, Map.of("chocolate", node(MIXING,
+                        List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")),
+                        "item|create:bar_of_chocolate"))),
+                Map.of());
+
+        assertEquals(Set.of("item|create:bar_of_chocolate"), Unlocks.outputsUsing(ProgressionRules.OPEN,
+                index, Set.of("fluid|create:chocolate"), Set.of(), Set.of()));
+    }
+
     private static InputSlot fluidSlot(String fluidId, String bucketId)
     {
         return new InputSlot(Set.of(rl(bucketId)), Set.of("fluid|" + fluidId));

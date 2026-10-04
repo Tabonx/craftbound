@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
@@ -157,6 +158,8 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BODY_H = ARROW_Y - BODY_Y - 4;
 
     private final List<BookIngredient> allItems = new ArrayList<>();
+    // Every ingredient, raw ones included, so a search can name an oak log and find its uses.
+    private List<BookIngredient> searchable = List.of();
     private List<BookIngredient> filtered = List.of();
     private int page = 0;
     private boolean loaded = false;
@@ -421,8 +424,9 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         if (loaded || !CraftboundJeiPlugin.hasRuntime())
             return;
+        searchable = CraftboundJeiPlugin.getAllIngredients();
         allItems.clear();
-        allItems.addAll(CraftboundJeiPlugin.getAllIngredients());
+        allItems.addAll(CraftboundJeiPlugin.producible(searchable));
         categories = ItemCategories.fromClientRecipes();
         refreshBookmarks(); // also applies the filter, so the grid is ready
         loaded = true;
@@ -492,17 +496,41 @@ public final class RecipeBookWidget extends AbstractWidget
                         .filter(this::inActiveTab)
                         .toList();
         String needle = search.getValue().toLowerCase(Locale.ROOT);
-        List<BookIngredient> result = needle.isEmpty() ? source
-                : source.stream()
-                        .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle)
-                                || SearchAliases.matches(item.unlockKey(), needle))
-                        .toList();
+        List<BookIngredient> result = needle.isEmpty() ? source : searched(source, needle);
         if (RecipeBookState.isFiltering())
             result = result.stream()
                     .filter(item -> item.item().map(craftable::contains).orElse(false))
                     .toList();
         filtered = result;
         setPage(page);
+    }
+
+    // Name matches first, then what those matches are used to make.
+    private List<BookIngredient> searched(List<BookIngredient> source, String needle)
+    {
+        Set<String> named = searchable.stream()
+                .filter(item -> matches(item, needle))
+                .map(BookIngredient::unlockKey)
+                .collect(Collectors.toSet());
+        Set<String> made = Progression.outputsUsing(named);
+
+        List<BookIngredient> result = new ArrayList<>();
+        List<BookIngredient> uses = new ArrayList<>();
+        for (BookIngredient item : source)
+        {
+            if (matches(item, needle))
+                result.add(item);
+            else if (made.contains(item.unlockKey()))
+                uses.add(item);
+        }
+        result.addAll(uses);
+        return result;
+    }
+
+    private static boolean matches(BookIngredient item, String needle)
+    {
+        return item.displayName().toLowerCase(Locale.ROOT).contains(needle)
+                || SearchAliases.matches(item.unlockKey(), needle);
     }
 
     private boolean inActiveTab(BookIngredient item)

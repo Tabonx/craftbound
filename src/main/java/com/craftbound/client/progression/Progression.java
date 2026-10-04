@@ -166,6 +166,11 @@ public final class Progression
         return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained(), unlockedOutputs);
     }
 
+    public static Set<String> outputsUsing(Set<String> inputKeys)
+    {
+        return Unlocks.outputsUsing(rules, index, inputKeys, obtained(), unlockedOutputs);
+    }
+
     public static boolean isCategoryUnlocked(String categoryUid)
     {
         if (!rules.enabled())

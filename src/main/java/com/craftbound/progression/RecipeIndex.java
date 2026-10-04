@@ -1,6 +1,9 @@
 package com.craftbound.progression;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -18,10 +21,14 @@ import net.minecraft.resources.ResourceLocation;
 // `producedKeys` is every output anything makes. A fluid outside it, water for example, is not produced
 // by any recipe, so requiring it to be "unlocked" would be a gate that can never open; slots
 // demanding one are left unjudged instead.
+//
+// `usedBy` maps each input key to the recipes that accept it, so search can find what an item is
+// used for without scanning every recipe on each keystroke.
 public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
-        Map<String, Set<ResourceLocation>> catalysts, Set<String> producedKeys)
+        Map<String, Set<ResourceLocation>> catalysts, Set<String> producedKeys,
+        Map<String, List<RecipeNode>> usedBy)
 {
-    public static final RecipeIndex EMPTY = new RecipeIndex(Map.of(), Map.of(), Set.of());
+    public static final RecipeIndex EMPTY = new RecipeIndex(Map.of(), Map.of(), Set.of(), Map.of());
 
     public static RecipeIndex of(Map<String, Map<Object, RecipeNode>> byCategory,
             Map<String, Set<ResourceLocation>> catalysts)
@@ -29,7 +36,24 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
         Set<String> produced = new HashSet<>();
         byCategory.values().forEach(nodes -> nodes.values()
                 .forEach(node -> produced.addAll(bootstrappable(node))));
-        return new RecipeIndex(Map.copyOf(byCategory), Map.copyOf(catalysts), Set.copyOf(produced));
+        return new RecipeIndex(Map.copyOf(byCategory), Map.copyOf(catalysts), Set.copyOf(produced),
+                usedBy(byCategory));
+    }
+
+    private static Map<String, List<RecipeNode>> usedBy(Map<String, Map<Object, RecipeNode>> byCategory)
+    {
+        Map<String, List<RecipeNode>> usedBy = new HashMap<>();
+        byCategory.values().forEach(nodes -> nodes.values().forEach(node ->
+        {
+            Set<String> keys = new HashSet<>();
+            for (InputSlot slot : node.inputSlots())
+            {
+                slot.items().forEach(item -> keys.add(UnlockKey.ofItem(item)));
+                keys.addAll(slot.fluids());
+            }
+            keys.forEach(key -> usedBy.computeIfAbsent(key, unused -> new ArrayList<>()).add(node));
+        }));
+        return usedBy;
     }
 
     // Only what a recipe makes *without already needing it*. Create's brewing both consumes and
@@ -60,6 +84,11 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
     public Stream<RecipeNode> nodes()
     {
         return byCategory.values().stream().flatMap(nodes -> nodes.values().stream());
+    }
+
+    public List<RecipeNode> recipesUsing(String inputKey)
+    {
+        return usedBy.getOrDefault(inputKey, List.of());
     }
 
     public Set<ResourceLocation> catalystsFor(String categoryUid)
