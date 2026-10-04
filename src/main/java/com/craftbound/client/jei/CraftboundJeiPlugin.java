@@ -14,6 +14,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 //? if >=1.21.5 {
 /*import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 *///?}
@@ -29,6 +30,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 //? if >=1.21.5 {
@@ -228,8 +230,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return recipes.createRecipeLookup(category.getRecipeType())
                 .get()
                 .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
-                .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe ->
-                        () -> recipes.createRecipeLayoutDrawableOrShowError(category, recipe, noFocus))
+                .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe -> () -> layout(recipes, category, recipe, noFocus))
                 .toList();
     }
 
@@ -286,7 +287,41 @@ public final class CraftboundJeiPlugin implements IModPlugin
                 .limitFocus(focuses)
                 .get()
                 .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
-                .forEach(recipe -> out.add(
-                        recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group)));
+                .forEach(recipe -> out.add(layout(recipes, category, recipe, group)));
+    }
+
+    // A slot offering alternatives shows only the ones the player has held, as long as they hold any:
+    // mundane potion brews from a dozen ingredients, and cycling a breeze rod they never saw gives it
+    // away. JEI already narrows a slot to whatever a focus names, so each held alternative becomes an
+    // input focus. A slot with none held keeps showing all of them, or the recipe would not say what
+    // it needs.
+    private static <T> IRecipeLayoutDrawable<T> layout(IRecipeManager recipes, IRecipeCategory<T> category,
+            T recipe, IFocusGroup group)
+    {
+        IRecipeLayoutDrawable<T> layout = recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group);
+        if (!Progression.isGating())
+            return layout;
+
+        IIngredientManager manager = runtime.getIngredientManager();
+        List<IFocus<?>> focuses = new ArrayList<>(group.getAllFocuses());
+        boolean narrowed = false;
+        for (IRecipeSlotView slot : layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT))
+        {
+            List<ITypedIngredient<?>> alternatives = slot.getAllIngredientsList();
+            List<ITypedIngredient<?>> held = alternatives.stream().filter(typed -> hasInput(manager, typed)).toList();
+            narrowed |= !held.isEmpty() && held.size() < alternatives.size();
+            held.forEach(typed -> focuses.add(focus(runtime.getJeiHelpers().getFocusFactory(),
+                    RecipeIngredientRole.INPUT, typed)));
+        }
+        return narrowed
+                ? recipes.createRecipeLayoutDrawableOrShowError(category, recipe,
+                        runtime.getJeiHelpers().getFocusFactory().createFocusGroup(focuses))
+                : layout;
+    }
+
+    private static boolean hasInput(IIngredientManager manager, ITypedIngredient<?> typed)
+    {
+        return Progression.hasInput(BookIngredient.unlockKey(manager, typed),
+                typed.getItemStack().map(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem())));
     }
 }

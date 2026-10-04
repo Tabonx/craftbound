@@ -197,6 +197,22 @@ public final class Progression
         return Unlocks.outputsUsing(rules, index, inputKeys, obtained(), available);
     }
 
+    public static boolean isGating()
+    {
+        return rules.enabled();
+    }
+
+    // Whether the player has this alternative of a recipe input: an item they have held, or a
+    // variant held or made. Anything that is not an item, a fluid, is never hidden.
+    public static boolean hasInput(String unlockKey, Optional<ResourceLocation> itemId)
+    {
+        if (itemId.isEmpty())
+            return true;
+        return unlockKey.equals(UnlockKey.withoutSubtype(unlockKey))
+                ? obtained().contains(itemId.get())
+                : available.contains(unlockKey);
+    }
+
     public static boolean isCategoryUnlocked(String categoryUid)
     {
         if (!rules.enabled())

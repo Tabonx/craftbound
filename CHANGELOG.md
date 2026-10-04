@@ -47,6 +47,9 @@
   potion, and searching a potion's name shows only what it is used for.
 - Recipes filled from a fluid nothing can make, such as a Spout filling a Potion of Luck, stay
   hidden.
+- A recipe slot that takes any of several ingredients now cycles only through the ones you have
+  held. Mundane potion no longer shows a breeze rod or a cobweb you have never found. A slot where
+  you have held none of them still shows them all, so the recipe still says what it needs.
 - Click the greyed-out place button to see what a recipe is missing. The ingredients you do not
   have turn red, as in vanilla's recipe book.
 
