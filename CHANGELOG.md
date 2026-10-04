@@ -34,6 +34,8 @@
   items no recipe makes, which the book does not list on their own.
 - Newer JEI releases no longer stamp a "#" on recipe slots that accept several items, and holding
   shift over a recipe's result no longer shows its recipe id.
+- On 1.21.10 and newer, double-clicking a word in the search field selects it, and shift-clicking
+  extends the selection, as in vanilla's recipe book.
 - Click the greyed-out place button to see what a recipe is missing. The ingredients you do not
   have turn red, as in vanilla's recipe book.
 

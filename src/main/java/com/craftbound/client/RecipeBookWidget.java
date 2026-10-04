@@ -676,7 +676,7 @@ public final class RecipeBookWidget extends AbstractWidget
     /*@Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
-        return clicked(event.x(), event.y(), event.button());
+        return clicked(event.x(), event.y(), event.button(), doubleClick);
     }
 
     @Override
@@ -694,7 +694,7 @@ public final class RecipeBookWidget extends AbstractWidget
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button)
     {
-        return clicked(mouseX, mouseY, button);
+        return clicked(mouseX, mouseY, button, false);
     }
 
     @Override
@@ -1064,7 +1064,7 @@ public final class RecipeBookWidget extends AbstractWidget
         return true;
     }
 
-    private boolean clicked(double mouseX, double mouseY, int button)
+    private boolean clicked(double mouseX, double mouseY, int button, boolean doubleClick)
     {
         if (!visible)
             return false;
@@ -1117,7 +1117,7 @@ public final class RecipeBookWidget extends AbstractWidget
         search.setFocused(onSearch);
         if (onSearch)
         {
-            Input.click(search, mouseX, mouseY, button);
+            Input.click(search, mouseX, mouseY, button, doubleClick);
             return true;
         }
 

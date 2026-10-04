@@ -9,6 +9,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 
+import org.lwjgl.glfw.GLFW;
+
 // This generation hands widgets an event record where older ones passed loose coordinates and key
 // codes. The book works in the loose form throughout and packs an event only when handing input on
 // to a vanilla widget, so its own input handling reads the same on every version.
@@ -16,7 +18,17 @@ public final class Input
 {
     public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button)
     {
-        return target.mouseClicked(new MouseButtonEvent(mouseX, mouseY, new MouseButtonInfo(button, 0)), false);
+        return click(target, mouseX, mouseY, button, false);
+    }
+
+    // Shift goes along because a text field reads it off the event to extend its selection, and a
+    // double click selects the word under the cursor.
+    public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button,
+            boolean doubleClick)
+    {
+        int modifiers = shiftDown() ? GLFW.GLFW_MOD_SHIFT : 0;
+        return target.mouseClicked(new MouseButtonEvent(mouseX, mouseY, new MouseButtonInfo(button, modifiers)),
+                doubleClick);
     }
 
     public static boolean keyPressed(GuiEventListener target, int keyCode, int scanCode, int modifiers)
