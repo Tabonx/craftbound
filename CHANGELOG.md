@@ -37,6 +37,8 @@
 - Variants share one slot in the book, as in vanilla's recipe book: every chest boat, bed or wool
   color sits behind a single entry that cycles through them. Click it to pick one. Search for a
   single variant and it shows on its own.
+- The lens no longer marks an item whose only news is another variant of a recipe you already
+  see. Once one chest boat is in the book, the other boats stop being marked.
 - On 1.21.10 and newer, double-clicking a word in the search field selects it, and shift-clicking
   extends the selection, as in vanilla's recipe book.
 - Click the greyed-out place button to see what a recipe is missing. The ingredients you do not

@@ -304,6 +304,28 @@ class UnlocksTest
         assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
     }
 
+    // Every boat opens its own chest boat, but once one chest boat is in the book the others are
+    // variants of it, not news.
+    @Test
+    void anItemOpeningOnlyAVariantOfAnOpenRecipeIsNotMarked()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of(
+                        "oak", new RecipeNode(CRAFTING, List.of(items("minecraft:oak_boat"), items("minecraft:chest")),
+                                Set.of("item|minecraft:oak_chest_boat"), "chest_boat"),
+                        "birch", new RecipeNode(CRAFTING, List.of(items("minecraft:birch_boat"), items("minecraft:chest")),
+                                Set.of("item|minecraft:birch_chest_boat"), "chest_boat"))),
+                Map.of());
+
+        Set<ResourceLocation> hasChest = obtained("minecraft:chest");
+        assertEquals(obtained("minecraft:oak_boat", "minecraft:birch_boat"), Unlocks.unlockingItems(STRICT, index,
+                hasChest, Unlocks.unlockedOutputs(STRICT, index, hasChest)));
+
+        Set<ResourceLocation> hasOakBoat = obtained("minecraft:chest", "minecraft:oak_boat");
+        assertEquals(Set.of(), Unlocks.unlockingItems(STRICT, index,
+                hasOakBoat, Unlocks.unlockedOutputs(STRICT, index, hasOakBoat)));
+    }
+
     @Test
     void outputsUsing_findsWhatAnInputMakes()
     {

@@ -88,8 +88,10 @@ public final class Unlocks
 
         Set<ResourceLocation> unlocking = new HashSet<>();
         Set<ResourceLocation> probe = new HashSet<>(obtained);
+        Set<String> openGroups = unlockedGroups(rules, index, obtained, unlockedOutputs);
         index.nodes()
                 .filter(node -> revealsSomething(node, unlockedOutputs))
+                .filter(node -> !openGroups.contains(node.group()))
                 .filter(node -> !recipeUnlocked(rules, index, node, obtained, unlockedOutputs))
                 .forEach(node -> {
                     for (ResourceLocation candidate : candidates(index, node))
@@ -104,6 +106,19 @@ public final class Unlocks
                     }
                 });
         return unlocking;
+    }
+
+    // A variant of a recipe the player can already see is no news either: once one chest boat is
+    // open, the boats leading to the others are not worth marking.
+    private static Set<String> unlockedGroups(ProgressionRules rules, RecipeIndex index,
+            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+    {
+        Set<String> groups = new HashSet<>();
+        index.nodes()
+                .filter(node -> !node.group().isEmpty())
+                .filter(node -> recipeUnlocked(rules, index, node, obtained, unlockedOutputs))
+                .forEach(node -> groups.add(node.group()));
+        return groups;
     }
 
     // A locked recipe whose outputs are all reachable some other way adds nothing to the book.
