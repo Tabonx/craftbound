@@ -32,6 +32,8 @@
 - Search now also finds what you can make from the items you name. Type "oak log" and the book
   lists items named oak log first, then what you craft from them, such as planks. This works for
   items no recipe makes, which the book does not list on their own.
+- Newer JEI releases no longer stamp a "#" on recipe slots that accept several items, and holding
+  shift over a recipe's result no longer shows its recipe id.
 
 ## 0.1.6
 
