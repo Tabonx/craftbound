@@ -69,5 +69,15 @@ public final class Canvas
         translate(graphics, -centerX, -centerY);
     }
 
+    // Draws over everything already drawn, as vanilla lifts its recipe overlay: far enough to clear
+    // the grid's item models, short of the tooltips drawn after it.
+    public static void inFront(GuiGraphics graphics, Runnable draw)
+    {
+        push(graphics);
+        graphics.pose().translate(0f, 0f, 200f);
+        draw.run();
+        pop(graphics);
+    }
+
     private Canvas() {}
 }

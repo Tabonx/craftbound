@@ -176,6 +176,7 @@ stonecutter.replacements.string {
     replace 'net.minecraft.client.gui.components.toasts.ToastComponent', 'net.minecraft.client.gui.components.toasts.ToastManager'
     replace 'ToastComponent', 'ToastManager'
     replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
+    replace '.value().getGroup()', '.value().group()'
 }
 
 // Drawing moved to deferred calls, which renamed the tooltip method without changing its arguments.

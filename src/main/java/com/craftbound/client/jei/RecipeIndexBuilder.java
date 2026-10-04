@@ -28,6 +28,7 @@ import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 // Reduces every recipe JEI knows about to the plain data progression needs, in one pass. Doing it
 // per browsable item instead would mean thousands of recipe lookups every time the obtained set
@@ -80,8 +81,17 @@ final class RecipeIndexBuilder
 
             List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
             inputs.addAll(RecipeRequirements.extraSlots(recipe));
-            out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet()));
+            out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(),
+                    groupOf(categoryUid, recipe)));
         });
+    }
+
+    private static String groupOf(String categoryUid, Object recipe)
+    {
+        if (!BookCategories.readsGroups(categoryUid))
+            return "";
+        String group = recipe instanceof RecipeHolder<?> holder ? holder.value().getGroup() : "";
+        return group.isEmpty() ? "" : categoryUid + "|" + group;
     }
 
     // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot

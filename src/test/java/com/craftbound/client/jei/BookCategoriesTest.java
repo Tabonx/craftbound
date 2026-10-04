@@ -26,4 +26,15 @@ class BookCategoriesTest
         assertTrue(BookCategories.isBrowsable("milling"));
         assertTrue(BookCategories.isBrowsable("sequenced_assembly"));
     }
+
+    // Create names every machine recipe's group "processing", which would fold everything a
+    // machine makes into one entry.
+    @Test
+    void onlyVanillaBookCategoriesReadGroups()
+    {
+        assertTrue(BookCategories.readsGroups("minecraft:crafting"));
+        assertTrue(BookCategories.readsGroups("minecraft:smoking"));
+        assertFalse(BookCategories.readsGroups("create:mixing"));
+        assertFalse(BookCategories.readsGroups("create:automatic_shaped"));
+    }
 }

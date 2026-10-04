@@ -2,6 +2,7 @@ package com.craftbound.client.progression;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
 import com.craftbound.progression.Unlocks;
+import com.craftbound.progression.VariantGroups;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -28,6 +30,7 @@ public final class Progression
 {
     private static RecipeIndexSnapshot snapshot = RecipeIndexSnapshot.EMPTY;
     private static RecipeIndex index = RecipeIndex.EMPTY;
+    private static Map<String, String> variantGroups = Map.of();
     private static ProgressionRules rules = ProgressionRules.OPEN;
     private static Set<String> unlockedOutputs = Set.of();
     private static Set<ResourceLocation> unlockingItems = Set.of();
@@ -57,6 +60,7 @@ public final class Progression
         {
             snapshot = CraftboundJeiPlugin.buildRecipeIndex();
             index = snapshot.index();
+            variantGroups = VariantGroups.of(index);
         }
 
         rules = current;
@@ -166,6 +170,12 @@ public final class Progression
         return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained(), unlockedOutputs);
     }
 
+    // The group of variants an entry belongs to, or null when it stands alone.
+    public static String variantGroup(BookIngredient ingredient)
+    {
+        return variantGroups.get(ingredient.unlockKey());
+    }
+
     public static Set<String> outputsUsing(Set<String> inputKeys)
     {
         return Unlocks.outputsUsing(rules, index, inputKeys, obtained(), unlockedOutputs);
@@ -183,6 +193,7 @@ public final class Progression
     {
         snapshot = RecipeIndexSnapshot.EMPTY;
         index = RecipeIndex.EMPTY;
+        variantGroups = Map.of();
         unlockedOutputs = Set.of();
         unlockingItems = Set.of();
         obtainedSize = -1;

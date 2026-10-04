@@ -71,5 +71,13 @@ public final class Canvas
         translate(graphics, -centerX, -centerY);
     }
 
+    // Draws over everything already drawn. This generation layers by stratum rather than depth, and
+    // tooltips still come after.
+    public static void inFront(GuiGraphics graphics, Runnable draw)
+    {
+        graphics.nextStratum();
+        draw.run();
+    }
+
     private Canvas() {}
 }
