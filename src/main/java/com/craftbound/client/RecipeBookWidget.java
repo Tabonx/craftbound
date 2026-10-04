@@ -108,9 +108,10 @@ public final class RecipeBookWidget extends AbstractWidget
                             .withStyle(ChatFormatting.GRAY));
 
     // The JEI tooltip lines the book drops: the one naming the mod a recipe came from, the recipe
-    // id shown while shift is held, and the "Accepts any:" tag hint, whose tag name follows on the
-    // line after it.
-    private static final Set<String> DROPPED_KEYS = Set.of("jei.tooltip.recipe.by", "jei.tooltip.recipe.id");
+    // id shown while shift is held, the heading of newer JEI's ingredients summary, and the tag
+    // hint, whose tag name follows on the line after it.
+    private static final Set<String> DROPPED_KEYS = Set.of("jei.tooltip.recipe.by", "jei.tooltip.recipe.id",
+            "jei.tooltip.recipe.tooltips.craft.ingredients");
     private static final String RECIPE_TAG_KEY = "jei.tooltip.recipe.tag";
 
     private static ResourceLocation bookmarkSprite(String name)
