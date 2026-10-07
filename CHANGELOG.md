@@ -13,6 +13,8 @@
   in sync with the book. Typing in the book updates the stock keeper's search, and the other
   way around.
 - Right-click the book's search field to clear it.
+- The bookmark and place buttons now use shaded icons in vanilla's style: a gray or gold
+  ribbon, and an arrow into a crafting table.
 - On a narrow window the recipe panel now narrows to keep its ribbons and the screen beside it
   in view. Before, the ribbons sat against the screen edge.
 - Above 1.21.1, the place button no longer offers a 3x3 recipe in the inventory's 2x2 grid.
