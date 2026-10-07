@@ -11,5 +11,15 @@ public final class Screens
         return Minecraft.getInstance().screen;
     }
 
+    // Lays the screen out again from scratch, Init events included, as a window resize does.
+    public static void rebuild(Screen screen)
+    {
+        //? if >=1.21.11 {
+        /*screen.resize(screen.width, screen.height);
+        *///?} else {
+        screen.resize(Minecraft.getInstance(), screen.width, screen.height);
+        //?}
+    }
+
     private Screens() {}
 }

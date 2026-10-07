@@ -8,7 +8,8 @@
     "JeiInputMixin",
     "JeiOverlayMixin",
     "MissingSlotMixin",
-    "ShapelessIconMixin"
+    "ShapelessIconMixin",
+    "StockKeeperSearchMixin"
   ],
   "injectors": {
     "defaultRequire": 0

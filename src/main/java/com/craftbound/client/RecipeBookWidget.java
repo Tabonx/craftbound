@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -49,9 +50,7 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
 // typed characters. Hosts a vanilla EditBox for search and ImageButtons for page arrows so it
@@ -110,11 +109,11 @@ public final class RecipeBookWidget extends AbstractWidget
             Component.translatable("craftbound.recipebook.bookmark");
     private static final Component TOOLTIP_BOOKMARKED =
             Component.translatable("craftbound.recipebook.bookmark.remove");
-    private static final Component TOOLTIP_PLACE =
+    private static final Tooltip PLACE_TOOLTIP = Tooltip.create(
             Component.translatable("craftbound.recipebook.place")
                     .append(CommonComponents.NEW_LINE)
                     .append(Component.translatable("craftbound.recipebook.place.all")
-                            .withStyle(ChatFormatting.GRAY));
+                            .withStyle(ChatFormatting.GRAY)));
 
     // The JEI tooltip lines the book drops: the one naming the mod a recipe came from, the recipe
     // id shown while shift is held, the heading of newer JEI's ingredients summary, and the tag
@@ -186,9 +185,10 @@ public final class RecipeBookWidget extends AbstractWidget
     // Highlight animations in flight, by unlock key, counting down in ticks.
     private final Map<String, Float> highlights = new HashMap<>();
 
-    // The craftable-filter state: which items are craftable right now (rebuilt when the inventory
-    // changes while filtering) and whether the filter button is hovered (for its tooltip).
+    // The craftable-filter state: which items are craftable right now (rebuilt when what they are
+    // made from changes) and whether the filter button is hovered (for its tooltip).
     private Supplier<Set<Item>> craftableSource = null;
+    private IntSupplier craftableVersion = () -> 0;
     private Set<Item> craftable = Set.of();
     private int craftableTimesChanged = -1;
     private boolean filterHovered = false;
@@ -245,20 +245,33 @@ public final class RecipeBookWidget extends AbstractWidget
                 Component.translatable("itemGroup.search"));
         this.search.setMaxLength(50);
         this.search.setHint(Component.translatable("gui.recipebook.search_hint"));
+        this.search.setValue(CraftboundJeiPlugin.searchText());
         this.search.setResponder(this::onSearchChanged);
 
         this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
         this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> stepForward());
 
         this.placeButton = new ImageButton(0, 0, PLACE_W, PLACE_H, PLACE_SPRITES, b -> placeShownRecipe());
-        this.placeButton.setTooltip(Tooltip.create(TOOLTIP_PLACE));
+        this.placeButton.setTooltip(PLACE_TOOLTIP);
         this.placeButton.visible = false;
     }
 
-    // Supplies the set of items craftable right now, bound by the host to the open menu.
-    public void setCraftableSource(Supplier<Set<Item>> source)
+    public boolean isSearchFocused()
+    {
+        return visible && search.isFocused();
+    }
+
+    public void blurSearch()
+    {
+        search.setFocused(false);
+    }
+
+    // Supplies the set of items craftable right now, bound by the host to the open menu, and a
+    // number that changes whenever that set may have.
+    public void setCraftableSource(Supplier<Set<Item>> source, IntSupplier version)
     {
         this.craftableSource = source;
+        this.craftableVersion = version;
     }
 
     public void setPlacer(RecipePlacer placer)
@@ -289,11 +302,12 @@ public final class RecipeBookWidget extends AbstractWidget
         return drawable;
     }
 
-    private Optional<RecipeHolder<?>> placeableRecipe()
+    private Optional<IRecipeLayoutDrawable<?>> placeableRecipe()
     {
         if (!inRecipeMode() || placer == null)
             return Optional.empty();
-        return placer.placeable(currentRecipe());
+        IRecipeLayoutDrawable<?> layout = currentRecipe();
+        return placer.offers(layout) ? Optional.of(layout) : Optional.empty();
     }
 
     // Advances the shown recipe's own animations, JEI's cycling through the items an ingredient
@@ -303,6 +317,10 @@ public final class RecipeBookWidget extends AbstractWidget
         if (!visible)
             return;
         ticks++;
+        // Another search synced with JEI, such as the stock keeper's, may have changed it meanwhile.
+        String shared = CraftboundJeiPlugin.searchText();
+        if (!search.isFocused() && !shared.equals(search.getValue()))
+            search.setValue(shared);
         if (inRecipeMode())
             currentRecipe().tick();
     }
@@ -318,7 +336,7 @@ public final class RecipeBookWidget extends AbstractWidget
         if (placer == null)
             return false;
 
-        Optional<RecipeHolder<?>> recipe =
+        Optional<IRecipeLayoutDrawable<?>> recipe =
                 placer.firstPlaceable(CraftboundJeiPlugin.recipeGroupsFor(ingredient, RecipeIngredientRole.OUTPUT));
         recipe.ifPresent(found ->
         {
@@ -507,6 +525,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void onSearchChanged(String value)
     {
+        CraftboundJeiPlugin.setSearchText(value);
         applyFilter();
     }
 
@@ -519,7 +538,7 @@ public final class RecipeBookWidget extends AbstractWidget
                         .toList();
         String needle = search.getValue().toLowerCase(Locale.ROOT);
         List<BookIngredient> result = needle.isEmpty() ? source : searched(source, needle);
-        if (RecipeBookState.isFiltering())
+        if (filtering())
             result = result.stream()
                     .filter(item -> item.item().map(craftable::contains).orElse(false))
                     .toList();
@@ -570,34 +589,45 @@ public final class RecipeBookWidget extends AbstractWidget
             applyFilter();
     }
 
-    private int inventoryTimesChanged()
-    {
-        var player = Minecraft.getInstance().player;
-        return player == null ? -1 : player.getInventory().getTimesChanged();
-    }
-
     // Rebuild the craftable set when the inventory changes, then update an active filter.
     private void refreshCraftableIfStale()
     {
-        if (craftableSource == null)
+        // Create's stock changes all the time. Waiting for the variants panel to close keeps it
+        // from closing under the player's cursor.
+        if (craftableSource == null || variants.isOpen())
             return;
-        int changed = inventoryTimesChanged();
-        if (changed != craftableTimesChanged)
-        {
-            craftable = craftableSource.get();
-            craftableTimesChanged = changed;
-            if (RecipeBookState.isFiltering())
-                applyFilter();
-        }
+        int changed = craftableVersion.getAsInt();
+        if (changed == craftableTimesChanged)
+            return;
+        craftableTimesChanged = changed;
+        // A stock keeper is sent its stock every second, mostly unchanged. Refiltering then would
+        // shuffle the grid for nothing.
+        Set<Item> fresh = craftableSource.get();
+        if (fresh.equals(craftable))
+            return;
+        craftable = fresh;
+        if (filtering())
+            applyFilter();
+    }
+
+    // A screen with no grid of its own, like a storage terminal, has nothing to filter against.
+    private boolean hasFilter()
+    {
+        return craftableSource != null;
+    }
+
+    private boolean filtering()
+    {
+        return hasFilter() && RecipeBookState.isFiltering();
     }
 
     private void toggleFilter()
     {
         RecipeBookState.toggleFiltering();
-        if (RecipeBookState.isFiltering() && craftableSource != null)
+        if (filtering())
         {
             craftable = craftableSource.get();
-            craftableTimesChanged = inventoryTimesChanged();
+            craftableTimesChanged = craftableVersion.getAsInt();
         }
         applyFilter();
     }
@@ -624,7 +654,7 @@ public final class RecipeBookWidget extends AbstractWidget
     // fixed width (clamped to the screen), sub-widgets re-placed.
     private void relayout()
     {
-        int w = inRecipeMode() ? Math.min(RecipeBookLayout.RECIPE_WIDTH, maxPanelWidth()) : WIDTH;
+        int w = inRecipeMode() ? RecipeBookLayout.recipeWidth(baseX + WIDTH) : WIDTH;
         int px = baseX + WIDTH - w;
         super.setPosition(px, baseY);
         setWidth(w);
@@ -636,13 +666,6 @@ public final class RecipeBookWidget extends AbstractWidget
         int center = px + w / 2;
         backButton.setPosition(center + BACKWARD_X - WIDTH / 2, baseY + ARROW_Y);
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
-    }
-
-    // Cap the recipe-mode width so the left edge (with the tab rail that protrudes further left)
-    // stays on-screen on very narrow windows.
-    private int maxPanelWidth()
-    {
-        return Math.max(WIDTH, baseX + WIDTH + BookRail.TAB_X - 2);
     }
 
     // The panel texture (bezel included) is stretched horizontally in recipe mode, so edge insets
@@ -869,7 +892,9 @@ public final class RecipeBookWidget extends AbstractWidget
     // still hiding. An entry with variants sits on vanilla's stacked slot.
     private ResourceLocation slotFor(List<BookIngredient> entry)
     {
-        boolean canCraft = entry.stream().anyMatch(item -> item.item().map(craftable::contains).orElse(false));
+        // With nothing to check against, no entry is marked as one the player cannot make.
+        boolean canCraft = !hasFilter()
+                || entry.stream().anyMatch(item -> item.item().map(craftable::contains).orElse(false));
         boolean unlocks = entry.stream().anyMatch(Progression::unlocksMore);
         if (entry.size() > 1)
         {
@@ -884,34 +909,14 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
+        filterHovered = hasFilter() && inRect(mouseX, mouseY, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
+        if (!hasFilter())
+            return;
         boolean on = RecipeBookState.isFiltering();
-        filterHovered = inRect(mouseX, mouseY, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
         ResourceLocation sprite = on
                 ? (filterHovered ? FILTER_ENABLED_HL : FILTER_ENABLED)
                 : (filterHovered ? FILTER_DISABLED_HL : FILTER_DISABLED);
         Canvas.sprite(graphics, sprite, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
-    }
-
-    // The inputs the player cannot fill from what they have. Only asked of recipes the book can
-    // place: elsewhere an input may be a tool the machine holds rather than one it consumes, and
-    // JEI cannot tell the two apart.
-    private static Set<IRecipeSlotView> missingInputs(IRecipeLayoutDrawable<?> layout)
-    {
-        var player = Minecraft.getInstance().player;
-        if (player == null)
-            return Set.of();
-
-        List<IRecipeSlotView> inputs = layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT).stream()
-                .filter(view -> view.getItemStacks().findAny().isPresent())
-                .toList();
-        List<MissingInputs.Slot<Item>> slots = inputs.stream()
-                .map(view -> new MissingInputs.Slot<>(
-                        view.getItemStacks().map(ItemStack::getItem).distinct().toList(),
-                        view.getItemStacks().findFirst().map(ItemStack::getCount).orElse(1)))
-                .toList();
-        return MissingInputs.of(slots, OwnedItems.of(player)).stream()
-                .map(inputs::get)
-                .collect(Collectors.toSet());
     }
 
     private void renderRecipe(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
@@ -957,8 +962,8 @@ public final class RecipeBookWidget extends AbstractWidget
         double localX = (mouseX - originX) / scale + bounds.getX();
         double localY = (mouseY - originY) / scale + bounds.getY();
 
-        Set<IRecipeSlotView> missing = layout == markedRecipe && placeableRecipe().isPresent()
-                ? missingInputs(layout) : Set.of();
+        boolean marked = layout == markedRecipe && placeableRecipe().isPresent();
+        Set<IRecipeSlotView> missing = marked ? placer.missing(layout) : Set.of();
         BookRecipeRender.whileDrawing(missing, () ->
         {
             Canvas.push(graphics);
@@ -968,6 +973,8 @@ public final class RecipeBookWidget extends AbstractWidget
             RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
 
             layout.drawRecipe(graphics, (int) localX, (int) localY);
+            if (marked)
+                placer.showMissing(graphics, layout, (int) localX, (int) localY);
             // JEI's own overlays draw the slot tooltip at once, inside this scaled pose and with the
             // mod name stamped on it. Its highlight is all we want here; the tooltip is taken apart
             // below and drawn later, unscaled, like every other tooltip in the book.
@@ -1061,12 +1068,14 @@ public final class RecipeBookWidget extends AbstractWidget
     // not work.
     private void renderPlaceButton(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
-        Optional<RecipeHolder<?>> recipe = placeableRecipe();
+        Optional<IRecipeLayoutDrawable<?>> recipe = placeableRecipe();
         placeButton.visible = recipe.isPresent();
         if (!placeButton.visible)
             return;
 
         placeButton.active = placer.canPlace(recipe.get());
+        List<Component> refusal = placeButton.active ? List.of() : placer.refusal(recipe.get());
+        placeButton.setTooltip(refusal.isEmpty() ? PLACE_TOOLTIP : Tooltip.create(CommonComponents.joinLines(refusal)));
         Canvas.widget(placeButton, graphics, mouseX, mouseY, partialTick);
     }
 
@@ -1172,7 +1181,7 @@ public final class RecipeBookWidget extends AbstractWidget
             return isMouseOverBook(mouseX, mouseY);
         }
 
-        if (inRect(mouseX, mouseY, getX() + FILTER_X, getY() + FILTER_Y, FILTER_W, FILTER_H))
+        if (hasFilter() && inRect(mouseX, mouseY, getX() + FILTER_X, getY() + FILTER_Y, FILTER_W, FILTER_H))
         {
             playClickSound();
             search.setFocused(false);
@@ -1184,7 +1193,11 @@ public final class RecipeBookWidget extends AbstractWidget
         search.setFocused(onSearch);
         if (onSearch)
         {
-            Input.click(search, mouseX, mouseY, button, doubleClick);
+            // Right-click clears, as in the creative inventory.
+            if (isRightClick(button))
+                search.setValue("");
+            else
+                Input.click(search, mouseX, mouseY, button, doubleClick);
             return true;
         }
 

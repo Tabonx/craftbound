@@ -27,11 +27,13 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 //? if >=1.21.5 {
 /*import net.minecraft.network.chat.Component;
@@ -77,6 +79,37 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public static boolean hasRuntime()
     {
         return runtime != null;
+    }
+
+    // JEI's search text is shared state: mods with a "sync with JEI" search, like Create's stock
+    // keeper, read and write it. The book uses it as its own, so those mods stay in sync with the book.
+    public static String searchText()
+    {
+        return runtime == null ? "" : runtime.getIngredientFilter().getFilterText();
+    }
+
+    public static void setSearchText(String text)
+    {
+        if (runtime != null)
+            runtime.getIngredientFilter().setFilterText(text);
+    }
+
+    // Whether a mod lets JEI move recipes into this menu: a storage terminal, a modded crafting
+    // table, Create's stock keeper. A screen like that is somewhere a player looks recipes up.
+    public static boolean acceptsRecipes(AbstractContainerMenu menu)
+    {
+        if (runtime == null)
+            return false;
+        return runtime.getRecipeManager().createRecipeCategoryLookup().get()
+                .anyMatch(category -> transferHandler(menu, category).isPresent());
+    }
+
+    static <R> Optional<IRecipeTransferHandler<AbstractContainerMenu, R>> transferHandler(AbstractContainerMenu menu,
+            IRecipeCategory<R> category)
+    {
+        return runtime == null
+                ? Optional.empty()
+                : runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category);
     }
 
     public static RecipeIndexSnapshot buildRecipeIndex()

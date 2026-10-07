@@ -284,7 +284,8 @@ sourceSets.main.java.srcDir stageVersionedSources
 if (!hasCreate) {
     sourceSets.main.java.exclude 'com/craftbound/client/ponder/CraftboundPonderPlugin.java',
             'com/craftbound/client/ponder/PonderVisibility.java',
-            'com/craftbound/client/ponder/mixin/**'
+            'com/craftbound/client/ponder/mixin/**',
+            'com/craftbound/client/create/**'
     sourceSets.main.resources.exclude 'craftbound.ponder.mixins.json'
 }
 

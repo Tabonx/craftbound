@@ -2,139 +2,55 @@ package com.craftbound.client;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import com.craftbound.PlaceRecipePayload;
-import com.craftbound.RecipePlacement;
 import com.craftbound.client.jei.RecipeGroup;
 
-import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
-import mezz.jei.api.recipe.RecipeType;
-import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.RecipeBookMenu;
-import net.minecraft.world.inventory.RecipeBookType;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
-// Places a shown recipe into the open menu's input slots. The slots are server-owned, so the click
-// only asks; CraftboundNetwork does the moving.
-public final class RecipePlacer
+// Moves a recipe the book shows into the open screen: into the grid on a recipe-book screen, or
+// wherever a mod's JEI transfer handler takes it, such as the stock keeper's order.
+public interface RecipePlacer
 {
-    private final RecipeBookMenu menu;
+    // Whether the place button shows for the recipe at all.
+    boolean offers(IRecipeLayoutDrawable<?> layout);
 
-    public RecipePlacer(RecipeBookMenu menu)
+    // Whether placing it would work now. The button greys out otherwise.
+    boolean canPlace(IRecipeLayoutDrawable<?> layout);
+
+    void place(IRecipeLayoutDrawable<?> layout, boolean placeAll);
+
+    // The inputs to mark after a click on the greyed button.
+    default Set<IRecipeSlotView> missing(IRecipeLayoutDrawable<?> layout)
     {
-        this.menu = menu;
+        return Set.of();
     }
 
-    // The vanilla recipe behind a shown layout, if this menu can place it. Gated on the layout's
-    // own category, so only the plain crafting or furnace-family tab offers placement: Create shows
-    // ordinary crafting recipes under its own "Automatic Shaped Crafting" tab as well, and there
-    // the recipe is meant for a mechanical crafter, not for the grid.
-    public Optional<RecipeHolder<?>> placeable(IRecipeLayoutDrawable<?> layout)
+    // Why placing would not work now, shown on the greyed button. Empty leaves it unexplained.
+    default List<Component> refusal(IRecipeLayoutDrawable<?> layout)
     {
-        if (!isMenuCategory(layout.getRecipeCategory()))
-            return Optional.empty();
-
-        return layout.getRecipe() instanceof RecipeHolder<?> recipe && RecipePlacement.canPlace(menu, recipe)
-                ? Optional.of(recipe)
-                : Optional.empty();
+        return List.of();
     }
 
-    // What shift-clicking an item places: the first recipe the menu can lay out and the player can
-    // make now, in the order the book lists them, so it is the one the player would see on opening.
-    public Optional<RecipeHolder<?>> firstPlaceable(List<RecipeGroup> groups)
+    // Drawn over the shown recipe, in its own coordinates, after a click on the greyed button.
+    default void showMissing(GuiGraphics graphics, IRecipeLayoutDrawable<?> layout, int mouseX, int mouseY)
+    {
+    }
+
+    // The tab a recipe opens on.
+    int menuGroup(List<RecipeGroup> groups);
+
+    // What shift-clicking an item places: the first recipe that works now, in the order the book
+    // lists them, so it is the one the player would see on opening.
+    default Optional<IRecipeLayoutDrawable<?>> firstPlaceable(List<RecipeGroup> groups)
     {
         return groups.stream()
                 .flatMap(group -> group.recipes().stream())
-                .flatMap(layout -> placeable(layout).stream())
-                .filter(this::canPlace)
+                .filter(layout -> offers(layout) && canPlace(layout))
                 .findFirst();
-    }
-
-    // The tab a recipe opens on: the open menu's own category, so a furnace shows how copper is
-    // smelted rather than crafted from nuggets. The first tab when the item has none there.
-    public int menuGroup(List<RecipeGroup> groups)
-    {
-        for (int i = 0; i < groups.size(); i++)
-            if (isMenuCategory(groups.get(i).category()))
-                return i;
-        return 0;
-    }
-
-    private boolean isMenuCategory(IRecipeCategory<?> category)
-    {
-        return category.getRecipeType() == categoryFor(menu.getRecipeBookType());
-    }
-
-    // Typed as Object because it is only ever compared for identity, and JEI renamed the interface
-    // it returns between the versions the book supports.
-    private static Object categoryFor(RecipeBookType bookType)
-    {
-        return switch (bookType)
-        {
-            case CRAFTING -> RecipeTypes.CRAFTING;
-            case FURNACE -> RecipeTypes.SMELTING;
-            case BLAST_FURNACE -> RecipeTypes.BLASTING;
-            case SMOKER -> RecipeTypes.SMOKING;
-        };
-    }
-
-    // Whether asking would actually do something: the ingredients are there, and on a server
-    // without Craftbound the vanilla recipe book has learned the recipe, since that server places
-    // nothing else. The book is synced to the client, so this is the server's own answer rather
-    // than a guess, and the button greys out instead of silently doing nothing.
-    public boolean canPlace(RecipeHolder<?> recipe)
-    {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null)
-            return false;
-
-        //? if >=1.21.4 {
-        /*// The client is only told about recipe displays now, and vanilla's placement packet names
-        // a display rather than a recipe, so there is nothing the book can ask a plain server to
-        // place. Placement needs a server running Craftbound, and the button greys out otherwise.
-        if (!ServerSupport.installed())
-            return false;
-        *///?} else {
-        if (!ServerSupport.installed() && !player.getRecipeBook().contains(recipe))
-            return false;
-        //?}
-
-        return RecipePlacement.available(player, menu).canCraft(recipe.value(), null);
-    }
-
-    // A recipe's own id, which newer versions wrap in a registry key.
-    private static ResourceLocation recipeId(RecipeHolder<?> recipe)
-    {
-        //? if >=1.21.4 {
-        /*return recipe.id().location();
-        *///?} else {
-        return recipe.id();
-        //?}
-    }
-
-    // A server without Craftbound cannot take our packet, so ask with vanilla's. That one only
-    // places recipes the player's vanilla recipe book already holds, which is as far as the client
-    // can get on its own.
-    public void place(RecipeHolder<?> recipe, boolean placeAll)
-    {
-        if (ServerSupport.installed())
-        {
-            Net.toServer(new PlaceRecipePayload(menu.containerId, recipeId(recipe), placeAll));
-            return;
-        }
-
-        // Newer versions have nothing to fall back to, and canPlace already refuses that case.
-        //? if <1.21.4 {
-        ClientPacketListener connection = Minecraft.getInstance().getConnection();
-        if (connection != null)
-            connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
-        //?}
     }
 }

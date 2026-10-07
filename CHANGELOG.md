@@ -2,6 +2,19 @@
 
 ## 0.1.7
 
+- The book now opens on screens that take recipes from JEI but have no recipe book of their
+  own, such as Create's stock keeper, storage terminals, the brewing stand and the smithing
+  table. Its button sits just left of the screen. Where JEI could move a recipe into the
+  screen, the book's place button does the same: in the stock keeper it adds the recipe to the
+  order. A greyed-out button says why, and clicking it marks what the stock is missing.
+  In the stock keeper, the craftable filter shows what its stock can be crafted into, and
+  placing a recipe already in the order raises its amount.
+- The book's search now shares its text with JEI, so mods that sync their search with JEI stay
+  in sync with the book. Typing in the book updates the stock keeper's search, and the other
+  way around.
+- Right-click the book's search field to clear it.
+- On a narrow window the recipe panel now narrows to keep its ribbons and the screen beside it
+  in view. Before, the ribbons sat against the screen edge.
 - Above 1.21.1, the place button no longer offers a 3x3 recipe in the inventory's 2x2 grid.
   Placing one used to lay out only part of the recipe and pull its ingredients out of your
   inventory. The craftable filter now also leaves these recipes out.

@@ -45,6 +45,20 @@ public final class CraftableItems
         return result;
     }
 
+    // Crafting recipes made from a pool other than the player's inventory, such as the stock behind
+    // Create's stock keeper, which orders crafts for any 3x3 recipe.
+    public static Set<Item> craftableFrom(StackedContents contents)
+    {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null)
+            return Set.of();
+
+        Set<Item> result = new HashSet<>();
+        collect(minecraft.level.getRecipeManager(), RecipeType.CRAFTING, contents, 3, 3,
+                minecraft.level.registryAccess(), result);
+        return result;
+    }
+
     // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime
     // from the menu, erase to a raw RecipeType and read each holder as a plain Recipe.
     @SuppressWarnings({"rawtypes", "unchecked"})
