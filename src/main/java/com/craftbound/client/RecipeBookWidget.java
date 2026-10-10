@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
@@ -49,7 +51,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
 // typed characters. Hosts a vanilla EditBox for search and ImageButtons for page arrows so it
@@ -69,6 +70,14 @@ public final class RecipeBookWidget extends AbstractWidget
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_craftable");
     private static final ResourceLocation UNLOCKING_UNCRAFTABLE_SLOT =
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_uncraftable");
+    private static final ResourceLocation MANY_CRAFTABLE_SLOT =
+            ResourceLocation.withDefaultNamespace("recipe_book/slot_many_craftable");
+    private static final ResourceLocation MANY_UNCRAFTABLE_SLOT =
+            ResourceLocation.withDefaultNamespace("recipe_book/slot_many_uncraftable");
+    private static final ResourceLocation UNLOCKING_MANY_CRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_many_craftable");
+    private static final ResourceLocation UNLOCKING_MANY_UNCRAFTABLE_SLOT =
+            ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/slot_many_uncraftable");
     private static final WidgetSprites FORWARD_SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward"),
             ResourceLocation.withDefaultNamespace("recipe_book/page_forward_highlighted"));
@@ -100,15 +109,17 @@ public final class RecipeBookWidget extends AbstractWidget
             Component.translatable("craftbound.recipebook.bookmark");
     private static final Component TOOLTIP_BOOKMARKED =
             Component.translatable("craftbound.recipebook.bookmark.remove");
-    private static final Component TOOLTIP_PLACE =
+    private static final Tooltip PLACE_TOOLTIP = Tooltip.create(
             Component.translatable("craftbound.recipebook.place")
                     .append(CommonComponents.NEW_LINE)
                     .append(Component.translatable("craftbound.recipebook.place.all")
-                            .withStyle(ChatFormatting.GRAY));
+                            .withStyle(ChatFormatting.GRAY)));
 
-    // The JEI tooltip lines the book drops: the one naming the mod a recipe came from, and the
-    // "Accepts any:" tag hint, whose tag name follows on the line after it.
-    private static final String RECIPE_BY_KEY = "jei.tooltip.recipe.by";
+    // The JEI tooltip lines the book drops: the one naming the mod a recipe came from, the recipe
+    // id shown while shift is held, the heading of newer JEI's ingredients summary, and the tag
+    // hint, whose tag name follows on the line after it.
+    private static final Set<String> DROPPED_KEYS = Set.of("jei.tooltip.recipe.by", "jei.tooltip.recipe.id",
+            "jei.tooltip.recipe.tooltips.craft.ingredients");
     private static final String RECIPE_TAG_KEY = "jei.tooltip.recipe.tag";
 
     private static ResourceLocation bookmarkSprite(String name)
@@ -117,6 +128,8 @@ public final class RecipeBookWidget extends AbstractWidget
     }
 
     private static final float ANIMATION_TICKS = 15f;
+    // How long an entry with variants shows each one, vanilla's own pace.
+    private static final int VARIANT_TICKS = 30;
     private static final int COLS = 5;
     private static final int PER_PAGE = COLS * 4;
     private static final int CELL = 25;
@@ -157,7 +170,12 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BODY_H = ARROW_Y - BODY_Y - 4;
 
     private final List<BookIngredient> allItems = new ArrayList<>();
-    private List<BookIngredient> filtered = List.of();
+    // Every ingredient, raw ones included, so a search can name an oak log and find its uses.
+    private List<BookIngredient> searchable = List.of();
+    // The grid's entries: one item, or every variant of one behind a single slot.
+    private List<List<BookIngredient>> entries = List.of();
+    private final VariantsOverlay variants = new VariantsOverlay();
+    private int ticks = 0;
     private int page = 0;
     private boolean loaded = false;
     private BookIngredient hovered = null;
@@ -167,9 +185,10 @@ public final class RecipeBookWidget extends AbstractWidget
     // Highlight animations in flight, by unlock key, counting down in ticks.
     private final Map<String, Float> highlights = new HashMap<>();
 
-    // The craftable-filter state: which items are craftable right now (rebuilt when the inventory
-    // changes while filtering) and whether the filter button is hovered (for its tooltip).
+    // The craftable-filter state: which items are craftable right now (rebuilt when what they are
+    // made from changes) and whether the filter button is hovered (for its tooltip).
     private Supplier<Set<Item>> craftableSource = null;
+    private IntSupplier craftableVersion = () -> 0;
     private Set<Item> craftable = Set.of();
     private int craftableTimesChanged = -1;
     private boolean filterHovered = false;
@@ -178,15 +197,15 @@ public final class RecipeBookWidget extends AbstractWidget
     private int groupIndex = 0;
 
     // The rail left of the book: recipe categories while a recipe is open, and while browsing the
-    // ribbons that choose what fills the grid. The ingredient whose recipes are shown is kept so the
-    // bookmark button can toggle it.
+    // ribbons that choose what fills the grid. The bookmark button toggles what the shown recipe
+    // makes, read as it is drawn so it follows every step to another recipe.
     private final BookRail categoryRail = new BookRail();
     private final BookRail browseRail = new BookRail();
     private List<BookIngredient> bookmarked = List.of();
     private List<BrowseTab> browseTabs = List.of();
     private BrowseTab activeTab = BrowseTab.ALL;
     private ItemCategories categories = ItemCategories.EMPTY;
-    private BookIngredient focused = null;
+    private BookIngredient bookmarkTarget = null;
     private boolean bookmarkHovered = false;
 
     // The recipes currently filling the body (one category's, focused or full), built lazily via
@@ -215,6 +234,8 @@ public final class RecipeBookWidget extends AbstractWidget
 
     // Fills the open menu's input slots with the shown recipe; absent until the host binds a menu.
     private RecipePlacer placer = null;
+    // The recipe whose greyed place button was clicked, to mark what it is missing.
+    private IRecipeLayoutDrawable<?> markedRecipe = null;
 
     public RecipeBookWidget()
     {
@@ -224,20 +245,33 @@ public final class RecipeBookWidget extends AbstractWidget
                 Component.translatable("itemGroup.search"));
         this.search.setMaxLength(50);
         this.search.setHint(Component.translatable("gui.recipebook.search_hint"));
+        this.search.setValue(CraftboundJeiPlugin.searchText());
         this.search.setResponder(this::onSearchChanged);
 
         this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
         this.forwardButton = new ImageButton(0, 0, ARROW_W, ARROW_H, FORWARD_SPRITES, b -> stepForward());
 
         this.placeButton = new ImageButton(0, 0, PLACE_W, PLACE_H, PLACE_SPRITES, b -> placeShownRecipe());
-        this.placeButton.setTooltip(Tooltip.create(TOOLTIP_PLACE));
+        this.placeButton.setTooltip(PLACE_TOOLTIP);
         this.placeButton.visible = false;
     }
 
-    // Supplies the set of items craftable right now, bound by the host to the open menu.
-    public void setCraftableSource(Supplier<Set<Item>> source)
+    public boolean isSearchFocused()
+    {
+        return visible && search.isFocused();
+    }
+
+    public void blurSearch()
+    {
+        search.setFocused(false);
+    }
+
+    // Supplies the set of items craftable right now, bound by the host to the open menu, and a
+    // number that changes whenever that set may have.
+    public void setCraftableSource(Supplier<Set<Item>> source, IntSupplier version)
     {
         this.craftableSource = source;
+        this.craftableVersion = version;
     }
 
     public void setPlacer(RecipePlacer placer)
@@ -268,24 +302,48 @@ public final class RecipeBookWidget extends AbstractWidget
         return drawable;
     }
 
-    private Optional<RecipeHolder<?>> placeableRecipe()
+    private Optional<IRecipeLayoutDrawable<?>> placeableRecipe()
     {
         if (!inRecipeMode() || placer == null)
             return Optional.empty();
-        return placer.placeable(currentRecipe());
+        IRecipeLayoutDrawable<?> layout = currentRecipe();
+        return placer.offers(layout) ? Optional.of(layout) : Optional.empty();
     }
 
     // Advances the shown recipe's own animations, JEI's cycling through the items an ingredient
     // stands for included. Holding shift stops the cycle, which is JEI's own behaviour.
     public void tick()
     {
-        if (visible && inRecipeMode())
+        if (!visible)
+            return;
+        ticks++;
+        // Another search synced with JEI, such as the stock keeper's, may have changed it meanwhile.
+        String shared = CraftboundJeiPlugin.searchText();
+        if (!search.isFocused() && !shared.equals(search.getValue()))
+            search.setValue(shared);
+        if (inRecipeMode())
             currentRecipe().tick();
     }
 
     private void placeShownRecipe()
     {
         placeableRecipe().ifPresent(recipe -> placer.place(recipe, Input.shiftDown()));
+    }
+
+    // Places as many sets as the inventory allows, as shift on the place button does.
+    private boolean quickPlace(BookIngredient ingredient)
+    {
+        if (placer == null)
+            return false;
+
+        Optional<IRecipeLayoutDrawable<?>> recipe =
+                placer.firstPlaceable(CraftboundJeiPlugin.recipeGroupsFor(ingredient, RecipeIngredientRole.OUTPUT));
+        recipe.ifPresent(found ->
+        {
+            playClickSound();
+            placer.place(found, true);
+        });
+        return recipe.isPresent();
     }
 
     // Browse and Recipe share the two page arrows; each step means "previous/next" in the active
@@ -313,11 +371,11 @@ public final class RecipeBookWidget extends AbstractWidget
         if (groups.isEmpty())
             return false;
         recipeGroups = groups;
-        focused = ingredient;
         hovered = null;
+        variants.close();
         search.setFocused(false);
         categoryRail.setTabs(recipeGroups, 0);
-        selectGroup(0);
+        selectGroup(placer == null ? 0 : placer.menuGroup(recipeGroups));
         return true;
     }
 
@@ -328,7 +386,6 @@ public final class RecipeBookWidget extends AbstractWidget
         bodyCache = new ArrayList<>();
         groupIndex = 0;
         recipeIndex = 0;
-        focused = null;
         categoryRail.setTabs(List.of(), -1);
         relayout();
     }
@@ -407,8 +464,9 @@ public final class RecipeBookWidget extends AbstractWidget
     {
         if (loaded || !CraftboundJeiPlugin.hasRuntime())
             return;
+        searchable = CraftboundJeiPlugin.getAllIngredients();
         allItems.clear();
-        allItems.addAll(CraftboundJeiPlugin.getAllIngredients());
+        allItems.addAll(CraftboundJeiPlugin.producible(searchable));
         categories = ItemCategories.fromClientRecipes();
         refreshBookmarks(); // also applies the filter, so the grid is ready
         loaded = true;
@@ -442,10 +500,19 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void toggleBookmark()
     {
-        if (focused == null)
-            return;
-        BookmarkStore.toggle(focused.uid());
+        BookmarkStore.toggle(bookmarkTarget.uid());
         refreshBookmarks();
+    }
+
+    // Empty for recipes that make nothing, such as fuel and info pages.
+    private List<BookIngredient> shownOutputs()
+    {
+        return currentRecipe().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT).stream()
+                .map(IRecipeSlotView::getDisplayedIngredient)
+                .flatMap(Optional::stream)
+                .map(CraftboundJeiPlugin::toBookIngredient)
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     private void selectBrowseTab(int index)
@@ -458,6 +525,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void onSearchChanged(String value)
     {
+        CraftboundJeiPlugin.setSearchText(value);
         applyFilter();
     }
 
@@ -469,17 +537,43 @@ public final class RecipeBookWidget extends AbstractWidget
                         .filter(this::inActiveTab)
                         .toList();
         String needle = search.getValue().toLowerCase(Locale.ROOT);
-        List<BookIngredient> result = needle.isEmpty() ? source
-                : source.stream()
-                        .filter(item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle)
-                                || SearchAliases.matches(item.unlockKey(), needle))
-                        .toList();
-        if (RecipeBookState.isFiltering())
+        List<BookIngredient> result = needle.isEmpty() ? source : searched(source, needle);
+        if (filtering())
             result = result.stream()
                     .filter(item -> item.item().map(craftable::contains).orElse(false))
                     .toList();
-        filtered = result;
+        entries = GridEntries.of(result,
+                activeTab == BrowseTab.BOOKMARKS ? item -> null : Progression::variantGroup);
+        variants.close();
         setPage(page);
+    }
+
+    // Name matches first, then what those matches are used to make.
+    private List<BookIngredient> searched(List<BookIngredient> source, String needle)
+    {
+        Set<String> named = searchable.stream()
+                .filter(item -> matches(item, needle))
+                .map(BookIngredient::unlockKey)
+                .collect(Collectors.toSet());
+        Set<String> made = Progression.outputsUsing(named);
+
+        List<BookIngredient> result = new ArrayList<>();
+        List<BookIngredient> uses = new ArrayList<>();
+        for (BookIngredient item : source)
+        {
+            if (matches(item, needle))
+                result.add(item);
+            else if (made.contains(item.unlockKey()))
+                uses.add(item);
+        }
+        result.addAll(uses);
+        return result;
+    }
+
+    private static boolean matches(BookIngredient item, String needle)
+    {
+        return item.displayName().toLowerCase(Locale.ROOT).contains(needle)
+                || SearchAliases.matches(item.registryKey(), needle);
     }
 
     private boolean inActiveTab(BookIngredient item)
@@ -495,34 +589,45 @@ public final class RecipeBookWidget extends AbstractWidget
             applyFilter();
     }
 
-    private int inventoryTimesChanged()
-    {
-        var player = Minecraft.getInstance().player;
-        return player == null ? -1 : player.getInventory().getTimesChanged();
-    }
-
     // Rebuild the craftable set when the inventory changes, then update an active filter.
     private void refreshCraftableIfStale()
     {
-        if (craftableSource == null)
+        // Create's stock changes all the time. Waiting for the variants panel to close keeps it
+        // from closing under the player's cursor.
+        if (craftableSource == null || variants.isOpen())
             return;
-        int changed = inventoryTimesChanged();
-        if (changed != craftableTimesChanged)
-        {
-            craftable = craftableSource.get();
-            craftableTimesChanged = changed;
-            if (RecipeBookState.isFiltering())
-                applyFilter();
-        }
+        int changed = craftableVersion.getAsInt();
+        if (changed == craftableTimesChanged)
+            return;
+        craftableTimesChanged = changed;
+        // A stock keeper is sent its stock every second, mostly unchanged. Refiltering then would
+        // shuffle the grid for nothing.
+        Set<Item> fresh = craftableSource.get();
+        if (fresh.equals(craftable))
+            return;
+        craftable = fresh;
+        if (filtering())
+            applyFilter();
+    }
+
+    // A screen with no grid of its own, like a storage terminal, has nothing to filter against.
+    private boolean hasFilter()
+    {
+        return craftableSource != null;
+    }
+
+    private boolean filtering()
+    {
+        return hasFilter() && RecipeBookState.isFiltering();
     }
 
     private void toggleFilter()
     {
         RecipeBookState.toggleFiltering();
-        if (RecipeBookState.isFiltering() && craftableSource != null)
+        if (filtering())
         {
             craftable = craftableSource.get();
-            craftableTimesChanged = inventoryTimesChanged();
+            craftableTimesChanged = craftableVersion.getAsInt();
         }
         applyFilter();
     }
@@ -534,7 +639,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private int pageCount()
     {
-        return Math.max(1, (filtered.size() + PER_PAGE - 1) / PER_PAGE);
+        return Math.max(1, (entries.size() + PER_PAGE - 1) / PER_PAGE);
     }
 
     @Override
@@ -549,7 +654,7 @@ public final class RecipeBookWidget extends AbstractWidget
     // fixed width (clamped to the screen), sub-widgets re-placed.
     private void relayout()
     {
-        int w = inRecipeMode() ? Math.min(RecipeBookLayout.RECIPE_WIDTH, maxPanelWidth()) : WIDTH;
+        int w = inRecipeMode() ? RecipeBookLayout.recipeWidth(baseX + WIDTH) : WIDTH;
         int px = baseX + WIDTH - w;
         super.setPosition(px, baseY);
         setWidth(w);
@@ -561,13 +666,6 @@ public final class RecipeBookWidget extends AbstractWidget
         int center = px + w / 2;
         backButton.setPosition(center + BACKWARD_X - WIDTH / 2, baseY + ARROW_Y);
         forwardButton.setPosition(center + FORWARD_X - WIDTH / 2, baseY + ARROW_Y);
-    }
-
-    // Cap the recipe-mode width so the left edge (with the tab rail that protrudes further left)
-    // stays on-screen on very narrow windows.
-    private int maxPanelWidth()
-    {
-        return Math.max(WIDTH, baseX + WIDTH + BookRail.TAB_X - 2);
     }
 
     // The panel texture (bezel included) is stretched horizontally in recipe mode, so edge insets
@@ -620,7 +718,7 @@ public final class RecipeBookWidget extends AbstractWidget
     /*@Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
-        return clicked(event.x(), event.y(), event.button());
+        return clicked(event.x(), event.y(), event.button(), doubleClick);
     }
 
     @Override
@@ -638,7 +736,7 @@ public final class RecipeBookWidget extends AbstractWidget
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button)
     {
-        return clicked(mouseX, mouseY, button);
+        return clicked(mouseX, mouseY, button, false);
     }
 
     @Override
@@ -656,6 +754,15 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void drawBook(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
+        // An open variants panel takes every click, so nothing else may light up as if it would.
+        int panelMouseX = mouseX;
+        int panelMouseY = mouseY;
+        if (variants.isOpen())
+        {
+            mouseX = -1;
+            mouseY = -1;
+        }
+
         ensureLoaded();
         refreshUnlocksIfStale();
         refreshCraftableIfStale();
@@ -668,12 +775,17 @@ public final class RecipeBookWidget extends AbstractWidget
         // Tabs are drawn over the book (like vanilla), their edge overlapping the book's left border.
         filterHovered = false;
         bookmarkHovered = false;
+        bookmarkTarget = null;
         slotTooltip = List.of();
         if (inRecipeMode())
         {
             categoryRail.render(graphics, mouseX, mouseY);
             renderRecipe(graphics, x, y, mouseX, mouseY);
-            renderBookmarkButton(graphics, x, y, mouseX, mouseY);
+            // Seeing the recipe that makes an unlock is seeing the unlock, so the grid does not
+            // replay its highlight later.
+            List<BookIngredient> outputs = shownOutputs();
+            outputs.forEach(Progression::takeHighlight);
+            renderBookmarkButton(graphics, outputs, y, mouseX, mouseY);
         }
         else
         {
@@ -683,6 +795,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
         renderPlaceButton(graphics, mouseX, mouseY, partialTick);
         renderPager(graphics, x, y, mouseX, mouseY, partialTick);
+        renderVariants(graphics, panelMouseX, panelMouseY, partialTick);
     }
 
     private BookRail rail()
@@ -690,14 +803,16 @@ public final class RecipeBookWidget extends AbstractWidget
         return inRecipeMode() ? categoryRail : browseRail;
     }
 
-    private void renderBookmarkButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
+    // A recipe with several outputs is bookmarked by its first.
+    private void renderBookmarkButton(GuiGraphics graphics, List<BookIngredient> outputs, int y, int mouseX, int mouseY)
     {
-        if (focused == null)
+        if (outputs.isEmpty())
             return;
+        bookmarkTarget = outputs.get(0);
 
         int buttonX = bookmarkX();
         bookmarkHovered = inRect(mouseX, mouseY, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);
-        boolean on = BookmarkStore.contains(focused.uid());
+        boolean on = BookmarkStore.contains(bookmarkTarget.uid());
         ResourceLocation sprite = on
                 ? (bookmarkHovered ? BOOKMARK_ON_HL : BOOKMARK_ON)
                 : (bookmarkHovered ? BOOKMARK_OFF_HL : BOOKMARK_OFF);
@@ -711,26 +826,47 @@ public final class RecipeBookWidget extends AbstractWidget
 
         int start = page * PER_PAGE;
         hovered = null;
-        for (int i = 0; i < PER_PAGE && start + i < filtered.size(); i++)
+        for (int i = 0; i < PER_PAGE && start + i < entries.size(); i++)
         {
             int cellX = x + GRID_X + CELL * (i % COLS);
             int cellY = y + GRID_Y + CELL * (i / COLS);
-            BookIngredient item = filtered.get(start + i);
-            renderCell(graphics, item, cellX, cellY, partialTick);
+            List<BookIngredient> entry = entries.get(start + i);
+            renderCell(graphics, entry, cellX, cellY, partialTick);
 
             if (mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL)
-                hovered = item;
+                hovered = shown(entry);
         }
+    }
+
+    // Drawn last, over the pager too, and the only thing hovered while it is open, as in vanilla.
+    private void renderVariants(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        if (inRecipeMode() || !variants.isOpen())
+            return;
+        variants.render(graphics, (variant, slotX, slotY) ->
+                renderCell(graphics, List.of(variant), slotX, slotY, partialTick));
+        hovered = variants.variantAt(mouseX, mouseY);
+    }
+
+    // Which variant an entry shows right now: they take turns, as in vanilla's book.
+    private BookIngredient shown(List<BookIngredient> entry)
+    {
+        return entry.get(ticks / VARIANT_TICKS % entry.size());
     }
 
     // A newly unlocked entry swells and settles once, vanilla's recipe-book highlight: a half sine
     // over ANIMATION_TICKS, scaling the slot and its item about the item's centre.
-    private void renderCell(GuiGraphics graphics, BookIngredient item, int cellX, int cellY, float partialTick)
+    private void renderCell(GuiGraphics graphics, List<BookIngredient> entry, int cellX, int cellY, float partialTick)
     {
-        if (Progression.takeHighlight(item))
-            highlights.put(item.unlockKey(), ANIMATION_TICKS);
+        // Every variant's highlight is claimed, so one swell stands for the lot.
+        String key = entry.get(0).unlockKey();
+        boolean fresh = false;
+        for (BookIngredient variant : entry)
+            fresh |= Progression.takeHighlight(variant);
+        if (fresh)
+            highlights.put(key, ANIMATION_TICKS);
 
-        Float remaining = highlights.get(item.unlockKey());
+        Float remaining = highlights.get(key);
         if (remaining != null)
         {
             float scale = 1f + 0.1f * (float) Math.sin(remaining / ANIMATION_TICKS * Math.PI);
@@ -740,32 +876,43 @@ public final class RecipeBookWidget extends AbstractWidget
 
             float left = remaining - partialTick;
             if (left > 0f)
-                highlights.put(item.unlockKey(), left);
+                highlights.put(key, left);
             else
-                highlights.remove(item.unlockKey());
+                highlights.remove(key);
         }
 
-        Canvas.sprite(graphics, slotFor(item), cellX, cellY, CELL, CELL);
-        item.render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
+        Canvas.sprite(graphics, slotFor(entry), cellX, cellY, CELL, CELL);
+        shown(entry).render(graphics, cellX + ITEM_INSET, cellY + ITEM_INSET);
 
         if (remaining != null)
             Canvas.pop(graphics);
     }
 
     // Marked slots are the ones worth getting hold of: obtaining them opens recipes the book is
-    // still hiding.
-    private ResourceLocation slotFor(BookIngredient ingredient)
+    // still hiding. An entry with variants sits on vanilla's stacked slot.
+    private ResourceLocation slotFor(List<BookIngredient> entry)
     {
-        boolean canCraft = ingredient.item().map(craftable::contains).orElse(false);
-        if (Progression.unlocksMore(ingredient))
+        // With nothing to check against, no entry is marked as one the player cannot make.
+        boolean canCraft = !hasFilter()
+                || entry.stream().anyMatch(item -> item.item().map(craftable::contains).orElse(false));
+        boolean unlocks = entry.stream().anyMatch(Progression::unlocksMore);
+        if (entry.size() > 1)
+        {
+            if (unlocks)
+                return canCraft ? UNLOCKING_MANY_CRAFTABLE_SLOT : UNLOCKING_MANY_UNCRAFTABLE_SLOT;
+            return canCraft ? MANY_CRAFTABLE_SLOT : MANY_UNCRAFTABLE_SLOT;
+        }
+        if (unlocks)
             return canCraft ? UNLOCKING_CRAFTABLE_SLOT : UNLOCKING_UNCRAFTABLE_SLOT;
         return canCraft ? CRAFTABLE_SLOT : UNCRAFTABLE_SLOT;
     }
 
     private void renderFilterButton(GuiGraphics graphics, int x, int y, int mouseX, int mouseY)
     {
+        filterHovered = hasFilter() && inRect(mouseX, mouseY, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
+        if (!hasFilter())
+            return;
         boolean on = RecipeBookState.isFiltering();
-        filterHovered = inRect(mouseX, mouseY, x + FILTER_X, y + FILTER_Y, FILTER_W, FILTER_H);
         ResourceLocation sprite = on
                 ? (filterHovered ? FILTER_ENABLED_HL : FILTER_ENABLED)
                 : (filterHovered ? FILTER_DISABLED_HL : FILTER_DISABLED);
@@ -815,7 +962,9 @@ public final class RecipeBookWidget extends AbstractWidget
         double localX = (mouseX - originX) / scale + bounds.getX();
         double localY = (mouseY - originY) / scale + bounds.getY();
 
-        BookRecipeRender.whileDrawing(() ->
+        boolean marked = layout == markedRecipe && placeableRecipe().isPresent();
+        Set<IRecipeSlotView> missing = marked ? placer.missing(layout) : Set.of();
+        BookRecipeRender.whileDrawing(missing, () ->
         {
             Canvas.push(graphics);
             Canvas.translate(graphics, (float) originX, (float) originY);
@@ -824,6 +973,8 @@ public final class RecipeBookWidget extends AbstractWidget
             RecipeSlotUnderMouse slot = layout.getSlotUnderMouse(localX, localY).orElse(null);
 
             layout.drawRecipe(graphics, (int) localX, (int) localY);
+            if (marked)
+                placer.showMissing(graphics, layout, (int) localX, (int) localY);
             // JEI's own overlays draw the slot tooltip at once, inside this scaled pose and with the
             // mod name stamped on it. Its highlight is all we want here; the tooltip is taken apart
             // below and drawn later, unscaled, like every other tooltip in the book.
@@ -864,7 +1015,7 @@ public final class RecipeBookWidget extends AbstractWidget
             String key = translationKey(lines.get(i));
             if (RECIPE_TAG_KEY.equals(key))
                 i++;
-            else if (!RECIPE_BY_KEY.equals(key))
+            else if (!DROPPED_KEYS.contains(key))
                 kept.add(lines.get(i));
         }
         return kept;
@@ -889,10 +1040,10 @@ public final class RecipeBookWidget extends AbstractWidget
             Canvas.tooltip(graphics, minecraft.font, hoveredTab.title(), mouseX, mouseY);
             return;
         }
-        if (bookmarkHovered && focused != null)
+        if (bookmarkHovered)
         {
             Canvas.tooltip(graphics, minecraft.font,
-                    BookmarkStore.contains(focused.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
+                    BookmarkStore.contains(bookmarkTarget.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
                     mouseX, mouseY);
             return;
         }
@@ -917,12 +1068,14 @@ public final class RecipeBookWidget extends AbstractWidget
     // not work.
     private void renderPlaceButton(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
-        Optional<RecipeHolder<?>> recipe = placeableRecipe();
+        Optional<IRecipeLayoutDrawable<?>> recipe = placeableRecipe();
         placeButton.visible = recipe.isPresent();
         if (!placeButton.visible)
             return;
 
         placeButton.active = placer.canPlace(recipe.get());
+        List<Component> refusal = placeButton.active ? List.of() : placer.refusal(recipe.get());
+        placeButton.setTooltip(refusal.isEmpty() ? PLACE_TOOLTIP : Tooltip.create(CommonComponents.joinLines(refusal)));
         Canvas.widget(placeButton, graphics, mouseX, mouseY, partialTick);
     }
 
@@ -977,20 +1130,39 @@ public final class RecipeBookWidget extends AbstractWidget
         return true;
     }
 
-    private boolean clicked(double mouseX, double mouseY, int button)
+    private boolean clicked(double mouseX, double mouseY, int button, boolean doubleClick)
     {
         if (!visible)
             return false;
 
+        // Like vanilla's overlay, an open panel takes the click wherever it lands and closes.
+        if (variants.isOpen())
+        {
+            BookIngredient variant = variants.variantAt(mouseX, mouseY);
+            variants.close();
+            if (variant != null)
+                open(variant, button);
+            return true;
+        }
+
         if (placeButton.visible && Input.click(placeButton, mouseX, mouseY, button))
             return true;
+
+        // An inactive button takes no clicks, so the greyed one is hit-tested here.
+        if (placeButton.visible && !placeButton.active
+                && inRect(mouseX, mouseY, placeButton.getX(), placeButton.getY(), placeButton.getWidth(), placeButton.getHeight()))
+        {
+            playClickSound();
+            markedRecipe = currentRecipe();
+            return true;
+        }
 
         if (railClicked(mouseX, mouseY, button))
             return true;
 
         if (inRecipeMode())
         {
-            if (focused != null && inRect(mouseX, mouseY, bookmarkX(), getY() + FILTER_Y, BOOKMARK_W, BOOKMARK_H))
+            if (bookmarkTarget != null && inRect(mouseX, mouseY, bookmarkX(), getY() + FILTER_Y, BOOKMARK_W, BOOKMARK_H))
             {
                 playClickSound();
                 toggleBookmark();
@@ -1009,7 +1181,7 @@ public final class RecipeBookWidget extends AbstractWidget
             return isMouseOverBook(mouseX, mouseY);
         }
 
-        if (inRect(mouseX, mouseY, getX() + FILTER_X, getY() + FILTER_Y, FILTER_W, FILTER_H))
+        if (hasFilter() && inRect(mouseX, mouseY, getX() + FILTER_X, getY() + FILTER_Y, FILTER_W, FILTER_H))
         {
             playClickSound();
             search.setFocused(false);
@@ -1021,22 +1193,37 @@ public final class RecipeBookWidget extends AbstractWidget
         search.setFocused(onSearch);
         if (onSearch)
         {
-            Input.click(search, mouseX, mouseY, button);
+            // Right-click clears, as in the creative inventory.
+            if (isRightClick(button))
+                search.setValue("");
+            else
+                Input.click(search, mouseX, mouseY, button, doubleClick);
             return true;
         }
 
         if (Input.click(backButton, mouseX, mouseY, button) || Input.click(forwardButton, mouseX, mouseY, button))
             return true;
 
-        // Left-click an item: how it is made. Right-click: where it is used.
-        BookIngredient clicked = ingredientAt(mouseX, mouseY);
-        if (clicked != null)
+        int index = entryIndexAt(mouseX, mouseY);
+        if (index >= 0)
         {
-            showRecipes(clicked, roleFor(button));
+            List<BookIngredient> entry = entries.get(page * PER_PAGE + index);
+            if (entry.size() > 1)
+                variants.open(entry, cellX(index), cellY(index), getX() + WIDTH / 2, getY() + 13 + HEIGHT / 2);
+            else
+                open(entry.get(0), button);
             return true;
         }
 
         return isMouseOverBook(mouseX, mouseY);
+    }
+
+    // Left-click an item: how it is made. Right-click: where it is used. Shift-left-click places it
+    // straight into the grid, or opens it like a plain click when nothing can be placed.
+    private void open(BookIngredient item, int button)
+    {
+        if (isRightClick(button) || !Input.shiftDown() || !quickPlace(item))
+            showRecipes(item, roleFor(button));
     }
 
     private static boolean isRightClick(int button)
@@ -1049,17 +1236,24 @@ public final class RecipeBookWidget extends AbstractWidget
         return isRightClick(button) ? RecipeIngredientRole.INPUT : RecipeIngredientRole.OUTPUT;
     }
 
-    private BookIngredient ingredientAt(double mouseX, double mouseY)
+    // The page-relative index of the grid slot under the cursor, or -1.
+    private int entryIndexAt(double mouseX, double mouseY)
     {
         int start = page * PER_PAGE;
-        for (int i = 0; i < PER_PAGE && start + i < filtered.size(); i++)
-        {
-            int cellX = getX() + GRID_X + CELL * (i % COLS);
-            int cellY = getY() + GRID_Y + CELL * (i / COLS);
-            if (inRect(mouseX, mouseY, cellX, cellY, CELL, CELL))
-                return filtered.get(start + i);
-        }
-        return null;
+        for (int i = 0; i < PER_PAGE && start + i < entries.size(); i++)
+            if (inRect(mouseX, mouseY, cellX(i), cellY(i), CELL, CELL))
+                return i;
+        return -1;
+    }
+
+    private int cellX(int index)
+    {
+        return getX() + GRID_X + CELL * (index % COLS);
+    }
+
+    private int cellY(int index)
+    {
+        return getY() + GRID_Y + CELL * (index / COLS);
     }
 
     @Override
@@ -1076,6 +1270,7 @@ public final class RecipeBookWidget extends AbstractWidget
         if (!isMouseOverBook(mouseX, mouseY))
             return false;
 
+        variants.close();
         if (inRecipeMode())
             setRecipe(scrollY < 0 ? recipeIndex + 1 : recipeIndex - 1);
         else

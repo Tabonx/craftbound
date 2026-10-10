@@ -4,9 +4,12 @@
   "package": "com.craftbound.client.mixin.jei",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "CandidatesBadgeMixin",
     "JeiInputMixin",
     "JeiOverlayMixin",
-    "ShapelessIconMixin"
+    "MissingSlotMixin",
+    "ShapelessIconMixin",
+    "StockKeeperSearchMixin"
   ],
   "injectors": {
     "defaultRequire": 0

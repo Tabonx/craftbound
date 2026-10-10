@@ -15,6 +15,7 @@ class UnlockKeyTest
     private static final ResourceLocation LAVA = ResourceLocation.parse("minecraft:lava");
     private static final ResourceLocation STICK = ResourceLocation.parse("minecraft:stick");
     private static final ResourceLocation POTION = ResourceLocation.parse("create:potion");
+    private static final ResourceLocation WATER_BOTTLE = ResourceLocation.parse("minecraft:potion");
 
     @Test
     void itemKeysRoundTrip()
@@ -54,6 +55,29 @@ class UnlockKeyTest
 
         assertEquals(POTION, parsed.id());
         assertEquals("long|strength", parsed.subtype());
+    }
+
+    @Test
+    void itemSubtypesRoundTrip()
+    {
+        assertEquals(Optional.of(new UnlockKey(UnlockKey.Kind.ITEM, WATER_BOTTLE, "water")),
+                UnlockKey.parse(UnlockKey.ofItem(WATER_BOTTLE, "water")));
+    }
+
+    // The one that let filling a water bottle reveal every potion in the game.
+    @Test
+    void twoPotionItemsAreDifferentKeys()
+    {
+        assertNotEquals(UnlockKey.ofItem(WATER_BOTTLE, "water"), UnlockKey.ofItem(WATER_BOTTLE, "strength"));
+    }
+
+    @Test
+    void droppingTheSubtypeLeavesTheRegistryKey()
+    {
+        assertEquals(UnlockKey.ofItem(WATER_BOTTLE), UnlockKey.withoutSubtype(UnlockKey.ofItem(WATER_BOTTLE, "long|strength")));
+        assertEquals(UnlockKey.ofItem(STICK), UnlockKey.withoutSubtype(UnlockKey.ofItem(STICK)));
+        assertEquals(UnlockKey.ofFluid(POTION, ""), UnlockKey.withoutSubtype(UnlockKey.ofFluid(POTION, "strength")));
+        assertEquals("mymod:weird_type|whatever|more", UnlockKey.withoutSubtype("mymod:weird_type|whatever|more"));
     }
 
     @Test

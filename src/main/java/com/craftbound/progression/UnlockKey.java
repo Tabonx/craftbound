@@ -4,14 +4,11 @@ import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
 
-// How progression names the things a recipe produces. Registry-level for items on purpose, ignoring
-// counts, damage and components, so a recipe outputting a damaged tool still unlocks the plain grid
-// entry.
-//
-// Fluids carry a subtype as well, because collapsing them to the registry id is wrong where one
-// fluid stands for many things: every Create potion is `create:potion`, so a single key would let
-// one unlocked brewing recipe reveal every potion in the game while their own recipes stayed
-// locked. The subtype is JEI's, which is how Create itself distinguishes them.
+// How progression names the things a recipe produces: the registry id, plus JEI's subtype where one
+// id stands for many things. Every potion is `minecraft:potion` and every Create potion fluid is
+// `create:potion`, so the id alone let filling one water bottle reveal every potion in the game.
+// JEI counts neither damage nor most components as a subtype, so a recipe outputting a damaged tool
+// still unlocks the plain grid entry.
 //
 // Kept as a parsed record rather than raw string handling so the format lives in one place and can
 // be tested without a registry: reading a key back is how the unlock toast finds an icon.
@@ -29,14 +26,22 @@ public record UnlockKey(Kind kind, ResourceLocation id, String subtype)
 
     public static String ofItem(ResourceLocation id)
     {
-        return ITEM_PREFIX + id;
+        return ofItem(id, "");
+    }
+
+    public static String ofItem(ResourceLocation id, String subtype)
+    {
+        return withSubtype(ITEM_PREFIX + id, subtype);
     }
 
     public static String ofFluid(ResourceLocation id, String subtype)
     {
-        return subtype.isEmpty()
-                ? FLUID_PREFIX + id
-                : FLUID_PREFIX + id + SUBTYPE_SEPARATOR + subtype;
+        return withSubtype(FLUID_PREFIX + id, subtype);
+    }
+
+    private static String withSubtype(String key, String subtype)
+    {
+        return subtype.isEmpty() ? key : key + SUBTYPE_SEPARATOR + subtype;
     }
 
     // Empty for keys naming something other than an item or fluid: ingredient types we have no
@@ -44,17 +49,28 @@ public record UnlockKey(Kind kind, ResourceLocation id, String subtype)
     public static Optional<UnlockKey> parse(String key)
     {
         if (key.startsWith(ITEM_PREFIX))
-            return of(Kind.ITEM, key.substring(ITEM_PREFIX.length()), "");
+            return parse(Kind.ITEM, key.substring(ITEM_PREFIX.length()));
+        if (key.startsWith(FLUID_PREFIX))
+            return parse(Kind.FLUID, key.substring(FLUID_PREFIX.length()));
+        return Optional.empty();
+    }
 
-        if (!key.startsWith(FLUID_PREFIX))
-            return Optional.empty();
+    // The key with its subtype dropped: what the registry id alone names. Recipe inputs are read at
+    // that level, since a slot asks for an item, not for one potion of it.
+    public static String withoutSubtype(String key)
+    {
+        int prefixEnd = key.indexOf(SUBTYPE_SEPARATOR);
+        int subtypeStart = key.indexOf(SUBTYPE_SEPARATOR, prefixEnd + 1);
+        return parse(key).isEmpty() || subtypeStart < 0 ? key : key.substring(0, subtypeStart);
+    }
 
-        // Ids never contain the separator, so the first one ends the id and starts the subtype.
-        String rest = key.substring(FLUID_PREFIX.length());
+    // Ids never contain the separator, so the first one ends the id and starts the subtype.
+    private static Optional<UnlockKey> parse(Kind kind, String rest)
+    {
         int split = rest.indexOf(SUBTYPE_SEPARATOR);
         return split < 0
-                ? of(Kind.FLUID, rest, "")
-                : of(Kind.FLUID, rest.substring(0, split), rest.substring(split + 1));
+                ? of(kind, rest, "")
+                : of(kind, rest.substring(0, split), rest.substring(split + 1));
     }
 
     private static Optional<UnlockKey> of(Kind kind, String id, String subtype)

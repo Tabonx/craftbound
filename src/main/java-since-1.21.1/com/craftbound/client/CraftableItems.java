@@ -16,9 +16,9 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 
-// Which item results the player can make right now in the open menu, from the player inventory plus
-// whatever sits in the input slots. Follows the menu's recipe book: a crafting screen checks
-// crafting recipes against its grid, a furnace/smoker/blast screen checks its smelting family.
+// Which item results the player can make right now in the open menu, from what
+// RecipePlacement.available counts as theirs. Follows the menu's recipe book: a crafting screen
+// checks crafting recipes against its grid, a furnace/smoker/blast screen its smelting family.
 // Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
 // which are not made through any of these menus.
 //
@@ -36,13 +36,25 @@ public final class CraftableItems
         if (minecraft.player == null || minecraft.level == null)
             return Set.of();
 
-        StackedContents contents = new StackedContents();
-        minecraft.player.getInventory().fillStackedContents(contents);
-        menu.fillCraftSlotsStackedContents(contents);
+        StackedContents contents = RecipePlacement.available(minecraft.player, menu);
 
         Set<Item> result = new HashSet<>();
         collect(minecraft.level.getRecipeManager(), RecipePlacement.recipeTypeFor(menu.getRecipeBookType()),
                 contents, menu.getGridWidth(), menu.getGridHeight(),
+                minecraft.level.registryAccess(), result);
+        return result;
+    }
+
+    // Crafting recipes made from a pool other than the player's inventory, such as the stock behind
+    // Create's stock keeper, which orders crafts for any 3x3 recipe.
+    public static Set<Item> craftableFrom(StackedContents contents)
+    {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null)
+            return Set.of();
+
+        Set<Item> result = new HashSet<>();
+        collect(minecraft.level.getRecipeManager(), RecipeType.CRAFTING, contents, 3, 3,
                 minecraft.level.registryAccess(), result);
         return result;
     }

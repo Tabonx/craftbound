@@ -14,6 +14,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 //? if >=1.21.5 {
 /*import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 *///?}
@@ -26,10 +27,14 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 //? if >=1.21.5 {
 /*import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
@@ -76,6 +81,37 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return runtime != null;
     }
 
+    // JEI's search text is shared state: mods with a "sync with JEI" search, like Create's stock
+    // keeper, read and write it. The book uses it as its own, so those mods stay in sync with the book.
+    public static String searchText()
+    {
+        return runtime == null ? "" : runtime.getIngredientFilter().getFilterText();
+    }
+
+    public static void setSearchText(String text)
+    {
+        if (runtime != null)
+            runtime.getIngredientFilter().setFilterText(text);
+    }
+
+    // Whether a mod lets JEI move recipes into this menu: a storage terminal, a modded crafting
+    // table, Create's stock keeper. A screen like that is somewhere a player looks recipes up.
+    public static boolean acceptsRecipes(AbstractContainerMenu menu)
+    {
+        if (runtime == null)
+            return false;
+        return runtime.getRecipeManager().createRecipeCategoryLookup().get()
+                .anyMatch(category -> transferHandler(menu, category).isPresent());
+    }
+
+    static <R> Optional<IRecipeTransferHandler<AbstractContainerMenu, R>> transferHandler(AbstractContainerMenu menu,
+            IRecipeCategory<R> category)
+    {
+        return runtime == null
+                ? Optional.empty()
+                : runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category);
+    }
+
     public static RecipeIndexSnapshot buildRecipeIndex()
     {
         return runtime == null ? RecipeIndexSnapshot.EMPTY : RecipeIndexBuilder.build(runtime);
@@ -86,8 +122,6 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static final List<IIngredientType<?>> BROWSABLE_TYPES =
             List.of(VanillaTypes.ITEM_STACK, NeoForgeTypes.FLUID_STACK);
 
-    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
-    // but has no recipe producing it, so it would just be dead weight in the browse grid.
     public static List<BookIngredient> getAllIngredients()
     {
         if (runtime == null)
@@ -97,11 +131,21 @@ public final class CraftboundJeiPlugin implements IModPlugin
         List<BookIngredient> result = new ArrayList<>();
         for (IIngredientType<?> type : BROWSABLE_TYPES)
             collect(manager, type, result);
+        return result;
+    }
+
+    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
+    // but has no recipe producing it, so it would just be dead weight in the browse grid.
+    public static List<BookIngredient> producible(List<BookIngredient> ingredients)
+    {
+        if (runtime == null)
+            return List.of();
 
         IRecipeManager recipes = runtime.getRecipeManager();
         IFocusFactory focusFactory = runtime.getJeiHelpers().getFocusFactory();
-        result.removeIf(item -> !isProducible(recipes, focusFactory, item));
-        return result;
+        return ingredients.stream()
+                .filter(item -> isProducible(recipes, focusFactory, item))
+                .toList();
     }
 
     private static <V> void collect(IIngredientManager manager, IIngredientType<V> type,
@@ -141,6 +185,20 @@ public final class CraftboundJeiPlugin implements IModPlugin
         if (runtime == null)
             return Optional.empty();
         return Optional.of(build(runtime.getIngredientManager(), typed));
+    }
+
+    // The unlock key of a held stack, the same one a recipe slot asking for it would carry.
+    public static Optional<String> unlockKeyOf(ItemStack stack)
+    {
+        if (runtime == null || stack.isEmpty())
+            return Optional.empty();
+        IIngredientManager manager = runtime.getIngredientManager();
+        //? if >=1.21.5 {
+        /*return manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack, false)
+        *///?} else {
+        return manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
+        //?}
+                .map(typed -> BookIngredient.unlockKey(manager, typed));
     }
 
     private static <V> BookIngredient build(IIngredientManager manager, ITypedIngredient<V> typed)
@@ -205,8 +263,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
         return recipes.createRecipeLookup(category.getRecipeType())
                 .get()
                 .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
-                .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe ->
-                        () -> recipes.createRecipeLayoutDrawableOrShowError(category, recipe, noFocus))
+                .<Supplier<IRecipeLayoutDrawable<?>>>map(recipe -> () -> layout(recipes, category, recipe, noFocus))
                 .toList();
     }
 
@@ -263,7 +320,41 @@ public final class CraftboundJeiPlugin implements IModPlugin
                 .limitFocus(focuses)
                 .get()
                 .filter(recipe -> Progression.isRecipeUnlocked(categoryUid, recipe))
-                .forEach(recipe -> out.add(
-                        recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group)));
+                .forEach(recipe -> out.add(layout(recipes, category, recipe, group)));
+    }
+
+    // A slot offering alternatives shows only the ones the player has held, as long as they hold any:
+    // mundane potion brews from a dozen ingredients, and cycling a breeze rod they never saw gives it
+    // away. JEI already narrows a slot to whatever a focus names, so each held alternative becomes an
+    // input focus. A slot with none held keeps showing all of them, or the recipe would not say what
+    // it needs.
+    private static <T> IRecipeLayoutDrawable<T> layout(IRecipeManager recipes, IRecipeCategory<T> category,
+            T recipe, IFocusGroup group)
+    {
+        IRecipeLayoutDrawable<T> layout = recipes.createRecipeLayoutDrawableOrShowError(category, recipe, group);
+        if (!Progression.isGating())
+            return layout;
+
+        IIngredientManager manager = runtime.getIngredientManager();
+        List<IFocus<?>> focuses = new ArrayList<>(group.getAllFocuses());
+        boolean narrowed = false;
+        for (IRecipeSlotView slot : layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT))
+        {
+            List<ITypedIngredient<?>> alternatives = slot.getAllIngredientsList();
+            List<ITypedIngredient<?>> held = alternatives.stream().filter(typed -> hasInput(manager, typed)).toList();
+            narrowed |= !held.isEmpty() && held.size() < alternatives.size();
+            held.forEach(typed -> focuses.add(focus(runtime.getJeiHelpers().getFocusFactory(),
+                    RecipeIngredientRole.INPUT, typed)));
+        }
+        return narrowed
+                ? recipes.createRecipeLayoutDrawableOrShowError(category, recipe,
+                        runtime.getJeiHelpers().getFocusFactory().createFocusGroup(focuses))
+                : layout;
+    }
+
+    private static boolean hasInput(IIngredientManager manager, ITypedIngredient<?> typed)
+    {
+        return Progression.hasInput(BookIngredient.unlockKey(manager, typed),
+                typed.getItemStack().map(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem())));
     }
 }

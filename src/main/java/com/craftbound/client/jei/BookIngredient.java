@@ -58,9 +58,8 @@ public final class BookIngredient
                 flag -> renderer.getTooltip(ingredient, flag));
     }
 
-    // Progression identity, deliberately coarser than uid(): items key on their registry id alone,
-    // so a recipe outputting a damaged or enchanted stack still unlocks the plain grid entry. Other
-    // ingredient types fall back to JEI's own uid, which is as fine-grained as we can be for them.
+    // Progression identity: the registry id and JEI's subtype, see UnlockKey. Other ingredient types
+    // fall back to JEI's own uid, which is as fine-grained as we can be for them.
     public static <V> String unlockKey(IIngredientManager manager, ITypedIngredient<V> typed)
     {
         return keyOf(typed, manager.getIngredientHelper(typed.getType()));
@@ -69,7 +68,8 @@ public final class BookIngredient
     private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
         Optional<String> itemKey = typed.getItemStack()
-                .map(stack -> UnlockKey.ofItem(BuiltInRegistries.ITEM.getKey(stack.getItem())));
+                .map(stack -> UnlockKey.ofItem(BuiltInRegistries.ITEM.getKey(stack.getItem()),
+                        subtypeOf(typed, helper)));
         if (itemKey.isPresent())
             return itemKey.get();
 
@@ -85,8 +85,8 @@ public final class BookIngredient
     // type. Its legacy string counterpart, the one getUniqueId reads, returns "", so keying on
     // that collapsed every potion onto one key and one unlocked brewing step revealed the lot.
     //
-    // For a fluid, getUid hands back either the Fluid alone or List.of(fluid, subtypeData); only the
-    // subtype half is stringified, never the Fluid, whose toString is an identity hash. An
+    // getUid hands back either the item or fluid alone or List.of(it, subtypeData); only the subtype
+    // half is stringified, never the Item or Fluid, whose toString is an identity hash. An
     // ingredient type that does not follow that shape yields no subtype, which is merely the coarse
     // behaviour rather than a crash.
     private static <V> String subtypeOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
@@ -98,6 +98,12 @@ public final class BookIngredient
     public String unlockKey()
     {
         return unlockKey;
+    }
+
+    // The key without its subtype, the level recipe inputs are read at.
+    public String registryKey()
+    {
+        return UnlockKey.withoutSubtype(unlockKey);
     }
 
     public ITypedIngredient<?> typed()

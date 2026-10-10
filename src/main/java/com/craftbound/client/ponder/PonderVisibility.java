@@ -16,8 +16,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ItemLike;
 
-// What Ponder is allowed to list. Ponder browsing follows the book: an entry the book still hides
-// is not named here either, so the two never tell the player different stories about what exists.
+// What Ponder is allowed to list: only what the player can ponder, the same rule the book applies
+// to its own entries (see PonderGate). Listing everything the book names would hand out a tour of
+// every machine whose recipe is unlocked but never made.
 //
 // Every Ponder listing goes through this one class rather than asking Progression directly, so the
 // index and the category screens cannot drift apart as Ponder's own screens change.
@@ -32,7 +33,19 @@ public final class PonderVisibility
 
     public static boolean isHidden(ItemLike itemLike)
     {
-        return guarded(() -> !Progression.isDiscovered(BuiltInRegistries.ITEM.getKey(itemLike.asItem())), false);
+        return guarded(() -> !Progression.canPonder(id(itemLike)), false);
+    }
+
+    // Whether a scene may name this block. Looser than isHidden: the book already names everything
+    // whose recipe is unlocked, so a scene can too.
+    public static boolean isUnnamed(ItemLike itemLike)
+    {
+        return guarded(() -> !Progression.isDiscovered(id(itemLike)), false);
+    }
+
+    private static ResourceLocation id(ItemLike itemLike)
+    {
+        return BuiltInRegistries.ITEM.getKey(itemLike.asItem());
     }
 
     // Ponder keys entries by item *or* block id, so they are resolved the way Ponder resolves them

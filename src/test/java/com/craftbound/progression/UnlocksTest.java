@@ -85,6 +85,46 @@ class UnlocksTest
         assertTrue(Unlocks.inputsSatisfied(STRICT, waterSlot, Set.of(), Set.of(), Set.of()));
     }
 
+    // A Potion of Luck's fluid: no recipe makes it and no bucket carries it, so nothing filled from
+    // it can ever be made.
+    @Test
+    void aFluidNothingMakesOrCarriesIsAGateThatNeverOpens()
+    {
+        List<InputSlot> luck = List.of(new InputSlot(Set.of(), Set.of("fluid|create:potion|luck")),
+                items("minecraft:glass_bottle"));
+
+        assertFalse(Unlocks.inputsSatisfied(STRICT, luck, obtained("minecraft:glass_bottle"), Set.of(), Set.of()));
+    }
+
+    // A water bottle is a minecraft:potion too, yet a slot asking for a Potion of Strength wants
+    // that potion and nothing else.
+    @Test
+    void aVariantSlotWantsThatVariant()
+    {
+        List<InputSlot> strength = List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:potion|strength")));
+
+        assertFalse(Unlocks.inputsSatisfied(STRICT, strength, obtained("minecraft:potion"),
+                Set.of("item|minecraft:potion|water"), Set.of()));
+        assertTrue(Unlocks.inputsSatisfied(STRICT, strength, Set.of(),
+                Set.of("item|minecraft:potion|strength"), Set.of()));
+    }
+
+    // Holding a potion opens what brews from it, but gives the potion no entry of its own.
+    @Test
+    void aHeldVariantCountsAsAnInputButNotAsAnOutput()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of("arrow", new RecipeNode(CRAFTING,
+                        List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:lingering_potion|strength"))),
+                        Set.of("item|minecraft:tipped_arrow|strength")))),
+                Map.of());
+
+        Set<String> unlocked = Unlocks.unlockedOutputs(STRICT, index, Set.of(),
+                Set.of("item|minecraft:lingering_potion|strength"));
+
+        assertEquals(Set.of("item|minecraft:tipped_arrow|strength"), unlocked);
+    }
+
     @Test
     void aProducedFluidGatesUntilItIsUnlocked()
     {
@@ -302,6 +342,62 @@ class UnlocksTest
 
         assertFalse(Unlocks.discovered(Set.of(), Set.of(), bell));
         assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
+    }
+
+    // Every boat opens its own chest boat, but once one chest boat is in the book the others are
+    // variants of it, not news.
+    @Test
+    void anItemOpeningOnlyAVariantOfAnOpenRecipeIsNotMarked()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(CRAFTING, Map.of(
+                        "oak", new RecipeNode(CRAFTING, List.of(items("minecraft:oak_boat"), items("minecraft:chest")),
+                                Set.of("item|minecraft:oak_chest_boat"), "chest_boat"),
+                        "birch", new RecipeNode(CRAFTING, List.of(items("minecraft:birch_boat"), items("minecraft:chest")),
+                                Set.of("item|minecraft:birch_chest_boat"), "chest_boat"))),
+                Map.of());
+
+        Set<ResourceLocation> hasChest = obtained("minecraft:chest");
+        assertEquals(obtained("minecraft:oak_boat", "minecraft:birch_boat"), Unlocks.unlockingItems(STRICT, index,
+                hasChest, Unlocks.unlockedOutputs(STRICT, index, hasChest)));
+
+        Set<ResourceLocation> hasOakBoat = obtained("minecraft:chest", "minecraft:oak_boat");
+        assertEquals(Set.of(), Unlocks.unlockingItems(STRICT, index,
+                hasOakBoat, Unlocks.unlockedOutputs(STRICT, index, hasOakBoat)));
+    }
+
+    @Test
+    void outputsUsing_findsWhatAnInputMakes()
+    {
+        Set<ResourceLocation> hasLog = obtained("minecraft:oak_log");
+
+        assertEquals(Set.of("item|minecraft:oak_planks"), Unlocks.outputsUsing(STRICT, index(),
+                Set.of("item|minecraft:oak_log"), hasLog, Unlocks.unlockedOutputs(STRICT, index(), hasLog)));
+    }
+
+    // Brass sheets need the mixer, so searching brass must not reveal them before the player has one.
+    @Test
+    void outputsUsing_leavesOutLockedRecipes()
+    {
+        Set<String> brass = Set.of("item|create:brass_ingot");
+        Set<ResourceLocation> hasBrass = obtained("create:brass_ingot");
+
+        assertEquals(Set.of(), Unlocks.outputsUsing(STRICT, index(), brass, hasBrass, Set.of()));
+        assertEquals(Set.of("item|create:brass_sheet"),
+                Unlocks.outputsUsing(ProgressionRules.OPEN, index(), brass, Set.of(), Set.of()));
+    }
+
+    @Test
+    void outputsUsing_matchesFluidInputs()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(MIXING, Map.of("chocolate", node(MIXING,
+                        List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")),
+                        "item|create:bar_of_chocolate"))),
+                Map.of());
+
+        assertEquals(Set.of("item|create:bar_of_chocolate"), Unlocks.outputsUsing(ProgressionRules.OPEN,
+                index, Set.of("fluid|create:chocolate"), Set.of(), Set.of()));
     }
 
     private static InputSlot fluidSlot(String fluidId, String bucketId)

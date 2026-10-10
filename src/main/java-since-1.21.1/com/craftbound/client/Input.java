@@ -12,6 +12,13 @@ public final class Input
 {
     public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button)
     {
+        return click(target, mouseX, mouseY, button, false);
+    }
+
+    // This generation has no double click: widgets are never told of one.
+    public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button,
+            boolean doubleClick)
+    {
         return target.mouseClicked(mouseX, mouseY, button);
     }
 

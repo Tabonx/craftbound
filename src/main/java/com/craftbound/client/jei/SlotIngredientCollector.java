@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.craftbound.progression.InputSlot;
+import com.craftbound.progression.UnlockKey;
 
 import mezz.jei.api.gui.builder.IIngredientAcceptor;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -21,7 +22,6 @@ import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -53,13 +53,18 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     {
         Set<ResourceLocation> items = new HashSet<>();
         Set<String> fluids = new HashSet<>();
+        Set<String> variants = new HashSet<>();
 
         for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
         {
-            ingredient.getItemStack()
-                    .map(ItemStack::getItem)
-                    .map(BuiltInRegistries.ITEM::getKey)
-                    .ifPresent(items::add);
+            ingredient.getItemStack().ifPresent(stack ->
+            {
+                String key = BookIngredient.unlockKey(manager, ingredient);
+                if (key.equals(UnlockKey.withoutSubtype(key)))
+                    items.add(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+                else
+                    variants.add(key);
+            });
 
             if (ingredient.getIngredient() instanceof FluidStack fluid)
             {
@@ -67,7 +72,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
                 bucketId(fluid).ifPresent(items::add);
             }
         }
-        return new InputSlot(Set.copyOf(items), Set.copyOf(fluids));
+        return new InputSlot(Set.copyOf(items), Set.copyOf(fluids), Set.copyOf(variants));
     }
 
     private static Optional<ResourceLocation> bucketId(FluidStack fluid)

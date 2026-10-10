@@ -37,7 +37,7 @@ public final class PonderGate
     public static boolean blocks(ItemStack stack)
     {
         return inBookTooltip && !stack.isEmpty()
-                && !Progression.isObtained(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+                && !Progression.canPonder(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
     private PonderGate() {}

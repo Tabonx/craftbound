@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 class RecipeBookLayoutTest
 {
     private static final int INVENTORY_WIDTH = 176;
+    private static final int STOCK_KEEPER_WIDTH = 226;
 
     @Test
     void closedBookCentersInventory()
@@ -17,59 +18,48 @@ class RecipeBookLayoutTest
     }
 
     @Test
-    void openBookShiftsInventoryRightByReservedColumn()
+    void openBookCentersTheBrowsingBookAndInventoryAsAPair()
     {
-        int closed = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, false);
-        int open = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
-        assertTrue(open > closed, "open book should push the inventory to the right");
+        int leftPos = RecipeBookLayout.inventoryLeftPos(800, INVENTORY_WIDTH, true);
+        int bookLeft = RecipeBookLayout.bookRight(leftPos) - RecipeBookLayout.BOOK_WIDTH;
+        int rightMargin = 800 - (leftPos + INVENTORY_WIDTH);
+        assertTrue(Math.abs(bookLeft - rightMargin) <= 1, "margins " + bookLeft + " and " + rightMargin);
     }
 
     @Test
-    void openBookLeavesRoomForTheBookLeftOfTheInventory()
+    void fullRecipePanelAndRailFitWhereThereIsRoom()
     {
-        int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
+        int leftPos = RecipeBookLayout.inventoryLeftPos(480, INVENTORY_WIDTH, true);
         int bookRight = RecipeBookLayout.bookRight(leftPos);
-        assertTrue(bookRight - RecipeBookLayout.BOOK_WIDTH >= 0,
-                "the reserved book column should fit on screen");
-        assertTrue(bookRight <= leftPos, "book must sit left of the inventory");
+        assertEquals(RecipeBookLayout.RECIPE_WIDTH, RecipeBookLayout.recipeWidth(bookRight));
+        assertTrue(bookRight - RecipeBookLayout.RECIPE_WIDTH - RecipeBookLayout.RAIL_WIDTH >= RecipeBookLayout.EDGE);
     }
 
     @Test
-    void narrowWindowDoesNotProduceNegativeLeftPos()
+    void narrowWindowNarrowsTheRecipePanelInsteadOfPushingTheScreenOff()
     {
-        int leftPos = RecipeBookLayout.inventoryLeftPos(200, INVENTORY_WIDTH, true);
-        assertTrue(leftPos >= RecipeBookLayout.BOOK_WIDTH + RecipeBookLayout.GAP,
-                "inventory still clears the reserved column even when the window is too small");
+        for (int width : new int[] {440, 480})
+        {
+            int leftPos = RecipeBookLayout.besideLeftPos(width, STOCK_KEEPER_WIDTH, true);
+            int bookRight = RecipeBookLayout.besideBookRight(leftPos);
+            int recipeLeft = bookRight - RecipeBookLayout.recipeWidth(bookRight);
+            assertEquals(width - RecipeBookLayout.EDGE, leftPos + STOCK_KEEPER_WIDTH);
+            assertEquals(RecipeBookLayout.EDGE, recipeLeft - RecipeBookLayout.RAIL_WIDTH);
+        }
     }
 
     @Test
-    void openReservesTheWidenedRecipeColumnAndCentersTheCluster()
+    void closedBookLeavesAScreenWithoutARecipeBookCentered()
     {
-        int reserved = RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP;
-        int clusterLeft = (640 - (reserved + INVENTORY_WIDTH)) / 2;
-
-        int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
-        assertEquals(clusterLeft + reserved, leftPos, "inventory sits just right of the reserved column");
-        assertTrue(leftPos + INVENTORY_WIDTH <= 640, "inventory must stay fully on screen");
-
-        int recipeLeft = RecipeBookLayout.bookRight(leftPos) - RecipeBookLayout.RECIPE_WIDTH;
-        assertTrue(recipeLeft >= 0, "the widened recipe panel fits in the reserved column");
+        assertEquals((640 - STOCK_KEEPER_WIDTH) / 2, RecipeBookLayout.besideLeftPos(640, STOCK_KEEPER_WIDTH, false));
     }
 
     @Test
-    void openReservationDoesNotDependOnRecipeState()
+    void screenCenteringItselfOnTheBesideWidthLandsBesideTheBook()
     {
-        int leftPos = RecipeBookLayout.inventoryLeftPos(640, INVENTORY_WIDTH, true);
-        assertEquals(RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP,
-                leftPos - (640 - (RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP + INVENTORY_WIDTH)) / 2,
-                "the reserved column is a fixed constant, independent of the shown recipe");
-    }
-
-    @Test
-    void narrowWindowClampsToTheReservedColumn()
-    {
-        int reserved = RecipeBookLayout.RECIPE_WIDTH + RecipeBookLayout.GAP;
-        assertEquals(reserved, RecipeBookLayout.inventoryLeftPos(200, INVENTORY_WIDTH, true),
-                "a window with no spare margin still clears the reserved column, without going off-screen");
+        for (int width : new int[] {425, 426, 480, 640})
+            for (boolean open : new boolean[] {false, true})
+                assertEquals(RecipeBookLayout.besideLeftPos(width, INVENTORY_WIDTH, open),
+                        (RecipeBookLayout.besideScreenWidth(width, INVENTORY_WIDTH, open) - INVENTORY_WIDTH) / 2);
     }
 }
