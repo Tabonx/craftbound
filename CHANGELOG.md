@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8
+
+- The back button above a recipe now reads "Items" with a capital letter, like vanilla's titles.
+
 ## 0.1.7
 
 - The book now opens on screens that take recipes from JEI but have no recipe book of their

@@ -1,4 +1,5 @@
 {
+  "craftbound.recipebook.title": "Craftbound Recipe Book",
   "craftbound.recipebook.place": "Place Ingredients",
   "craftbound.recipebook.place.all": "Hold Shift for as many as possible",
   "craftbound.recipebook.tab.all": "All",
@@ -9,6 +10,7 @@
   "craftbound.recipebook.bookmarks": "Bookmarks",
   "craftbound.recipebook.bookmark": "Bookmark",
   "craftbound.recipebook.bookmark.remove": "Remove Bookmark",
+  "craftbound.recipebook.back": "Items",
   "craftbound.ponder.unknown": "???",
   "item.craftbound.bookbinders_lens": "Bookbinder's Lens",
   "craftbound.upgrade.toast.title": "Recipe Book Upgraded",
