@@ -13,6 +13,28 @@ game as you play.
 - **Optional on 1.21.1:** Create 6.x. Create has no releases for the other supported Minecraft
   versions, so those downloads omit its recipe categories and Ponder integration.
 
+## Screenshots
+
+Browse every recipe by category, search them, and bookmark the ones you need.
+
+![Recipe book](docs/images/1-browse.png)
+
+Items that come in many variants, like logs, share one slot. Open it to pick the one you want.
+
+![Item variants](docs/images/2-variants.png)
+
+Show only what you can craft from your inventory right now.
+
+![Craftable filter](docs/images/3-craftable-filter.png)
+
+Open any item to see its recipe and place it straight into the grid.
+
+![Crafting recipe](docs/images/4-crafting-recipe.png)
+
+Create's machine recipes, like crushing, show up next to vanilla ones.
+
+![Create machine recipe](docs/images/5-create-recipe.png)
+
 ## Development
 
 Prerequisite: IntelliJ IDEA. Gradle provisions Java 21 for Minecraft 1.21.x and Java 25 for 26.x.
