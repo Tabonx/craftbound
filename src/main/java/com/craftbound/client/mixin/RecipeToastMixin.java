@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.gui.components.toasts.RecipeToast;
 
 // Vanilla still tracks its own recipe unlocks and toasts them, even though its recipe book is
-// forced hidden (see RecipeBookVisibilityMixin). That leaves two notifications side by side, one
+// forced hidden (see RecipeBookComponentMixin). That leaves two notifications side by side, one
 // telling the player to check a book they do not have, and the two disagree, since vanilla unlocks
 // on its own rules rather than Craftbound's progression. Suppress it and let RecipeUnlockToast be
 // the single answer to "what did I just unlock?".

@@ -3,6 +3,7 @@ package com.craftbound.client;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -77,6 +78,18 @@ public final class Canvas
         graphics.pose().translate(0f, 0f, 200f);
         draw.run();
         pop(graphics);
+    }
+
+    // Dims the world behind a screen the book hides, without the screen's own panel, which a
+    // container draws as part of its background.
+    public static void backdrop(Screen screen, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        screen.renderTransparentBackground(graphics);
+    }
+
+    // This generation draws a tooltip as soon as it is asked for.
+    public static void drawTooltips(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
     }
 
     private Canvas() {}

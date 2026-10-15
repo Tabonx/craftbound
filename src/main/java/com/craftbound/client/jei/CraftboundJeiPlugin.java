@@ -1,7 +1,9 @@
 package com.craftbound.client.jei;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -31,6 +33,8 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -47,6 +51,8 @@ public final class CraftboundJeiPlugin implements IModPlugin
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "jei");
 
     private static IJeiRuntime runtime;
+    // Asked on every screen init, and answering means walking every recipe category.
+    private static final Map<Object, Boolean> ACCEPTS_RECIPES = new HashMap<>();
 
     @Override
     public ResourceLocation getPluginUid()
@@ -66,6 +72,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime)
     {
         runtime = jeiRuntime;
+        ACCEPTS_RECIPES.clear();
         Progression.invalidate();
     }
 
@@ -73,6 +80,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
     public void onRuntimeUnavailable()
     {
         runtime = null;
+        ACCEPTS_RECIPES.clear();
         Progression.invalidate();
     }
 
@@ -100,8 +108,31 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         if (runtime == null)
             return false;
-        return runtime.getRecipeManager().createRecipeCategoryLookup().get()
-                .anyMatch(category -> transferHandler(menu, category).isPresent());
+        return ACCEPTS_RECIPES.computeIfAbsent(menuKey(menu), key -> runtime.getRecipeManager()
+                .createRecipeCategoryLookup().get()
+                .anyMatch(category -> transferHandler(menu, category).isPresent()));
+    }
+
+    // JEI finds a transfer handler by both. The player's own menu has no type and says so by throwing.
+    private static Object menuKey(AbstractContainerMenu menu)
+    {
+        try
+        {
+            return List.of(menu.getClass(), menu.getType());
+        }
+        catch (UnsupportedOperationException noType)
+        {
+            return menu.getClass();
+        }
+    }
+
+    // The areas mods report around a screen so recipe viewers keep clear of them: side tabs,
+    // toolbars, slot panels.
+    public static List<Rect2i> exclusionAreas(Screen screen)
+    {
+        if (runtime == null)
+            return List.of();
+        return JeiOverlayHider.lifted(() -> runtime.getScreenHelper().getGuiExclusionAreas(screen).toList());
     }
 
     static <R> Optional<IRecipeTransferHandler<AbstractContainerMenu, R>> transferHandler(AbstractContainerMenu menu,

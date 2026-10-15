@@ -4,9 +4,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.Slot;
 
-// Exposes the container GUI's position/size so Craftbound can shift the inventory aside to make
-// room for its book.
+// Exposes the container GUI's position and size so Craftbound can place its book beside it.
 @Mixin(AbstractContainerScreen.class)
 public interface ContainerScreenAccessor
 {
@@ -15,4 +15,11 @@ public interface ContainerScreenAccessor
 
     @Accessor("imageWidth")
     int craftbound$getImageWidth();
+
+    @Accessor("imageHeight")
+    int craftbound$getImageHeight();
+
+    // The screen finds its hovered slot while drawing, so one it does not draw keeps the last.
+    @Accessor("hoveredSlot")
+    void craftbound$setHoveredSlot(Slot slot);
 }

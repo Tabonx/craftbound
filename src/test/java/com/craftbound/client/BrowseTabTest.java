@@ -38,7 +38,7 @@ class BrowseTabTest
 
         List<BrowseTab> withBookmarks = BrowseTab.visible(true);
         assertEquals(BrowseTab.BOOKMARKS, withBookmarks.get(withBookmarks.size() - 1));
-        assertEquals(RailLayout.MAX_TABS, withBookmarks.size(), "the rail must not need paging");
+        assertEquals(RailLayout.forHeight(RecipeBookLayout.BOOK_HEIGHT).maxTabs(), withBookmarks.size(), "the rail must not need paging");
     }
 
     @Test

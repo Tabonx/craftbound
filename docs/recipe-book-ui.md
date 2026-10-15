@@ -27,7 +27,9 @@ split.
 - A **single book button** replaces the vanilla recipe-book toggle.
 - The book opens as a panel to the **left of the inventory**; the inventory stays fully visible
   and usable.
-- **Fixed height = inventory height.** In the browse state the width stays at the vanilla book
+- **Height follows the screen beside it.** The book is never shorter than vanilla's (166) and
+  grows a grid row at a time to match a taller screen, such as a stock keeper or a storage
+  terminal that sizes itself to the window. In the browse state the width stays at the vanilla book
   width. In the recipe state the panel **grows left to fit the shown recipe** (revised from the
   original "never widen" rule): JEI's category drawables have fixed horizontal layouts, so wide
   multi-step recipes (e.g. Create sequenced assembly) would otherwise scale down to be unreadable.
@@ -52,7 +54,8 @@ as peers here. This rail *is* the unification.
 
 - Rail tabs are badged with each recipe **category's icon** (crafting table, furnace, blast
   furnace, Create crushing wheels, mechanical mixer, …).
-- If methods overflow the visible height (currently ~5 tabs), the rail **pages with ▲ / ▼**.
+- If methods overflow the visible height (6 tabs on a vanilla-height book, more on a taller one),
+  the rail **pages with ▲ / ▼**.
   The active selection persists across pages, like vanilla.
 
 ### Recipe order within a method
@@ -262,12 +265,43 @@ view's strip, left of the place button; the same button clears one. Storage is
 `config/craftbound-bookmarks.json`, keyed per world (save name) and per server (address), and never
 touches the server: bookmarks are a client convenience.
 
+## Placement beside any screen
+Mods draw past their screen's left edge all the time: AE2's toolbar, Refined Storage's side
+buttons, Sophisticated Backpacks' upgrade column, Mekanism's tabs, Curios' slot panel. A book
+docked against `leftPos` would cover them. Craftbound reads the areas mods already report to JEI
+(`IScreenHelper.getGuiExclusionAreas`, with its own whole-window claim lifted) and keeps the book
+left of them. `SideAreas` turns those areas into two numbers relative to the screen: how far its
+elements reach left, and how far down the left side belongs to it (Create's stock keeper claims
+the rows of its keeper). They are learned the first time a kind of screen is drawn, so that first
+sighting lays the screen out once more. A mod that reports nothing is invisible here, as it is to
+JEI.
+
+The screen is placed while it lays itself out, never moved afterwards, so every widget it and
+other mods add follows it. A recipe-book screen asks its vanilla book (`updateScreenPosition`)
+and `RecipeBookComponentMixin` answers; any other screen centers itself on the width it is told,
+which `ContainerScreenLayoutMixin` sets. Opening and closing the book lays the screen out again.
+
+When the window is too narrow for the book, its rail and the screen side by side,
+`RecipeBookLayout` stops docking and does what vanilla does below 379 px: the screen stays
+centered, is not drawn, and the book sits over it. Every click
+then goes to the book. The threshold is `EDGE + rail + book + gap + imageWidth + EDGE`, so a 226 px
+stock keeper needs 419 px and the inventory 369.
+
+The toggle stays where the screen keeps it: vanilla's spot on a recipe-book screen, and the same
+corner on a vanilla screen that has it free of slots, such as the brewing stand. Elsewhere it sits
+left of the closed book's screen, and the open book carries it in its bottom-left corner, level with
+the pager, so it never takes room between the book and the screen.
+
+The book takes clicks before the screen does, anywhere in its own column, and the release that
+follows. A screen would otherwise offer the click to its own widgets first, or read it as a click
+outside itself and throw the carried item out.
+
 ## Trade-offs & open questions
-- **Narrow screens.** `RecipeBookLayout` reserves a fixed column wide enough for the widened
-  recipe panel and shifts the inventory right by it, so the two never overlap and the inventory
-  never moves between browse and recipe states. The reservation is clamped at the screen edge,
-  so an effective width below roughly 384 px (a small window at a large GUI scale) pushes the
-  pair off-centre. Untested at those sizes.
+- **Placement learns from JEI only.** A mod that draws past its edge without reporting it (Iron
+  Furnaces' settings tab, Waystones' side buttons) gets covered by the book.
+- **The book is open or closed everywhere at once.** Vanilla keeps one state per book type.
+- **Only screens that take recipes get the book.** JEI's overlays are hidden on every screen, so a
+  chest has no recipe lookup at all.
 - **Recipes wider than the clamped panel** still scale down to fit, which is readable for most
   Create categories but tight for long sequenced assembly chains.
 - **Category gating leans on the workstation being an item.** A category whose "machine" is not
@@ -275,7 +309,7 @@ touches the server: bookmarks are a client convenience.
 
 ## Status
 Implemented and in use:
-- Vanilla recipe book **suppressed** globally via `client/mixin/RecipeBookVisibilityMixin`
+- Vanilla recipe book **suppressed** globally via `client/mixin/RecipeBookComponentMixin`
   (forces `RecipeBookComponent.isVisible()` false). The Craftbound book replaces it everywhere
   the vanilla one appeared, including crafting tables and the furnace family.
 - Recipes render through JEI's own category drawables inside the docked panel, via
