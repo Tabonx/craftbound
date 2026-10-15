@@ -3,6 +3,19 @@
 ## 0.1.8
 
 - The back button above a recipe now reads "Items" with a capital letter, like vanilla's titles.
+- When the window is too narrow for the book beside a screen, at a large GUI scale for example,
+  the book now opens over the screen, as vanilla's does, instead of running off the window's
+  edge.
+- Beside a taller screen, such as Create's stock keeper or a storage terminal, the book now grows
+  taller to match and shows more items per page.
+- The book now keeps clear of buttons and panels that other mods draw left of their screens,
+  such as storage terminal toolbars, backpack upgrade slots and the Curios slot panel.
+- Where a screen has no place for the book's button, such as Create's stock keeper, the open book
+  now carries the button in its bottom-left corner. The book sits right beside the screen instead
+  of leaving a gap for the button. The brewing stand keeps the button inside its own window, as the
+  crafting table does.
+- Clicking the book with an item on the cursor no longer throws the item out of the inventory.
+- Buttons that other mods add to the inventory no longer stay behind when the book opens.
 
 ## 0.1.7
 

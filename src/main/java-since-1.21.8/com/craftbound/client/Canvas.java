@@ -3,6 +3,7 @@ package com.craftbound.client;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -77,6 +78,33 @@ public final class Canvas
     {
         graphics.nextStratum();
         draw.run();
+    }
+
+    // Dims the world behind a screen the book hides, without the screen's own panel, which a
+    // container draws as part of its background. The layers match the ones the screen would have
+    // drawn.
+    public static void backdrop(Screen screen, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        graphics.nextStratum();
+        //? if >=26.1 {
+        /*screen.extractTransparentBackground(graphics);
+        *///?} else {
+        screen.renderTransparentBackground(graphics);
+        //?}
+        graphics.nextStratum();
+    }
+
+    // This generation collects tooltips and draws them once the screen is done, which a screen the
+    // book hides never gets to.
+    public static void drawTooltips(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        //? if >=26.1 {
+        /*graphics.extractDeferredElements(mouseX, mouseY, partialTick);
+        *///?} else if >=1.21.10 {
+        /*graphics.renderDeferredElements();
+        *///?} else {
+        graphics.renderDeferredTooltip();
+        //?}
     }
 
     private Canvas() {}

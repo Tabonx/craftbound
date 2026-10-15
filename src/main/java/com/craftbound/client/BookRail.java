@@ -20,7 +20,7 @@ public final class BookRail
     private static final int TAB_SELECTED_SHIFT = 2;
     private static final int TAB_ICON_DX = 9;
     private static final int TAB_ICON_DY = 6;
-    private static final int ARROW_H = 11;
+    static final int ARROW_H = 11;
     private static final String UP = "▲";
     private static final String DOWN = "▼";
 
@@ -42,31 +42,34 @@ public final class BookRail
     private int offset = 0;
     private int x;
     private int y;
+    private RailLayout layout = RailLayout.forHeight(RecipeBookLayout.BOOK_HEIGHT);
     private Tab hovered = null;
 
-    public void setPosition(int x, int y)
+    public void setPosition(int x, int y, int height)
     {
         this.x = x;
         this.y = y;
+        this.layout = RailLayout.forHeight(height);
+        this.offset = layout.clampOffset(offset, tabs.size());
     }
 
     public void setTabs(List<? extends Tab> tabs, int selected)
     {
         this.tabs = tabs;
         this.selected = selected;
-        this.offset = RailLayout.clampOffset(offset, tabs.size());
+        this.offset = layout.clampOffset(offset, tabs.size());
     }
 
     // Scroll so the given tab is visible, after the host changed the selection.
     public void showTab(int index)
     {
         selected = index;
-        offset = RailLayout.offsetShowing(index, offset, tabs.size());
+        offset = layout.offsetShowing(index, offset, tabs.size());
     }
 
     public void scroll(int delta)
     {
-        offset = RailLayout.clampOffset(offset + delta, tabs.size());
+        offset = layout.clampOffset(offset + delta, tabs.size());
     }
 
     public Tab hovered()
@@ -77,7 +80,7 @@ public final class BookRail
     public void render(GuiGraphics graphics, int mouseX, int mouseY)
     {
         hovered = null;
-        int visible = RailLayout.visibleTabs(tabs.size());
+        int visible = layout.visibleTabs(tabs.size());
         for (int row = 0; row < visible; row++)
         {
             int index = offset + row;
@@ -91,17 +94,17 @@ public final class BookRail
                 hovered = tabs.get(index);
         }
 
-        if (RailLayout.paged(tabs.size()))
+        if (layout.paged(tabs.size()))
         {
             drawArrow(graphics, UP, y + TAB_TOP, offset > 0, mouseX, mouseY);
-            drawArrow(graphics, DOWN, downArrowY(), offset < RailLayout.maxOffset(tabs.size()), mouseX, mouseY);
+            drawArrow(graphics, DOWN, downArrowY(), offset < layout.maxOffset(tabs.size()), mouseX, mouseY);
         }
     }
 
     // The tab index under the mouse, or -1. Ignores the pager arrow rows.
     public int tabAt(double mouseX, double mouseY)
     {
-        int visible = RailLayout.visibleTabs(tabs.size());
+        int visible = layout.visibleTabs(tabs.size());
         for (int row = 0; row < visible; row++)
         {
             int index = offset + row;
@@ -114,20 +117,20 @@ public final class BookRail
     // +1 for the down pager, -1 for the up pager, 0 if neither was clicked.
     public int arrowAt(double mouseX, double mouseY)
     {
-        if (!RailLayout.paged(tabs.size()))
+        if (!layout.paged(tabs.size()))
             return 0;
         if (inRect(mouseX, mouseY, x + TAB_X, y + TAB_TOP, -TAB_X, ARROW_H) && offset > 0)
             return -1;
         if (inRect(mouseX, mouseY, x + TAB_X, downArrowY(), -TAB_X, ARROW_H)
-                && offset < RailLayout.maxOffset(tabs.size()))
+                && offset < layout.maxOffset(tabs.size()))
             return 1;
         return 0;
     }
 
     public boolean isOver(double mouseX, double mouseY)
     {
-        int visible = RailLayout.visibleTabs(tabs.size());
-        int height = tabTop() - TAB_TOP + visible * TAB_H + (RailLayout.paged(tabs.size()) ? ARROW_H : 0);
+        int visible = layout.visibleTabs(tabs.size());
+        int height = tabTop() - TAB_TOP + visible * TAB_H + (layout.paged(tabs.size()) ? ARROW_H : 0);
         return inRect(mouseX, mouseY, x + TAB_X, y + TAB_TOP, -TAB_X, height);
     }
 
@@ -143,7 +146,7 @@ public final class BookRail
     // Tabs sit below the ▲ pager when the rail is paged, otherwise flush with the top.
     private int tabTop()
     {
-        return TAB_TOP + (RailLayout.paged(tabs.size()) ? ARROW_H : 0);
+        return TAB_TOP + (layout.paged(tabs.size()) ? ARROW_H : 0);
     }
 
     private int tabX(int index)
@@ -158,7 +161,7 @@ public final class BookRail
 
     private int downArrowY()
     {
-        return y + tabTop() + RailLayout.visibleTabs(tabs.size()) * TAB_H;
+        return y + tabTop() + layout.visibleTabs(tabs.size()) * TAB_H;
     }
 
     private static boolean inRect(double mx, double my, int x, int y, int w, int h)

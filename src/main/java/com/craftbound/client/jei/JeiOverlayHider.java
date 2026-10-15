@@ -2,6 +2,7 @@ package com.craftbound.client.jei;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 
 import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
 
@@ -17,9 +18,27 @@ import net.minecraft.client.renderer.Rect2i;
 // ingredient list and the bookmark list stay hidden without touching the player's JEI settings.
 final class JeiOverlayHider implements IGlobalGuiHandler
 {
+    private static boolean lifted = false;
+
+    // What the other mods claim, without this claim drowning them out.
+    static <T> T lifted(Supplier<T> read)
+    {
+        lifted = true;
+        try
+        {
+            return read.get();
+        }
+        finally
+        {
+            lifted = false;
+        }
+    }
+
     @Override
     public Collection<Rect2i> getGuiExtraAreas()
     {
+        if (lifted)
+            return List.of();
         var window = Minecraft.getInstance().getWindow();
         return List.of(new Rect2i(0, 0, window.getGuiScaledWidth(), window.getGuiScaledHeight()));
     }
