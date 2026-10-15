@@ -158,9 +158,9 @@ public final class RecipeBookWidget extends AbstractWidget
     private static final int BACKWARD_X = 38;
     private static final int ARROW_Y = 137;
 
-    // Recipe state: an arrow-sprite "items" back control at the top and the recipe drawn into a body
+    // Recipe state: an arrow-sprite "Items" back control at the top and the recipe drawn into a body
     // rect. The control reuses the book's page-arrow sprite so it hovers and clicks like vanilla.
-    private static final String BACK_LABEL = "items";
+    private static final Component BACK_LABEL = Component.translatable("craftbound.recipebook.back");
     private static final int BACK_X = 8;
     private static final int BACK_Y = SEARCH_Y - 2;
     private static final int BACK_W = 42;
@@ -239,7 +239,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     public RecipeBookWidget()
     {
-        super(0, 0, WIDTH, HEIGHT, Component.literal("Craftbound Recipe Book"));
+        super(0, 0, WIDTH, HEIGHT, Component.translatable("craftbound.recipebook.title"));
 
         this.search = new EditBox(Minecraft.getInstance().font, 0, 0, SEARCH_W, SEARCH_H,
                 Component.translatable("itemGroup.search"));
