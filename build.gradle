@@ -69,12 +69,21 @@ base {
 // Gradle provisions the toolchain itself, so no local JDK has to match.
 java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
 
+// -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
+// where the two have drifted apart. Only for running the game locally, never for publishing. Every
+// version is configured on each build, so a version without neo_version_jei_runtime refuses to run
+// the game rather than refusing to configure.
+def jeiRuntime = project.hasProperty('jeiRuntime')
+def jeiRuntimeMissing = jeiRuntime && !project.hasProperty('neo_version_jei_runtime')
+tasks.matching { it.name.startsWith('run') }.configureEach {
+    doFirst {
+        if (jeiRuntimeMissing)
+            throw new GradleException("-PjeiRuntime needs neo_version_jei_runtime in versions/${minecraft_version}/gradle.properties")
+    }
+}
+
 neoForge {
-    // -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
-    // where the two have drifted apart. Only for running the game locally, never for publishing.
-    version = project.hasProperty('jeiRuntime') && project.hasProperty('neo_version_jei_runtime')
-            ? neo_version_jei_runtime
-            : neo_version
+    version = jeiRuntime && !jeiRuntimeMissing ? neo_version_jei_runtime : neo_version
 
     // Parchment lags new Minecraft versions and may never cover some of them. A version without it
     // builds against the plain official names.
