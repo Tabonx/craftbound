@@ -2,9 +2,11 @@ package com.craftbound.client.jei;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -31,6 +33,7 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.runtime.IIngredientFilter;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.gui.screens.Screen;
@@ -53,6 +56,9 @@ public final class CraftboundJeiPlugin implements IModPlugin
     private static IJeiRuntime runtime;
     // Asked on every screen init, and answering means walking every recipe category.
     private static final Map<Object, Boolean> ACCEPTS_RECIPES = new HashMap<>();
+    // The book filters again on every tab switch and unlock, often with the same text.
+    private static String searchedText;
+    private static Set<String> searchedUids = Set.of();
 
     @Override
     public ResourceLocation getPluginUid()
@@ -73,6 +79,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         runtime = jeiRuntime;
         ACCEPTS_RECIPES.clear();
+        searchedText = null;
         Progression.invalidate();
     }
 
@@ -81,6 +88,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         runtime = null;
         ACCEPTS_RECIPES.clear();
+        searchedText = null;
         Progression.invalidate();
     }
 
@@ -100,6 +108,36 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         if (runtime != null)
             runtime.getIngredientFilter().setFilterText(text);
+    }
+
+    // The uids of the book's ingredients that JEI's own search keeps for this text, so the book
+    // understands the same syntax: @mod, #tag, $tooltip, -exclusions, a|b and the rest.
+    public static Set<String> searchMatches(String text)
+    {
+        if (runtime == null)
+            return Set.of();
+        if (text.equals(searchedText))
+            return searchedUids;
+
+        IIngredientFilter filter = runtime.getIngredientFilter();
+        if (!text.equals(filter.getFilterText()))
+            filter.setFilterText(text);
+        IIngredientManager manager = runtime.getIngredientManager();
+        Set<String> uids = new HashSet<>();
+        for (IIngredientType<?> type : BROWSABLE_TYPES)
+            collectUids(manager, filter, type, uids);
+
+        searchedText = text;
+        searchedUids = uids;
+        return uids;
+    }
+
+    private static <V> void collectUids(IIngredientManager manager, IIngredientFilter filter,
+            IIngredientType<V> type, Set<String> out)
+    {
+        var helper = manager.getIngredientHelper(type);
+        for (V ingredient : filter.getFilteredIngredients(type))
+            out.add(BookIngredient.uidOf(type, helper, ingredient));
     }
 
     // Whether a mod lets JEI move recipes into this menu: a storage terminal, a modded crafting
@@ -184,12 +222,14 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         var renderer = manager.getIngredientRenderer(type);
         var helper = manager.getIngredientHelper(type);
+        var visibility = runtime.getJeiHelpers().getIngredientVisibility();
         for (V ingredient : manager.getAllIngredients(type))
             //? if >=1.21.5 {
             /*manager.createTypedIngredient(type, ingredient, false)
             *///?} else {
             manager.createTypedIngredient(type, ingredient)
             //?}
+                    .filter(visibility::isIngredientVisible)
                     .ifPresent(typed -> out.add(BookIngredient.of(typed, renderer, helper)));
     }
 
