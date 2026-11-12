@@ -17,6 +17,14 @@
 - Each download of the mod now names only the Minecraft version it is made for, so NeoForge
   reports a mismatch at startup instead of the game failing later. The 1.21.10 download no longer
   claims to run on 1.21.11.
+- Bookmarks and the item variants the book remembers, such as which potions you have held, now
+  belong to the world's save folder instead of its name. Two worlds with the same name no longer
+  share them, and renaming a world keeps them. Each world takes over what it had the first time it
+  is opened.
+- Playing a world without some of another world's mods no longer erases that other world's
+  remembered item variants.
+- When one of the book's files in the config folder cannot be read in full, it is now kept beside
+  the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 
 ## 0.1.8
 
