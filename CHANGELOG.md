@@ -7,6 +7,11 @@
   finds either. JEI's search settings apply to these searches too. They show only the matching
   items, not also what they are used to make. Searching by name works as before.
 - Items hidden in JEI no longer show in the book either.
+- Filling the crafting grid from the book no longer teaches the player the recipe in the vanilla
+  recipe book. With the `doLimitedCrafting` game rule on, the book only fills the grid with
+  recipes the player has unlocked.
+- In creative mode on Minecraft 1.21.4 and newer, the book fills the crafting grid even when the
+  inventory has no room for what the grid held, as vanilla's recipe book does.
 
 ## 0.1.8
 

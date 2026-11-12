@@ -1,4 +1,4 @@
-package com.craftbound;
+package com.craftbound.placement;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.StackedContents;

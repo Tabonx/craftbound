@@ -1,4 +1,6 @@
-package com.craftbound;
+package com.craftbound.placement;
+
+import com.craftbound.Craftbound;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;

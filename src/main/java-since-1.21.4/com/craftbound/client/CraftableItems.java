@@ -3,7 +3,7 @@ package com.craftbound.client;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.craftbound.RecipePlacement;
+import com.craftbound.placement.RecipePlacement;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;

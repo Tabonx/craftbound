@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.craftbound.RecipePlacement;
+import com.craftbound.placement.RecipePlacement;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
