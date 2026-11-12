@@ -85,8 +85,6 @@ neoForge {
         }
     }
 
-    accessTransformers.from rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
-
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
