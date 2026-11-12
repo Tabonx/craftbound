@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.placement.PlaceRecipePayload;
 import com.craftbound.placement.RecipePlacement;
+import com.craftbound.placement.Recipes;
 
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -19,8 +20,6 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.Item;
@@ -132,28 +131,9 @@ public final class GridPlacer implements RecipePlacer
         if (player == null)
             return false;
 
-        //? if >=1.21.4 {
-        /*// The client is only told about recipe displays now, and vanilla's placement packet names
-        // a display rather than a recipe, so there is nothing the book can ask a plain server to
-        // place. Placement needs a server running Craftbound, and the button greys out otherwise.
-        if (!ServerSupport.installed())
+        if (!ServerSupport.installed() && !Recipes.vanillaPlaces(player.getRecipeBook(), recipe))
             return false;
-        *///?} else {
-        if (!ServerSupport.installed() && !player.getRecipeBook().contains(recipe))
-            return false;
-        //?}
-
         return RecipePlacement.available(player, menu).canCraft(recipe.value(), null);
-    }
-
-    // A recipe's own id, which newer versions wrap in a registry key.
-    private static ResourceLocation recipeId(RecipeHolder<?> recipe)
-    {
-        //? if >=1.21.4 {
-        /*return recipe.id().location();
-        *///?} else {
-        return recipe.id();
-        //?}
     }
 
     // A server without Craftbound cannot take our packet, so ask with vanilla's. That one only
@@ -163,15 +143,12 @@ public final class GridPlacer implements RecipePlacer
     {
         if (ServerSupport.installed())
         {
-            Net.toServer(new PlaceRecipePayload(menu.containerId, recipeId(recipe), placeAll));
+            Net.toServer(new PlaceRecipePayload(menu.containerId, Recipes.id(recipe), placeAll));
             return;
         }
 
-        // Newer versions have nothing to fall back to, and canPlace already refuses that case.
-        //? if <1.21.4 {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null)
-            connection.send(new ServerboundPlaceRecipePacket(menu.containerId, recipe, placeAll));
-        //?}
+            Recipes.vanillaPlacement(menu.containerId, recipe, placeAll).ifPresent(connection::send);
     }
 }
