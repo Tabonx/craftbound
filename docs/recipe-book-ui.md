@@ -130,8 +130,9 @@ for JEI's own multi-version, multi-loader support.
 however it was acquired, whether mined, looted or traded, not just crafted. This one set backs both the
 progression tint and progressive unlocking below.
 
-`client/mixin/RecipeButtonMixin` tints recipe-book slots for recipes whose result the player has
-never had; in the browse grid the same tint marks an item that is unlocked but has never been made.
+Once the book carries the Bookbinder's Lens, the browse grid marks an item when obtaining it would
+unlock recipes the book still hides. The mark is the slot sprite: `craftbound:recipe_book/slot_*`,
+a tinted copy of vanilla's. Vanilla's own recipe book is never shown, so its slots stay as they are.
 
 ## Progressive unlocking (already implemented)
 The book starts nearly empty and grows as the player plays, instead of showing every recipe in the
