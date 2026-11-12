@@ -19,11 +19,11 @@
   claims to run on 1.21.11.
 - Bookmarks and the item variants the book remembers, such as which potions you have held, now
   belong to the world's save folder instead of its name. Two worlds with the same name no longer
-  share them, and renaming a world keeps them. Each world takes over what it had the first time it
-  is opened.
+  share them, and renaming a world keeps them. What a world had under its old name goes to the
+  first world of that name opened after the update.
 - Fluid bookmarks now survive a restart.
 - Playing a world without some of another world's mods no longer erases that other world's
-  remembered item variants.
+  remembered item variants, and variants from a removed mod come back when it is installed again.
 - When one of the book's files in the config folder cannot be read in full, it is now kept beside
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 

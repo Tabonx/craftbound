@@ -14,7 +14,9 @@ import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
 import com.craftbound.client.storage.WorldScopedStore;
 import com.craftbound.progression.UnlockKey;
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -30,16 +32,17 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 // itself, per world, from its own view of the inventory.
 //
 // A variant's key holds JEI's subtype, which is only stable within one session, so what is saved is
-// one stack of each variant, and the keys are worked out again from those once JEI is up.
+// one stack of each variant, and the keys are worked out again from those once JEI is up. A stack
+// that does not decode, such as one from a mod that is gone, stays in the file as it was.
 @EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class ClientHeldVariants
 {
-    static final Codec<List<ItemStack>> CODEC =
-            ItemStack.CODEC.listOf().xmap(ArrayList::new, List::copyOf);
-    private static final Supplier<WorldScopedStore<List<ItemStack>>> STORE =
+    static final Codec<List<Either<ItemStack, Dynamic<?>>>> CODEC =
+            Codec.either(ItemStack.CODEC, Codec.PASSTHROUGH).listOf().xmap(ArrayList::new, List::copyOf);
+    private static final Supplier<WorldScopedStore<List<Either<ItemStack, Dynamic<?>>>>> STORE =
             ClientStores.lazy("craftbound-held-variants.json", CODEC, ArrayList::new);
 
-    private static List<ItemStack> keysSource = null;
+    private static List<Either<ItemStack, Dynamic<?>>> keysSource = null;
     private static Set<String> keys = Set.of();
 
     public static Set<String> current()
@@ -47,12 +50,12 @@ public final class ClientHeldVariants
         if (Minecraft.getInstance().player == null || !CraftboundJeiPlugin.hasRuntime())
             return Set.of();
 
-        List<ItemStack> stacks = stacks();
+        List<Either<ItemStack, Dynamic<?>>> stacks = stacks();
         if (stacks != keysSource)
         {
             keys = new HashSet<>();
-            for (ItemStack stack : stacks)
-                variantKey(stack).ifPresent(keys::add);
+            for (Either<ItemStack, Dynamic<?>> stack : stacks)
+                stack.left().flatMap(ClientHeldVariants::variantKey).ifPresent(keys::add);
             keysSource = stacks;
         }
         return keys;
@@ -71,7 +74,7 @@ public final class ClientHeldVariants
             Optional<String> key = variantKey(stack);
             if (key.isPresent() && known.add(key.get()))
             {
-                stacks().add(stack.copyWithCount(1));
+                stacks().add(Either.left(stack.copyWithCount(1)));
                 STORE.get().markDirty();
             }
         }
@@ -94,9 +97,9 @@ public final class ClientHeldVariants
                 .filter(key -> !key.equals(UnlockKey.withoutSubtype(key)));
     }
 
-    private static List<ItemStack> stacks()
+    private static List<Either<ItemStack, Dynamic<?>>> stacks()
     {
-        return STORE.get().open(WorldKey.current(), ClientStores.registryOps());
+        return STORE.get().open(WorldKey.current(), ClientStores::registryOps);
     }
 
     private ClientHeldVariants() {}

@@ -39,13 +39,19 @@ public final class WorldScopedStore<T>
 
     public T open(WorldId id, DynamicOps<JsonElement> ops)
     {
+        return open(id, () -> ops);
+    }
+
+    // The ops are only built when the world changes, since building them can be costly.
+    public T open(WorldId id, Supplier<DynamicOps<JsonElement>> ops)
+    {
         if (id.key().equals(world))
             return value;
 
         close();
         entries = file.read();
         world = id.key();
-        this.ops = ops;
+        this.ops = ops.get();
         JsonElement json = entries.get(world);
         if (json == null && id.legacyKey().isPresent())
         {
