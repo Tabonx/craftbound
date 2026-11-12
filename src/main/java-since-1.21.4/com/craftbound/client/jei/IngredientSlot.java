@@ -118,6 +118,13 @@ final class IngredientSlot extends IngredientSlotBase
 
     //? if >=26.1 {
     /*@Override
+    public IRecipeSlotBuilder setFluidRenderer(long capacity, boolean showCapacity, int width, int height,
+            mezz.jei.api.gui.drawable.TilingDirection tilingDirection)
+    {
+        return this;
+    }
+
+    @Override
     public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
     {
         return add(itemStackTemplate.create());
