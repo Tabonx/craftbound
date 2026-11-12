@@ -21,6 +21,7 @@
   belong to the world's save folder instead of its name. Two worlds with the same name no longer
   share them, and renaming a world keeps them. Each world takes over what it had the first time it
   is opened.
+- Fluid bookmarks now survive a restart.
 - Playing a world without some of another world's mods no longer erases that other world's
   remembered item variants.
 - When one of the book's files in the config folder cannot be read in full, it is now kept beside

@@ -11,7 +11,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.craftbound.Craftbound;
+import com.craftbound.client.BookmarkKeys;
 import com.craftbound.client.progression.Progression;
+import com.google.gson.JsonElement;
+import com.mojang.serialization.DynamicOps;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -110,8 +113,8 @@ public final class CraftboundJeiPlugin implements IModPlugin
             runtime.getIngredientFilter().setFilterText(text);
     }
 
-    // The uids of the book's ingredients that JEI's own search keeps for this text, so the book
-    // understands the same syntax: @mod, #tag, $tooltip, -exclusions, a|b and the rest.
+    // The session uids of the book's ingredients that JEI's own search keeps for this text, so the
+    // book understands the same syntax: @mod, #tag, $tooltip, -exclusions, a|b and the rest.
     public static Set<String> searchMatches(String text)
     {
         if (runtime == null)
@@ -137,7 +140,13 @@ public final class CraftboundJeiPlugin implements IModPlugin
     {
         var helper = manager.getIngredientHelper(type);
         for (V ingredient : filter.getFilteredIngredients(type))
-            out.add(BookIngredient.uidOf(type, helper, ingredient));
+            out.add(BookIngredient.sessionUidOf(type, helper, ingredient));
+    }
+
+    public static Optional<BookmarkKeys<BookIngredient>> bookmarkKeys(DynamicOps<JsonElement> ops)
+    {
+        return runtime == null ? Optional.empty()
+                : Optional.of(new IngredientBookmarkKeys(runtime.getIngredientManager(), ops));
     }
 
     // Whether a mod lets JEI move recipes into this menu: a storage terminal, a modded crafting
