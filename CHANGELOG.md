@@ -12,6 +12,8 @@
   recipes the player has unlocked.
 - In creative mode on Minecraft 1.21.4 and newer, the book fills the crafting grid even when the
   inventory has no room for what the grid held, as vanilla's recipe book does.
+- A world from Minecraft 1.21.5 or older keeps each player's obtained items and Bookbinder's Lens
+  when it is opened on 1.21.8 or newer.
 
 ## 0.1.8
 
