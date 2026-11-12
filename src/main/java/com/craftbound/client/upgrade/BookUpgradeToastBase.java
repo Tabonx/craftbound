@@ -2,7 +2,6 @@ package com.craftbound.client.upgrade;
 
 import com.craftbound.CraftboundItems;
 import com.craftbound.client.Canvas;
-import com.craftbound.client.Toasts;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -34,7 +33,7 @@ public abstract class BookUpgradeToastBase implements Toast
 
     public static void show()
     {
-        Toasts.of(Minecraft.getInstance()).addToast(new BookUpgradeToast());
+        Minecraft.getInstance().getToasts().addToast(new BookUpgradeToast());
     }
 
     protected void advance(double displayTimeMultiplier, long fullyVisibleForMs)

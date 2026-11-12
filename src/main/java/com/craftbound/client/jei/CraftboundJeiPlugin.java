@@ -356,11 +356,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
         if (icon != null)
             return icon::draw;
 
-        //? if >=1.21.4 {
-        /*return recipes.createCraftingStationLookup(category.getRecipeType())
-        *///?} else {
         return recipes.createRecipeCatalystLookup(category.getRecipeType())
-        //?}
                 .get()
                 .findFirst()
                 .map(catalyst -> catalystIcon(manager, catalyst))

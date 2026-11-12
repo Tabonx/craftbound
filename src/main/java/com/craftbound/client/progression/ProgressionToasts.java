@@ -1,7 +1,5 @@
 package com.craftbound.client.progression;
 
-import com.craftbound.client.Toasts;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +42,7 @@ public final class ProgressionToasts
                 .flatMap(Optional::stream)
                 .toList();
 
-        RecipeUnlockToast.addOrUpdate(Toasts.of(minecraft), icons);
+        RecipeUnlockToast.addOrUpdate(minecraft.getToasts(), icons);
     }
 
     private ProgressionToasts() {}

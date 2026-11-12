@@ -184,6 +184,13 @@ stonecutter.replacements.string {
     replace 'ToastComponent', 'ToastManager'
     replace 'net.minecraft.client.RecipeBookCategories', 'net.minecraft.world.item.crafting.RecipeBookCategories'
     replace '.value().getGroup()', '.value().group()'
+    replace '.getToasts()', '.getToastManager()'
+}
+
+// JEI's own rename of the blocks that craft in a category.
+stonecutter.replacements.string {
+    direction = stonecutter.eval(stonecutter.current.version, '>=1.21.4')
+    replace '.createRecipeCatalystLookup(', '.createCraftingStationLookup('
 }
 
 // Drawing moved to deferred calls, which renamed the tooltip method without changing its arguments.
@@ -200,6 +207,9 @@ stonecutter.replacements.string {
     replace 'net.minecraft.world.level.GameRules', 'net.minecraft.world.level.gamerules.GameRules'
     // A registry key's own accessor, renamed with the type it returns.
     replace '.id().location()', '.id().identifier()'
+    // Game rules became typed values read with one getter.
+    replace '.getBoolean(GameRules.RULE_KEEPINVENTORY)', '.get(GameRules.KEEP_INVENTORY)'
+    replace '.getBoolean(GameRules.RULE_LIMITED_CRAFTING)', '.get(GameRules.LIMITED_CRAFTING)'
 }
 
 // Same package as GuiGraphics, so renaming the type covers its import and every use. The lookbehind

@@ -11,7 +11,13 @@ import net.minecraft.world.inventory.Slot;
 public interface ContainerScreenAccessor
 {
     @Accessor("leftPos")
+    int craftbound$getLeftPos();
+
+    @Accessor("leftPos")
     void craftbound$setLeftPos(int leftPos);
+
+    @Accessor("topPos")
+    int craftbound$getTopPos();
 
     @Accessor("imageWidth")
     int craftbound$getImageWidth();

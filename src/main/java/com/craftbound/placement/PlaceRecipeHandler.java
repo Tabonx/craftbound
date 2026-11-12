@@ -51,11 +51,7 @@ public final class PlaceRecipeHandler
 
     private static boolean limitedCrafting(ServerPlayer player)
     {
-        //? if >=1.21.11 {
-        /*return ServerLevels.of(player).getGameRules().get(GameRules.LIMITED_CRAFTING);
-        *///?} else {
         return ServerLevels.of(player).getGameRules().getBoolean(GameRules.RULE_LIMITED_CRAFTING);
-        //?}
     }
 
     // The add and remove below are the recipe book's silent ones: the client hears of neither, so
