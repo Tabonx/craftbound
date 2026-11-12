@@ -8,9 +8,16 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 // Server -> client: everything the player has obtained. The book filters client-side, so the client
-// needs the whole set rather than the change, and it is sent whenever the set grows.
+// needs the whole set rather than the change, and it is sent whenever the set grows. The set is
+// copied because the server keeps adding to its own, and in single player the client reads the
+// payload on another thread without encoding it.
 public record ObtainedItemsPayload(Set<ResourceLocation> items) implements CustomPacketPayload
 {
+    public ObtainedItemsPayload
+    {
+        items = Set.copyOf(items);
+    }
+
     public static final Type<ObtainedItemsPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "obtained_items"));
 
