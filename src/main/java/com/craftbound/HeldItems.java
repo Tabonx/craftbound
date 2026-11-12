@@ -13,6 +13,9 @@ import net.minecraft.world.item.ItemStack;
 // its own players, and on a server without Craftbound the client sweeps its synced copy instead.
 public final class HeldItems
 {
+    // How often the inventory is swept, on either side, and so how often the obtained set can change.
+    public static final int SCAN_INTERVAL_TICKS = 20;
+
     public static List<ResourceLocation> of(Player player)
     {
         List<ResourceLocation> ids = new ArrayList<>();
