@@ -427,7 +427,7 @@ public final class RecipeBookScreenTweaks
 
     private static int left(AbstractContainerScreen<?> screen)
     {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         /*return screen.getLeftPos();
         *///?} else {
         return screen.getGuiLeft();
@@ -436,7 +436,7 @@ public final class RecipeBookScreenTweaks
 
     private static int top(AbstractContainerScreen<?> screen)
     {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         /*return screen.getTopPos();
         *///?} else {
         return screen.getGuiTop();

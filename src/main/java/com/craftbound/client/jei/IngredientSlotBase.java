@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
-//? if >=26.1.2 {
+//? if >=26.1 {
 /*import mezz.jei.api.gui.drawable.TilingDirection;
 *///?}
 import mezz.jei.api.gui.ingredient.IRecipeSlotRichTooltipCallback;
@@ -207,7 +207,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     /*@Override
     public IRecipeSlotBuilder setFluidRenderer(long capacity, boolean showCapacity, int width, int height,
             TilingDirection tilingDirection)
