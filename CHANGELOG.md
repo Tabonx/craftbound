@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.9
+
+- The book's search now understands JEI's search syntax: `@create` lists one mod's items,
+  `#logs` searches tags, `$fuel` searches tooltips, `-oak` leaves matches out, and `iron|gold`
+  finds either. JEI's search settings apply to these searches too. They show only the matching
+  items, not also what they are used to make. Searching by name works as before.
+- Items hidden in JEI no longer show in the book either.
+
 ## 0.1.8
 
 - The back button above a recipe now reads "Items" with a capital letter, like vanilla's titles.

@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -542,8 +543,8 @@ public final class RecipeBookWidget extends AbstractWidget
                         .filter(Progression::isUnlocked)
                         .filter(this::inActiveTab)
                         .toList();
-        String needle = search.getValue().toLowerCase(Locale.ROOT);
-        List<BookIngredient> result = needle.isEmpty() ? source : searched(source, needle);
+        String text = search.getValue();
+        List<BookIngredient> result = text.isBlank() ? source : searched(source, text);
         if (filtering())
             result = result.stream()
                     .filter(item -> item.item().map(craftable::contains).orElse(false))
@@ -554,20 +555,24 @@ public final class RecipeBookWidget extends AbstractWidget
         setPage(page);
     }
 
-    // Name matches first, then what those matches are used to make.
-    private List<BookIngredient> searched(List<BookIngredient> source, String needle)
+    // Matches first. A plain name search then adds what those matches are used to make. Text with
+    // JEI's operators, such as @mod or #tag, goes to JEI's own search.
+    private List<BookIngredient> searched(List<BookIngredient> source, String text)
     {
-        Set<String> named = searchable.stream()
-                .filter(item -> matches(item, needle))
-                .map(BookIngredient::unlockKey)
-                .collect(Collectors.toSet());
-        Set<String> made = Progression.outputsUsing(named);
+        boolean plain = SearchSyntax.isPlainName(text);
+        Predicate<BookIngredient> matches = plain ? named(text) : jeiMatches(text);
+        Set<String> made = plain
+                ? Progression.outputsUsing(searchable.stream()
+                        .filter(matches)
+                        .map(BookIngredient::unlockKey)
+                        .collect(Collectors.toSet()))
+                : Set.of();
 
         List<BookIngredient> result = new ArrayList<>();
         List<BookIngredient> uses = new ArrayList<>();
         for (BookIngredient item : source)
         {
-            if (matches(item, needle))
+            if (matches.test(item))
                 result.add(item);
             else if (made.contains(item.unlockKey()))
                 uses.add(item);
@@ -576,10 +581,17 @@ public final class RecipeBookWidget extends AbstractWidget
         return result;
     }
 
-    private static boolean matches(BookIngredient item, String needle)
+    private static Predicate<BookIngredient> named(String text)
     {
-        return item.displayName().toLowerCase(Locale.ROOT).contains(needle)
+        String needle = text.toLowerCase(Locale.ROOT);
+        return item -> item.displayName().toLowerCase(Locale.ROOT).contains(needle)
                 || SearchAliases.matches(item.registryKey(), needle);
+    }
+
+    private static Predicate<BookIngredient> jeiMatches(String text)
+    {
+        Set<String> found = CraftboundJeiPlugin.searchMatches(text);
+        return item -> found.contains(item.uid());
     }
 
     private boolean inActiveTab(BookIngredient item)

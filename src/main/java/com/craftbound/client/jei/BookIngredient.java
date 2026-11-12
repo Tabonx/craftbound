@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.IIngredientRenderer;
+import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import com.craftbound.progression.UnlockKey;
@@ -51,11 +52,16 @@ public final class BookIngredient
         V ingredient = typed.getIngredient();
         return new BookIngredient(
                 typed,
-                typed.getType().getUid() + "|" + helper.getUid(ingredient, UidContext.Ingredient),
+                uidOf(typed.getType(), helper, ingredient),
                 keyOf(typed, helper),
                 helper.getDisplayName(ingredient),
                 (graphics, x, y) -> renderer.render(graphics, ingredient, x, y),
                 flag -> renderer.getTooltip(ingredient, flag));
+    }
+
+    static <V> String uidOf(IIngredientType<V> type, IIngredientHelper<V> helper, V ingredient)
+    {
+        return type.getUid() + "|" + helper.getUid(ingredient, UidContext.Ingredient);
     }
 
     // Progression identity: the registry id and JEI's subtype, see UnlockKey. Other ingredient types
