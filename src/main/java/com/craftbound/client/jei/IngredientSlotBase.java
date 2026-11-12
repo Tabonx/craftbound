@@ -69,11 +69,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
     {
         for (Object ingredient : ingredients)
             if (ingredient != null)
-                //? if >=1.21.5 {
-                /*manager.createTypedIngredient(ingredient, false).ifPresent(this.ingredients::add);
-                *///?} else {
-                manager.createTypedIngredient(ingredient).ifPresent(this.ingredients::add);
-                //?}
+                JeiCompat.typed(manager, ingredient).ifPresent(this.ingredients::add);
         return this;
     }
 
@@ -145,11 +141,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
     public <I> IRecipeSlotBuilder add(IIngredientType<I> type, I ingredient)
     {
         if (ingredient != null)
-            //? if >=1.21.5 {
-            /*manager.createTypedIngredient(type, ingredient, false).ifPresent(ingredients::add);
-            *///?} else {
-            manager.createTypedIngredient(type, ingredient).ifPresent(ingredients::add);
-            //?}
+            JeiCompat.typed(manager, type, ingredient).ifPresent(ingredients::add);
         return this;
     }
 

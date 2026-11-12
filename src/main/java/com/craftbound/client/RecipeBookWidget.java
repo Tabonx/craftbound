@@ -17,6 +17,7 @@ import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipeRender;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiCompat;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.ponder.PonderGate;
 import com.craftbound.client.progression.Progression;
@@ -1033,11 +1034,7 @@ public final class RecipeBookWidget extends AbstractWidget
             {
                 Canvas.push(graphics);
                 Canvas.translate(graphics, slot.offset().x(), slot.offset().y());
-                //? if >=1.21.11 {
-                /*slot.slot().draw(graphics, true);
-                *///?} else {
-                slot.slot().drawHoverOverlays(graphics);
-                //?}
+                JeiCompat.drawHighlight(slot.slot(), graphics);
                 Canvas.pop(graphics);
             }
             Canvas.pop(graphics);
@@ -1051,13 +1048,7 @@ public final class RecipeBookWidget extends AbstractWidget
     // under the cursor. The mod name itself is never in here, since JEI only adds that as it draws.
     private static List<Component> slotTooltip(IRecipeSlotDrawable slot)
     {
-        //? if >=1.21.5 {
-        /*Minecraft minecraft = Minecraft.getInstance();
-        TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
-        List<Component> lines = CraftboundJeiPlugin.getTooltip(slot, flag);
-        *///?} else {
-        List<Component> lines = slot.getTooltip();
-        //?}
+        List<Component> lines = CraftboundJeiPlugin.tooltip(slot);
         List<Component> kept = new ArrayList<>(lines.size());
         for (int i = 0; i < lines.size(); i++)
         {
