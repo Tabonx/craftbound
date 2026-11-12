@@ -227,6 +227,8 @@ stonecutter.replacements.string {
     direction = extractor
     replace '.drawString(', '.text('
     replace '.renderFakeItem(', '.fakeItem('
+    replace 'renderWidget(', 'extractWidgetRenderState('
+    replace 'renderContents(', 'extractContents('
 }
 
 // StackedContents was renamed with the recipe rewrite, well before the drawing changes.

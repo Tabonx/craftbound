@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.craftbound.client.Canvas;
+import com.craftbound.client.VersionedToast;
 import com.craftbound.client.jei.BookIngredient;
 
 import net.minecraft.client.gui.Font;
@@ -20,30 +21,25 @@ import net.minecraft.world.item.Items;
 // RecipeToast. Same sprite, same strings and the same cycling layout, so it reads as the popup
 // players know, and each result is drawn with the renderer the book itself uses, so a fluid looks
 // the same in both places.
-//
-// What the toast holds and how long it stays are here; how a version asks it to draw and to decide
-// is on RecipeUnlockToast.
-public abstract class RecipeUnlockToastBase implements Toast
+public final class RecipeUnlockToast extends VersionedToast
 {
-    protected static final ResourceLocation BACKGROUND_SPRITE =
-            ResourceLocation.withDefaultNamespace("toast/recipe");
-    protected static final Component TITLE_TEXT = Component.translatable("recipe.toast.title");
-    protected static final Component DESCRIPTION_TEXT = Component.translatable("recipe.toast.description");
-    protected static final long DISPLAY_TIME = 5000L;
-    protected static final int TITLE_COLOR = -11534256;
-    protected static final int DESCRIPTION_COLOR = -16777216;
+    private static final ResourceLocation BACKGROUND_SPRITE = ResourceLocation.withDefaultNamespace("toast/recipe");
+    private static final Component TITLE_TEXT = Component.translatable("recipe.toast.title");
+    private static final Component DESCRIPTION_TEXT = Component.translatable("recipe.toast.description");
+    private static final long DISPLAY_TIME = 5000L;
+    private static final int TITLE_COLOR = -11534256;
+    private static final int DESCRIPTION_COLOR = -16777216;
 
     // Unlocking a whole branch at once can produce hundreds of results; past a handful the cycle is
     // a flicker rather than information, so the toast only ever shows the first few.
     private static final int MAX_ICONS = 8;
 
-    protected Toast.Visibility visibility = Toast.Visibility.SHOW;
     private final List<BookIngredient> results = new ArrayList<>();
     private double displayTime = DISPLAY_TIME;
     private long lastChanged;
     private boolean changed;
 
-    protected RecipeUnlockToastBase(List<BookIngredient> results)
+    private RecipeUnlockToast(List<BookIngredient> results)
     {
         addAll(results);
         changed = true;
@@ -61,7 +57,7 @@ public abstract class RecipeUnlockToastBase implements Toast
             existing.addAll(results);
     }
 
-    void addAll(List<BookIngredient> results)
+    private void addAll(List<BookIngredient> results)
     {
         for (BookIngredient result : results)
         {
@@ -72,7 +68,8 @@ public abstract class RecipeUnlockToastBase implements Toast
         }
     }
 
-    protected void advance(double displayTimeMultiplier, long fullyVisibleForMs)
+    @Override
+    protected Toast.Visibility advance(double displayTimeMultiplier, long fullyVisibleForMs)
     {
         if (changed)
         {
@@ -81,11 +78,12 @@ public abstract class RecipeUnlockToastBase implements Toast
         }
 
         displayTime = DISPLAY_TIME * displayTimeMultiplier;
-        visibility = fullyVisibleForMs - lastChanged >= displayTime
+        return fullyVisibleForMs - lastChanged >= displayTime
                 ? Toast.Visibility.HIDE
                 : Toast.Visibility.SHOW;
     }
 
+    @Override
     protected void draw(GuiGraphics graphics, Font font, long fullyVisibleForMs)
     {
         Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
