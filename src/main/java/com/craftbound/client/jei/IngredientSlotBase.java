@@ -35,7 +35,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
 
     private final IIngredientManager manager;
     private final IPlatformFluidHelper<?> fluids;
-    protected final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
+    private final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
 
     IngredientSlotBase(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
     {
@@ -84,7 +84,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    private <I> void addTyped(ITypedIngredient<I> ingredient)
+    protected final <I> void addTyped(ITypedIngredient<I> ingredient)
     {
         add(ingredient.getType(), ingredient.getIngredient());
     }
@@ -93,7 +93,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
     public IRecipeSlotBuilder addOptionalTypedIngredients(List<Optional<ITypedIngredient<?>>> ingredients)
     {
         for (Optional<ITypedIngredient<?>> ingredient : ingredients)
-            ingredient.ifPresent(this.ingredients::add);
+            ingredient.ifPresent(this::addTyped);
         return this;
     }
 
