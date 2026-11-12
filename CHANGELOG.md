@@ -14,6 +14,9 @@
   inventory has no room for what the grid held, as vanilla's recipe book does.
 - A world from Minecraft 1.21.5 or older keeps each player's obtained items and Bookbinder's Lens
   when it is opened on 1.21.8 or newer.
+- Each download of the mod now names only the Minecraft version it is made for, so NeoForge
+  reports a mismatch at startup instead of the game failing later. The 1.21.10 download no longer
+  claims to run on 1.21.11.
 
 ## 0.1.8
 

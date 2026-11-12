@@ -331,10 +331,18 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
+// Each jar is published against exactly the Minecraft versions it was built for, which the version
+// owns rather than the root: a jar for one version must never claim to cover the others. The
+// mods.toml range names the same versions, so the loader refuses the jar everywhere else.
+def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
+if (!publishMinecraftVersions.contains(minecraft_version))
+    throw new GradleException("publish_minecraft_versions for ${minecraft_version} does not name ${minecraft_version} itself")
+def minecraftVersionRange = publishMinecraftVersions.collect { "[${it}]" }.join(',')
+
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
+            minecraft_version_range: minecraftVersionRange,
             neo_version            : neo_version,
             neo_version_range      : neo_version_range,
             loader_version_range   : loader_version_range,
@@ -399,9 +407,6 @@ def changelogFor(String released)
     section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
 }
 
-// Each jar is published against exactly the Minecraft versions it was built for, which the version
-// owns rather than the root: a jar for one version must never claim to cover the others.
-def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
 def githubParentVersion = '1.21.1'
 
 publishMods {
