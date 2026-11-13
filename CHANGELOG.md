@@ -47,6 +47,13 @@
   tab instead of Miscellaneous, as they do on 1.21.1.
 - A Create update that no longer fits the book now switches off only the book's Create features,
   such as the stock keeper and basin heat, instead of crashing the game.
+- A click right after the book changes, such as the first click on a recipe you just opened or on
+  the place button as it appears, now lands on what the book shows instead of what it showed a
+  moment before.
+- A newly unlocked item with variants no longer finishes its highlight early while its variants
+  panel is open.
+- On Minecraft 1.21.10 and newer, the book's search keeps characters outside the basic plane, such
+  as emoji, instead of mangling them.
 
 ## 0.1.8
 

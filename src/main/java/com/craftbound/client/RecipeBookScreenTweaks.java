@@ -195,10 +195,10 @@ public final class RecipeBookScreenTweaks
                 left(screen), top(screen), imageWidth(screen), imageHeight(screen), gap, sides(screen).floor());
         boolean overlay = open && placement.overlay();
 
-        RecipeBookWidget book = new RecipeBookWidget();
+        RecipeBookWidget book = new RecipeBookWidget(new BookState(), new BookCatalog());
         book.visible = open;
         bind(book, screen);
-        book.place(placement.bookRight(), placement.bookTop(), placement.bookHeight());
+        book.anchor(placement.bookRight(), placement.bookTop(), placement.bookHeight());
 
         RecipeBookToggleButton toggle = new RecipeBookToggleButton(0, 0, b ->
         {
