@@ -2,7 +2,10 @@ package com.craftbound.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.ref.WeakReference;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +60,25 @@ class ScreenSidesTest
         sides.learn(screen, SideAreas.NONE, true);
 
         assertFalse(sides.relayoutDue(screen));
+    }
+
+    @Test
+    void aClosedScreenIsNotKeptAlive()
+    {
+        WeakReference<Terminal> closed = laidOutTwice();
+
+        for (int i = 0; i < 50 && closed.get() != null; i++)
+            System.gc();
+
+        assertNull(closed.get());
+    }
+
+    private WeakReference<Terminal> laidOutTwice()
+    {
+        Terminal screen = new Terminal();
+        sides.learn(screen, TOOLBAR, true);
+        sides.relayoutDue(screen);
+        return new WeakReference<>(screen);
     }
 
     @Test

@@ -18,7 +18,8 @@ import net.minecraft.world.inventory.RecipeBookMenu;
 // places itself through its vanilla book, which RecipeBookComponentMixin answers for. A screen that
 // takes recipes from JEI but has no recipe book, like Create's stock keeper, gets the book on the
 // side where JEI would show its ingredient list, and ContainerScreenLayoutMixin moves it aside.
-// Where the window is too narrow for both, the book hides the screen, as vanilla's does.
+// Where the window is too narrow for both, the book hides the screen, as vanilla's does. Nothing here
+// holds on to a screen once it closes.
 public final class BookScreens
 {
     private static final ScreenSides SIDES = new ScreenSides();
@@ -88,6 +89,12 @@ public final class BookScreens
                 return button;
         }
         return null;
+    }
+
+    public static void closing(Screen screen)
+    {
+        if (on(screen).isPresent())
+            host = null;
     }
 
     private static Optional<BookHost> on(Screen screen)

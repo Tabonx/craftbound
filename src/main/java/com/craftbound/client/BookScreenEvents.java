@@ -82,6 +82,12 @@ public final class BookScreenEvents
         BookScreens.opening();
     }
 
+    @SubscribeEvent
+    public static void onClosing(ScreenEvent.Closing event)
+    {
+        BookScreens.closing(event.getScreen());
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMouseScrolled(ScreenEvent.MouseScrolled.Pre event)
     {
