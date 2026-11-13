@@ -23,8 +23,6 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
 
-// JEI from this generation on names every one of these "add". They all funnel into the same place:
-// whatever the slot accepts, recorded as a typed ingredient.
 final class IngredientSlot extends IngredientSlotBase
 {
     IngredientSlot(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
@@ -130,8 +128,8 @@ final class IngredientSlot extends IngredientSlotBase
         return add(itemStackTemplate.create());
     }
 
-    // Slot contents only resolve to actual ingredients against the level's context. Without it
-    // every slot resolves to nothing and the index reads every recipe as requiring no inputs.
+    // Without the level's context every slot resolves to nothing and every recipe reads as needing
+    // no inputs.
     @Override
     public ContextMap getContextMap()
     {

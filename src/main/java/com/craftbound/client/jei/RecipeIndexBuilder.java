@@ -14,11 +14,12 @@ import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
-import com.craftbound.client.Integrations;
+import com.craftbound.client.integration.Integrations;
 import com.craftbound.progression.CatalystCompanions;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.UnlockKey;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
@@ -34,12 +35,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// Reduces every recipe JEI knows about to the plain data progression needs, in one pass. Doing it
-// per browsable item instead would mean thousands of recipe lookups every time the obtained set
-// grows; with the index in hand, re-evaluating unlocks is set arithmetic.
-//
-// Recipes are keyed by identity because that is what the rest of the book holds: recipe objects
-// come straight out of JEI's lookups, and only some of them are records with usable equality.
+// Recipes are keyed by identity: they come straight out of JEI's lookups, and only some of them are
+// records with usable equality.
 public final class RecipeIndexBuilder
 {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -57,9 +54,9 @@ public final class RecipeIndexBuilder
 
     private final Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
     private final Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
-    private final Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
-    private final Set<String> unjudged = new HashSet<>();
-    private final Set<String> invisibleOutputs = new HashSet<>();
+    private final Map<UnlockKey, ITypedIngredient<?>> representatives = new HashMap<>();
+    private final Set<UnlockKey> unjudged = new HashSet<>();
+    private final Set<UnlockKey> invisibleOutputs = new HashSet<>();
 
     private RecipeIndexBuilder(IJeiRuntime runtime)
     {
@@ -69,7 +66,6 @@ public final class RecipeIndexBuilder
         this.noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
     }
 
-    // Built the first time it is asked for after JEI starts, and kept until JEI stops.
     public static Optional<RecipeIndexSnapshot> current()
     {
         return CURRENT.get();
@@ -103,7 +99,7 @@ public final class RecipeIndexBuilder
 
     private RecipeNode node(SlotIngredientCollector collector, Object recipe, String categoryUid)
     {
-        Map<String, ITypedIngredient<?>> outputs = collector.outputs();
+        Map<UnlockKey, ITypedIngredient<?>> outputs = collector.outputs();
         represent(outputs);
         invisibleOutputs.addAll(collector.invisibleOutputKeys());
         List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
@@ -134,11 +130,9 @@ public final class RecipeIndexBuilder
         return Optional.of(collector);
     }
 
-    // A recipe the index cannot read is left out of it, and the book treats a recipe it never
-    // indexed as unlocked. JEI's own layout often still reads it, being what JEI's screens show, so
-    // what it makes is taken from there and never hidden: otherwise an item whose only recipe this
-    // is would stay out of the book for good. JEI logs a layout that fails as an error, so one that
-    // failed is not tried again on the next build.
+    // An unreadable recipe counts as unlocked, but its outputs still come from JEI's own layout and
+    // are never hidden: otherwise an item whose only recipe this is would stay out of the book for
+    // good. JEI logs a failed layout as an error, so one that failed is not tried again.
     private <T> void unjudged(IRecipeCategory<T> category, T recipe, String categoryUid)
     {
         if (UNLAYABLE.getOrDefault(recipe, Set.of()).contains(categoryUid))
@@ -149,7 +143,7 @@ public final class RecipeIndexBuilder
             UNLAYABLE.computeIfAbsent(recipe, unused -> new HashSet<>()).add(categoryUid);
             return;
         }
-        Map<String, ITypedIngredient<?>> outputs = new HashMap<>();
+        Map<UnlockKey, ITypedIngredient<?>> outputs = new HashMap<>();
         layout.get().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT)
                 .forEach(slot -> slot.getAllIngredientsList().forEach(output ->
                         outputs.putIfAbsent(BookIngredient.unlockKey(manager, output), output)));
@@ -157,11 +151,9 @@ public final class RecipeIndexBuilder
         represent(outputs);
     }
 
-    // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot
-    // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
-    // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
-    // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
-    private void represent(Map<String, ITypedIngredient<?>> outputs)
+    // Normalized so the stack size of whichever recipe is read first does not leak into the unlock:
+    // otherwise the toast would announce a nugget wearing a 9.
+    private void represent(Map<UnlockKey, ITypedIngredient<?>> outputs)
     {
         outputs.forEach((key, output) -> representatives.putIfAbsent(key, manager.normalizeTypedIngredient(output)));
     }

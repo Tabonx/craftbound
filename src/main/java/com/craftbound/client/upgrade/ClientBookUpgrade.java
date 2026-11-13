@@ -1,7 +1,7 @@
 package com.craftbound.client.upgrade;
 
 import com.craftbound.client.ServerSupport;
-import com.craftbound.progression.ProgressionConfig;
+import com.craftbound.platform.CraftboundConfig;
 import com.craftbound.upgrade.BookUpgrade;
 
 // The client's view of the book upgrade: whatever the server last told it. The only judgement is
@@ -22,7 +22,7 @@ public final class ClientBookUpgrade
 
     public boolean hintsUnlocked()
     {
-        return BookUpgrade.hintsUnlocked(ProgressionConfig.gateHintsBehindLens(),
+        return BookUpgrade.hintsUnlocked(CraftboundConfig.gateHintsBehindLens(),
                 ServerSupport.installed(), bound());
     }
 
@@ -30,7 +30,7 @@ public final class ClientBookUpgrade
     // progression itself is off, since then there is nothing left to mark.
     public boolean hintsActive()
     {
-        return ProgressionConfig.rules().enabled() && hintsUnlocked();
+        return CraftboundConfig.progression().enabled() && hintsUnlocked();
     }
 
     public boolean bound()

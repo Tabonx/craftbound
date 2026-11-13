@@ -7,13 +7,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
-// Keeps JEI's full-screen recipe view from opening. Hiding JEI's overlays leaves one way back in:
-// its show-recipe and show-uses keys work off whatever the cursor is over, inventory slots
-// included, and would answer with every recipe in the pack rather than the ones the book has
-// revealed. The book is the only recipe view Craftbound wants on screen.
-//
-// The screen is matched by class name so JEI's internals stay off the compile classpath. If JEI
-// ever renames it the view simply comes back, which is a far better failure than a crash.
+// JEI's show-recipe and show-uses keys work off any slot under the cursor and would reveal every
+// recipe in the pack. The screen is matched by class name so JEI's internals stay off the compile
+// classpath; if JEI renames it the view comes back rather than crashing.
 @EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class JeiScreenBlocker
 {

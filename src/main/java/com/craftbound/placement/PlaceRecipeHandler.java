@@ -1,6 +1,6 @@
 package com.craftbound.placement;
 
-import com.craftbound.ServerLevels;
+import com.craftbound.platform.ServerLevels;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.RecipeBookMenu;

@@ -2,9 +2,10 @@ package com.craftbound.client.jei;
 
 import java.util.Optional;
 
+import com.craftbound.progression.UnlockKey;
+
 import net.minecraft.resources.ResourceLocation;
 
-// What the book may show of the recipes JEI knows. Progression answers it; JEI only asks.
 public interface RecipeGate
 {
     RecipeGate OPEN = new RecipeGate()
@@ -28,7 +29,7 @@ public interface RecipeGate
         }
 
         @Override
-        public boolean hasInput(String unlockKey, Optional<ResourceLocation> itemId)
+        public boolean hasInput(UnlockKey unlockKey, Optional<ResourceLocation> itemId)
         {
             return true;
         }
@@ -38,8 +39,7 @@ public interface RecipeGate
 
     boolean isRecipeUnlocked(String categoryUid, Object recipe);
 
-    // Whether a slot offering alternatives shows only the ones the player has.
     boolean narrowsSlots();
 
-    boolean hasInput(String unlockKey, Optional<ResourceLocation> itemId);
+    boolean hasInput(UnlockKey unlockKey, Optional<ResourceLocation> itemId);
 }

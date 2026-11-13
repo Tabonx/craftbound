@@ -17,9 +17,9 @@ import net.minecraft.resources.ResourceLocation;
 // `variants` are items asked for down to their JEI subtype, such as one potion: a slot wanting a
 // Potion of Strength is not satisfied by a water bottle, though both are `minecraft:potion`. They
 // are keys like the outputs', satisfied by holding that variant or by a recipe making it.
-public record InputSlot(Set<ResourceLocation> items, Set<String> fluids, Set<String> variants)
+public record InputSlot(Set<ResourceLocation> items, Set<UnlockKey> fluids, Set<UnlockKey> variants)
 {
-    public InputSlot(Set<ResourceLocation> items, Set<String> fluids)
+    public InputSlot(Set<ResourceLocation> items, Set<UnlockKey> fluids)
     {
         this(items, fluids, Set.of());
     }

@@ -12,9 +12,8 @@ import net.createmod.ponder.foundation.ui.PonderTagScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-// Hides entries the player cannot ponder yet from a Ponder category's item grid. The category's own
-// item set is filtered as it is read, before the screen counts rows from it, so the grid closes up
-// instead of leaving holes where the hidden entries would have been.
+// Filters the category's items as they are read, before the screen counts rows, so the grid closes
+// up instead of leaving holes.
 @Mixin(PonderTagScreen.class)
 public class PonderTagScreenMixin
 {
@@ -27,9 +26,8 @@ public class PonderTagScreenMixin
         return PonderVisibility.visible(items);
     }
 
-    // The category's main item gets its own large button beside the grid, so filtering the grid
-    // alone would still name it. Reporting it as absent takes the branch Ponder already has for
-    // categories without one, which drops the button and leaves the rest of the page intact.
+    // The main item has its own button beside the grid. Reporting it as absent takes Ponder's branch
+    // for categories without one, which drops the button and keeps the rest of the page.
     @ModifyExpressionValue(
             method = "init",
             at = @At(value = "INVOKE",

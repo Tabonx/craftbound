@@ -1,10 +1,10 @@
 package com.craftbound.progression;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,29 +18,15 @@ class UnlockKeyTest
     private static final ResourceLocation WATER_BOTTLE = ResourceLocation.parse("minecraft:potion");
 
     @Test
-    void itemKeysRoundTrip()
+    void keysPrintInTheirTextForm()
     {
-        assertEquals(Optional.of(new UnlockKey(UnlockKey.Kind.ITEM, STICK, "")),
-                UnlockKey.parse(UnlockKey.ofItem(STICK)));
+        assertEquals("item|minecraft:stick", UnlockKey.ofItem(STICK).toString());
+        assertEquals("item|minecraft:potion|water", UnlockKey.ofItem(WATER_BOTTLE, "water").toString());
+        assertEquals("fluid|minecraft:lava", UnlockKey.ofFluid(LAVA, "").toString());
+        assertEquals("fluid|create:potion|strength", UnlockKey.ofFluid(POTION, "strength").toString());
+        assertEquals("mymod:weird_type|whatever", UnlockKey.ofIngredient("mymod:weird_type", "whatever").toString());
     }
 
-    // The one that broke the unlock toast: a fluid-only output has to be readable back, or the
-    // recipe unlocks with nothing to draw and the notification is dropped.
-    @Test
-    void fluidKeysRoundTrip()
-    {
-        assertEquals(Optional.of(new UnlockKey(UnlockKey.Kind.FLUID, LAVA, "")),
-                UnlockKey.parse(UnlockKey.ofFluid(LAVA, "")));
-    }
-
-    @Test
-    void fluidSubtypesRoundTrip()
-    {
-        assertEquals(Optional.of(new UnlockKey(UnlockKey.Kind.FLUID, POTION, "strength")),
-                UnlockKey.parse(UnlockKey.ofFluid(POTION, "strength")));
-    }
-
-    // The one that let a single unlocked brewing recipe reveal every potion in the game.
     @Test
     void twoPotionsAreDifferentKeys()
     {
@@ -48,23 +34,6 @@ class UnlockKeyTest
         assertNotEquals(UnlockKey.ofFluid(POTION, "strength"), UnlockKey.ofFluid(POTION, ""));
     }
 
-    @Test
-    void aSubtypeContainingTheSeparatorStillYieldsTheFluidId()
-    {
-        UnlockKey parsed = UnlockKey.parse(UnlockKey.ofFluid(POTION, "long|strength")).orElseThrow();
-
-        assertEquals(POTION, parsed.id());
-        assertEquals("long|strength", parsed.subtype());
-    }
-
-    @Test
-    void itemSubtypesRoundTrip()
-    {
-        assertEquals(Optional.of(new UnlockKey(UnlockKey.Kind.ITEM, WATER_BOTTLE, "water")),
-                UnlockKey.parse(UnlockKey.ofItem(WATER_BOTTLE, "water")));
-    }
-
-    // The one that let filling a water bottle reveal every potion in the game.
     @Test
     void twoPotionItemsAreDifferentKeys()
     {
@@ -74,27 +43,25 @@ class UnlockKeyTest
     @Test
     void droppingTheSubtypeLeavesTheRegistryKey()
     {
-        assertEquals(UnlockKey.ofItem(WATER_BOTTLE), UnlockKey.withoutSubtype(UnlockKey.ofItem(WATER_BOTTLE, "long|strength")));
-        assertEquals(UnlockKey.ofItem(STICK), UnlockKey.withoutSubtype(UnlockKey.ofItem(STICK)));
-        assertEquals(UnlockKey.ofFluid(POTION, ""), UnlockKey.withoutSubtype(UnlockKey.ofFluid(POTION, "strength")));
-        assertEquals("mymod:weird_type|whatever|more", UnlockKey.withoutSubtype("mymod:weird_type|whatever|more"));
+        assertEquals(UnlockKey.ofItem(WATER_BOTTLE), UnlockKey.ofItem(WATER_BOTTLE, "long|strength").withoutSubtype());
+        assertEquals(UnlockKey.ofFluid(POTION, ""), UnlockKey.ofFluid(POTION, "strength").withoutSubtype());
+        UnlockKey stick = UnlockKey.ofItem(STICK);
+        assertSame(stick, stick.withoutSubtype());
+    }
+
+    @Test
+    void anIngredientWithNoRegistryIdentityHasNoSubtypeToDrop()
+    {
+        UnlockKey weird = UnlockKey.ofIngredient("mymod:weird_type", "whatever|more");
+
+        assertFalse(weird.hasSubtype());
+        assertSame(weird, weird.withoutSubtype());
+        assertTrue(UnlockKey.ofItem(WATER_BOTTLE, "water").hasSubtype());
     }
 
     @Test
     void itemsAndFluidsOfTheSameNameAreDifferentKeys()
     {
         assertNotEquals(UnlockKey.ofItem(LAVA), UnlockKey.ofFluid(LAVA, ""));
-    }
-
-    @Test
-    void anIngredientTypeWithNoRegistryIdentityIsNotParsed()
-    {
-        assertTrue(UnlockKey.parse("mymod:weird_type|whatever").isEmpty());
-    }
-
-    @Test
-    void aMalformedIdIsNotParsed()
-    {
-        assertTrue(UnlockKey.parse("item|NOT AN ID").isEmpty());
     }
 }

@@ -3,9 +3,7 @@ import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
 
 plugins {
     id 'java-library'
-    id 'eclipse'
     id 'idea'
-    id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.144'
     id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
 }
@@ -14,7 +12,8 @@ plugins {
 // changelog is currently being written for, so a dry run rehearses the release that is coming
 // rather than whatever mod_version was last set to.
 def releaseTag = System.getenv('GITHUB_REF_NAME')
-ext.modVersion = releaseTag?.matches(/v\d.*/) ? releaseTag.substring(1) : unreleasedVersion()
+def releasing = releaseTag?.matches(/v\d.*/) ?: false
+ext.modVersion = releasing ? releaseTag.substring(1) : unreleasedVersion()
 
 // The topmost section heading in the changelog, which is the version being worked on.
 def unreleasedVersion()
@@ -31,7 +30,6 @@ version = modVersion
 group = mod_group_id
 
 repositories {
-    mavenLocal()
     maven { url = 'https://maven.blamejared.com' }         // JEI
     maven { url = 'https://maven.createmod.net' }         // Create, Ponder, Flywheel
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
@@ -100,8 +98,8 @@ neoForge {
         }
     }
 
-    // Puts Minecraft on the test classpath. The tests themselves are plain logic and never touch a
-    // running game, they just name types like ResourceLocation.
+    // Runs the tests through FML's JUnit launcher, which loads NeoForge and this mod into the test
+    // JVM the way the game would, but opens no window and no world.
     unitTest {
         enable()
         testedMod = mods."${mod_id}"
@@ -115,8 +113,6 @@ neoForge {
 
         client {
             client()
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             taskBefore muteClient
 
             // Larger default dev window.
@@ -125,31 +121,10 @@ neoForge {
 
         server {
             server()
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             programArgument '--nogui'
         }
 
-        gameTestServer {
-            type = 'gameTestServer'
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
-        }
 
-        data {
-            data()
-            programArguments.addAll '--mod', mod_id, '--all',
-                    '--output', rootProject.file('src/generated/resources/').absolutePath,
-                    '--existing', rootProject.file('src/main/resources/').absolutePath
-        }
-    }
-}
-
-// src/ is Stonecutter's shared source directory, linked into whichever version is active, so it is
-// left at the default and only the generated resources are added.
-sourceSets {
-    main {
-        resources {
-            srcDir rootProject.file('src/generated/resources')
-        }
     }
 }
 
@@ -169,7 +144,7 @@ tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
 def hasCreate = project.hasProperty('create_version')
 
 // Readable as `//? if create` in source, for the one place that names the Create integration from a
-// file that is otherwise shared: client/Integrations. The integration itself is excluded below.
+// file that is otherwise shared: client/integration/Integrations. The integration itself is excluded below.
 stonecutter.constants.put('create', hasCreate)
 
 // Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's
@@ -368,10 +343,12 @@ tasks.withType(ProcessResources).configureEach {
             mod_authors            : mod_authors,
             mod_description        : mod_description,
             jei_version_range      : jei_version_range,
-            // Newer versions require the supported range to be spelled out alongside the format.
-            pack_formats           : modern
-                    ? "\"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
-                    : "\"pack_format\": ${pack_format}",
+            // From 1.21.10 NeoForge reads a mod's pack.mcmeta without a format as fitting the game, and
+            // a single number there cannot be both the resource and the data pack format.
+            pack_formats           : stonecutter.eval(stonecutter.current.version, '>=1.21.10') ? ''
+                    : modern
+                    ? ",\n        \"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
+                    : ",\n        \"pack_format\": ${pack_format}",
             create_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.create.mixins.json\"" : '',
             create_dependency      : hasCreate ? [
                     '# Create is optional: without it the book simply has no Create categories to show. It must still',
@@ -397,29 +374,26 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
-    }
-}
-
 // The release notes are the CHANGELOG section headed by the version being released, so a release
-// carries its own entry rather than the whole file.
-def changelogFor(String released)
+// carries its own entry rather than the whole file. A release whose version has no entries fails
+// instead of publishing empty notes. The publish plugin reads the notes while configuring, so any
+// other build falls back to a placeholder rather than failing over a section still being written.
+def changelogFor(String released, boolean releasing)
 {
     def notes = rootProject.file('CHANGELOG.md')
-    if (!notes.exists())
-        return "${mod_name} ${released}"
+    def section = notes.exists() ? notes.text.split(/(?m)^## /).find { it.readLines()[0].trim() == released } : null
+    def body = section?.readLines()?.drop(1)?.join('\n')?.trim()
+    if (body)
+        return body
+    if (releasing)
+        throw new GradleException("CHANGELOG.md has no entries under '## ${released}'")
+    "${mod_name} ${released}"
+}
 
-    def section = notes.text.split(/(?m)^## /).find { it.readLines()[0].trim() == released }
-    section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
+tasks.register('checkChangelog') {
+    group = 'publishing'
+    description = 'Fails unless CHANGELOG.md has a section for the version being built.'
+    doLast { changelogFor(modVersion, true) }
 }
 
 def githubParentVersion = '1.21.1'
@@ -435,7 +409,7 @@ publishMods {
     displayName = "${mod_name} ${modVersion} for NeoForge ${minecraft_version}"
     type = ReleaseType.valueOf(publish_type.toUpperCase(Locale.ROOT))
     modLoaders.add('neoforge')
-    changelog = providers.provider { changelogFor(modVersion) }
+    changelog = providers.provider { changelogFor(modVersion, releasing) }
 
     github {
         accessToken = providers.environmentVariable('GITHUB_TOKEN')

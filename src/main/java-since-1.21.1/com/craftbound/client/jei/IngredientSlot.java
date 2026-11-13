@@ -9,7 +9,6 @@ import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.world.level.material.Fluid;
 
-// The slot as JEI asked for it before it moved to displays.
 final class IngredientSlot extends IngredientSlotBase
 {
     IngredientSlot(IIngredientManager manager, IPlatformFluidHelper<?> fluids)

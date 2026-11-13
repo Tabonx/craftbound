@@ -10,9 +10,6 @@ import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 
-// Pure progression logic: what the player has ever obtained decides what the book shows. Kept free
-// of Minecraft singletons and of JEI so it can be unit-tested without launching the game.
-//
 // Unlock state is derived, never stored: the obtained set only ever grows, so anything unlocked
 // stays unlocked without a second thing to persist and keep in step.
 public final class Unlocks
@@ -28,7 +25,7 @@ public final class Unlocks
     }
 
     public static boolean recipeUnlocked(ProgressionRules rules, RecipeIndex index, RecipeNode node,
-            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+            Set<ResourceLocation> obtained, Set<UnlockKey> unlockedOutputs)
     {
         if (!rules.enabled())
             return true;
@@ -39,7 +36,7 @@ public final class Unlocks
     // A recipe with no judgeable slots is always satisfied: there is nothing to hold it back, and
     // refusing to show it would strand recipes whose inputs we cannot read.
     public static boolean inputsSatisfied(ProgressionRules rules, List<InputSlot> inputSlots,
-            Set<ResourceLocation> obtained, Set<String> unlockedOutputs, Set<String> producedKeys)
+            Set<ResourceLocation> obtained, Set<UnlockKey> unlockedOutputs, Set<UnlockKey> producedKeys)
     {
         boolean anySatisfied = false;
         boolean anyJudgeable = false;
@@ -58,7 +55,7 @@ public final class Unlocks
     }
 
     private static boolean satisfied(InputSlot slot, Set<ResourceLocation> obtained,
-            Set<String> unlockedOutputs)
+            Set<UnlockKey> unlockedOutputs)
     {
         return slot.items().stream().anyMatch(obtained::contains)
                 || slot.fluids().stream().anyMatch(unlockedOutputs::contains)
@@ -69,7 +66,7 @@ public final class Unlocks
     // satisfy the slot without turning an ungateable one (water) into a gate. A fluid nothing makes
     // and no bucket carries cannot be had at all, a Potion of Luck's for one, so its slot is judged
     // and never satisfied. Everything else is judged on its items.
-    private static boolean judgeable(InputSlot slot, Set<String> producedKeys)
+    private static boolean judgeable(InputSlot slot, Set<UnlockKey> producedKeys)
     {
         if (slot.fluids().isEmpty())
             return !slot.items().isEmpty() || !slot.variants().isEmpty();
@@ -83,7 +80,7 @@ public final class Unlocks
     //
     // Judged one recipe ahead, not to a fixpoint: a mark promises the next step, not the whole tree.
     public static Set<ResourceLocation> unlockingItems(ProgressionRules rules, RecipeIndex index,
-            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+            Set<ResourceLocation> obtained, Set<UnlockKey> unlockedOutputs)
     {
         if (!rules.enabled())
             return Set.of();
@@ -113,7 +110,7 @@ public final class Unlocks
     // A variant of a recipe the player can already see is no news either: once one chest boat is
     // open, the boats leading to the others are not worth marking.
     private static Set<String> unlockedGroups(ProgressionRules rules, RecipeIndex index,
-            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+            Set<ResourceLocation> obtained, Set<UnlockKey> unlockedOutputs)
     {
         Set<String> groups = new HashSet<>();
         index.nodes()
@@ -124,7 +121,7 @@ public final class Unlocks
     }
 
     // A locked recipe whose outputs are all reachable some other way adds nothing to the book.
-    private static boolean revealsSomething(RecipeNode node, Set<String> unlockedOutputs)
+    private static boolean revealsSomething(RecipeNode node, Set<UnlockKey> unlockedOutputs)
     {
         return node.outputKeys().stream().anyMatch(key -> !unlockedOutputs.contains(key));
     }
@@ -140,12 +137,12 @@ public final class Unlocks
 
     // What the unlocked recipes taking any of these inputs make. A locked recipe is left out even
     // when its output is reachable another way, since opening that output would not show it.
-    public static Set<String> outputsUsing(ProgressionRules rules, RecipeIndex index, Set<String> inputKeys,
-            Set<ResourceLocation> obtained, Set<String> unlockedOutputs)
+    public static Set<UnlockKey> outputsUsing(ProgressionRules rules, RecipeIndex index, Set<UnlockKey> inputKeys,
+            Set<ResourceLocation> obtained, Set<UnlockKey> unlockedOutputs)
     {
         Set<RecipeNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        Set<String> outputs = new HashSet<>();
-        for (String key : inputKeys)
+        Set<UnlockKey> outputs = new HashSet<>();
+        for (UnlockKey key : inputKeys)
             for (RecipeNode node : index.recipesUsing(key))
                 if (seen.add(node) && recipeUnlocked(rules, index, node, obtained, unlockedOutputs))
                     outputs.addAll(node.outputKeys());
@@ -157,7 +154,7 @@ public final class Unlocks
     // Grown to a fixpoint rather than decided in one pass, because unlocking a recipe can unlock
     // another: chocolate becomes reachable the moment sugar and cocoa are in hand, and the Bar of
     // Chocolate that needs it becomes reachable in the same breath.
-    public static Set<String> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
+    public static Set<UnlockKey> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
             Set<ResourceLocation> obtained)
     {
         return unlockedOutputs(rules, index, obtained, Set.of());
@@ -167,11 +164,11 @@ public final class Unlocks
     // holding a potion unlocks what it brews into, not the potion's own entry.
     //
     // What only unreadable recipes make starts out unlocked, see RecipeIndex.
-    public static Set<String> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
-            Set<ResourceLocation> obtained, Set<String> heldVariants)
+    public static Set<UnlockKey> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
+            Set<ResourceLocation> obtained, Set<UnlockKey> heldVariants)
     {
-        Set<String> unlocked = new HashSet<>(index.unjudgedOutputs());
-        Set<String> available = new HashSet<>(heldVariants);
+        Set<UnlockKey> unlocked = new HashSet<>(index.unjudgedOutputs());
+        Set<UnlockKey> available = new HashSet<>(heldVariants);
         available.addAll(index.unjudgedOutputs());
         List<RecipeNode> pending = new ArrayList<>(index.nodes().toList());
 
@@ -199,7 +196,7 @@ public final class Unlocks
     // held one. Holding it matters on its own because plenty of things no recipe produces, a Bell or
     // Create's creative-only blocks, can still be come by, and starting the game able to name them
     // gives away the whole catalogue.
-    public static boolean discovered(Set<String> unlockedOutputs, Set<ResourceLocation> obtained,
+    public static boolean discovered(Set<UnlockKey> unlockedOutputs, Set<ResourceLocation> obtained,
             ResourceLocation itemId)
     {
         return obtained.contains(itemId) || unlockedOutputs.contains(UnlockKey.ofItem(itemId));

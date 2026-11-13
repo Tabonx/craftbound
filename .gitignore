@@ -21,10 +21,8 @@ build
 eclipse
 run
 runs
-run-data
 logs
 
-repo
 # macOS
 .DS_Store
 

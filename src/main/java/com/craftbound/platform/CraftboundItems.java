@@ -1,0 +1,31 @@
+package com.craftbound.platform;
+
+import com.craftbound.Craftbound;
+import com.craftbound.upgrade.BookbindersLensItem;
+
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+// The mod's items. Only the book upgrade so far, which is why it sits beside the tools and
+// utilities the player already carries rather than in a tab of its own.
+public final class CraftboundItems
+{
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Craftbound.MODID);
+
+    // Registered through registerItem so the properties are handed over already carrying the item's
+    // own id, which newer versions require before an item may be built.
+    public static final DeferredItem<Item> BOOKBINDERS_LENS = ITEMS.registerItem("bookbinders_lens",
+            props -> new BookbindersLensItem(props.stacksTo(1).rarity(Rarity.UNCOMMON)));
+
+    public static void addToCreativeTabs(final BuildCreativeModeTabContentsEvent event)
+    {
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES)
+            event.accept(BOOKBINDERS_LENS);
+    }
+
+    private CraftboundItems() {}
+}

@@ -11,9 +11,8 @@ import com.craftbound.client.create.PonderVisibility;
 import net.createmod.ponder.foundation.PonderTooltipHandler;
 import net.minecraft.world.item.ItemStack;
 
-// Ponder's hold-to-ponder shortcut latches onto whatever stack a tooltip is being built for, which
-// includes the book's own entries. Entries the player has never held drop the shortcut: no progress
-// bar in the tooltip and no scene, since the tracked stack is cleared along with it.
+// Ponder's hold-to-ponder shortcut latches onto any stack a tooltip is built for, including the
+// book's entries. Clearing the tracked stack drops both the progress bar and the scene.
 @Mixin(PonderTooltipHandler.class)
 public class PonderTooltipHandlerMixin
 {

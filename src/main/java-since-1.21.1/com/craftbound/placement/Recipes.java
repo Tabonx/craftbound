@@ -12,8 +12,7 @@ import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// Recipes as this generation keeps them: on both sides, named by a plain id, and placed by the menu
-// only when the player's recipe book holds them.
+// The menu places a recipe only when the player's recipe book holds it.
 public final class Recipes
 {
     public static ResourceLocation id(RecipeHolder<?> recipe)

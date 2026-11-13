@@ -18,11 +18,8 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-// The recipes the book shows for an ingredient, as far as the gate lets it see them.
 public final class BookRecipes
 {
-    // Recipes involving the ingredient in the given role, grouped by category so each becomes a tab
-    // on the book's left rail. OUTPUT answers "how is this made?"; INPUT answers "where is it used?".
     public static List<RecipeGroup> groupsFor(BookIngredient ingredient, RecipeIngredientRole role, RecipeGate gate)
     {
         return JeiSession.runtime().map(runtime -> groupsFor(runtime, ingredient, role, gate)).orElse(List.of());
@@ -50,8 +47,7 @@ public final class BookRecipes
         return result;
     }
 
-    // Every recipe in a category, built lazily: right-clicking a tab browses the whole category
-    // (thousands of entries for crafting), so drawables are only created for the one being viewed.
+    // Lazy: a whole category can hold thousands of recipes, so only the one viewed is laid out.
     public static List<Supplier<IRecipeLayoutDrawable<?>>> allIn(RecipeGroup group, RecipeGate gate)
     {
         return JeiSession.runtime().map(runtime -> recipeSuppliers(runtime, group.category(), gate)).orElse(List.of());
@@ -69,8 +65,7 @@ public final class BookRecipes
                 .toList();
     }
 
-    // Prefer the category's own tab icon; fall back to its first catalyst (the workstation block,
-    // e.g. a furnace or a Create machine), matching how JEI itself icons a category.
+    // Falls back to the first catalyst, as JEI does.
     private static RecipeGroup.Icon iconFor(IRecipeManager recipes, IIngredientManager manager,
             IRecipeCategory<?> category)
     {
@@ -92,7 +87,6 @@ public final class BookRecipes
         return (graphics, x, y) -> renderer.render(graphics, ingredient, x, y);
     }
 
-    // The non-tag recipe categories matching the given focus (by role and ingredient).
     private static Stream<IRecipeCategory<?>> categoriesFor(IRecipeManager recipes, List<IFocus<?>> focuses)
     {
         return recipes.createRecipeCategoryLookup()

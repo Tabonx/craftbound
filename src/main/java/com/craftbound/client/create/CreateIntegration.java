@@ -3,10 +3,10 @@ package com.craftbound.client.create;
 import java.util.List;
 import java.util.Optional;
 
-import com.craftbound.client.BookIntegration;
-import com.craftbound.client.IntegrationGuard;
-import com.craftbound.client.MenuBinding;
-import com.craftbound.client.RecipePlacer;
+import com.craftbound.client.integration.BookIntegration;
+import com.craftbound.client.integration.IntegrationGuard;
+import com.craftbound.client.integration.MenuBinding;
+import com.craftbound.client.placement.RecipePlacer;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.create.HeatRequirement;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
@@ -15,8 +15,6 @@ import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// Everything the book knows about Create beyond what Create tells JEI: the heat a basin recipe needs,
-// and the stock keeper's order and stock.
 public final class CreateIntegration implements BookIntegration
 {
     private final IntegrationGuard guard;

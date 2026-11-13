@@ -3,8 +3,8 @@ package com.craftbound.client.progression;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.craftbound.client.Canvas;
-import com.craftbound.client.VersionedToast;
+import com.craftbound.client.compat.Canvas;
+import com.craftbound.client.compat.VersionedToast;
 import com.craftbound.client.jei.BookIngredient;
 
 import net.minecraft.client.gui.Font;
@@ -16,11 +16,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-// Vanilla's recipe toast, backed by book ingredients instead of RecipeHolders: the book unlocks
-// recipes that came from JEI categories, which have no RecipeHolder to hand to net.minecraft's
-// RecipeToast. Same sprite, same strings and the same cycling layout, so it reads as the popup
-// players know, and each result is drawn with the renderer the book itself uses, so a fluid looks
-// the same in both places.
+// Vanilla's recipe toast, rebuilt because JEI category recipes have no RecipeHolder to hand to
+// RecipeToast.
 public final class RecipeUnlockToast extends VersionedToast
 {
     private static final ResourceLocation BACKGROUND_SPRITE = ResourceLocation.withDefaultNamespace("toast/recipe");
@@ -30,8 +27,7 @@ public final class RecipeUnlockToast extends VersionedToast
     private static final int TITLE_COLOR = -11534256;
     private static final int DESCRIPTION_COLOR = -16777216;
 
-    // Unlocking a whole branch at once can produce hundreds of results; past a handful the cycle is
-    // a flicker rather than information, so the toast only ever shows the first few.
+    // A whole branch can unlock at once; past a handful the cycle is a flicker.
     private static final int MAX_ICONS = 8;
 
     private final List<BookIngredient> results = new ArrayList<>();
@@ -45,9 +41,7 @@ public final class RecipeUnlockToast extends VersionedToast
         changed = true;
     }
 
-    // Icons may be empty: an unlock whose only output has nothing drawable (a fluid with no bucket)
-    // still deserves to be announced, so the toast falls back to its text alone rather than being
-    // dropped.
+    // Results may be empty, for an unlock with nothing drawable; the toast then shows text alone.
     public static void addOrUpdate(ToastComponent toasts, List<BookIngredient> results)
     {
         RecipeUnlockToast existing = toasts.getToast(RecipeUnlockToast.class, NO_TOKEN);
@@ -95,7 +89,6 @@ public final class RecipeUnlockToast extends VersionedToast
         graphics.renderFakeItem(new ItemStack(Items.CRAFTING_TABLE), 3, 3);
         Canvas.pop(graphics);
 
-        // Drawn through JEI's own renderer, so a fluid shows here exactly as it does in the book.
         if (!results.isEmpty())
             results.get(cycleIndex(fullyVisibleForMs)).render(graphics, 8, 8);
     }

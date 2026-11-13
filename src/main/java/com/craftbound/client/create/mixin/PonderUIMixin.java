@@ -13,10 +13,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-// Identify mode names whatever block the cursor is over inside a scene, which hands the player the
-// name of every part in a contraption they have not reached yet. Undiscovered blocks answer with
-// "???" instead; the scene still plays, so what the machine *does* is never hidden, only what the
-// pieces are called.
+// Identify mode would name every part of a contraption the player has not reached yet, so
+// undiscovered blocks answer with "???". The scene itself still plays.
 @Mixin(PonderUI.class)
 public class PonderUIMixin
 {

@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.craftbound.client.screen.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "RecipeBookComponentMixin",
+    "RecipeToastMixin",
+    "ContainerScreenAccessor",
+    "ContainerScreenLayoutMixin",
+    "ImageButtonAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

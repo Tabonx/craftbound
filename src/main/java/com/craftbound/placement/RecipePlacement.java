@@ -1,6 +1,6 @@
 package com.craftbound.placement;
 
-import com.craftbound.PlayerItems;
+import com.craftbound.obtained.PlayerItems;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.StackedContents;

@@ -8,9 +8,8 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-// The runtime JEI has handed over, while it has one. JEI hands it over on every reload and takes it
-// back before rebuilding, so every start and stop opens a new generation, and whatever was built
-// from the runtime holds for one generation only.
+// JEI hands its runtime over on every reload and takes it back before rebuilding, so whatever was
+// built from the runtime holds for one generation only.
 public final class JeiSession
 {
     private static IJeiRuntime runtime;

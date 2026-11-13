@@ -1,5 +1,6 @@
 package com.craftbound.progression;
 
+import static com.craftbound.progression.Keys.key;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,7 +77,6 @@ class UnlocksTest
         assertTrue(satisfied(STRICT, List.of(), Set.of()));
     }
 
-    // Water is in no recipe's output, so gating on it would be a gate that never opens.
     @Test
     void aFluidNothingProducesIsNotAGate()
     {
@@ -85,12 +85,10 @@ class UnlocksTest
         assertTrue(Unlocks.inputsSatisfied(STRICT, waterSlot, Set.of(), Set.of(), Set.of()));
     }
 
-    // A Potion of Luck's fluid: no recipe makes it and no bucket carries it, so nothing filled from
-    // it can ever be made.
     @Test
     void aFluidNothingMakesOrCarriesIsAGateThatNeverOpens()
     {
-        List<InputSlot> luck = List.of(new InputSlot(Set.of(), Set.of("fluid|create:potion|luck")),
+        List<InputSlot> luck = List.of(new InputSlot(Set.of(), Set.of(key("fluid|create:potion|luck"))),
                 items("minecraft:glass_bottle"));
 
         assertFalse(Unlocks.inputsSatisfied(STRICT, luck, obtained("minecraft:glass_bottle"), Set.of(), Set.of()));
@@ -101,39 +99,38 @@ class UnlocksTest
     @Test
     void aVariantSlotWantsThatVariant()
     {
-        List<InputSlot> strength = List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:potion|strength")));
+        List<InputSlot> strength = List.of(new InputSlot(Set.of(), Set.of(), Set.of(key("item|minecraft:potion|strength"))));
 
         assertFalse(Unlocks.inputsSatisfied(STRICT, strength, obtained("minecraft:potion"),
-                Set.of("item|minecraft:potion|water"), Set.of()));
+                Set.of(key("item|minecraft:potion|water")), Set.of()));
         assertTrue(Unlocks.inputsSatisfied(STRICT, strength, Set.of(),
-                Set.of("item|minecraft:potion|strength"), Set.of()));
+                Set.of(key("item|minecraft:potion|strength")), Set.of()));
     }
 
-    // Holding a potion opens what brews from it, but gives the potion no entry of its own.
     @Test
     void aHeldVariantCountsAsAnInputButNotAsAnOutput()
     {
         RecipeIndex index = RecipeIndex.of(
                 Map.of(CRAFTING, Map.of("arrow", new RecipeNode(CRAFTING,
-                        List.of(new InputSlot(Set.of(), Set.of(), Set.of("item|minecraft:lingering_potion|strength"))),
-                        Set.of("item|minecraft:tipped_arrow|strength")))),
+                        List.of(new InputSlot(Set.of(), Set.of(), Set.of(key("item|minecraft:lingering_potion|strength")))),
+                        Set.of(key("item|minecraft:tipped_arrow|strength"))))),
                 Map.of());
 
-        Set<String> unlocked = Unlocks.unlockedOutputs(STRICT, index, Set.of(),
-                Set.of("item|minecraft:lingering_potion|strength"));
+        Set<UnlockKey> unlocked = Unlocks.unlockedOutputs(STRICT, index, Set.of(),
+                Set.of(key("item|minecraft:lingering_potion|strength")));
 
-        assertEquals(Set.of("item|minecraft:tipped_arrow|strength"), unlocked);
+        assertEquals(Set.of(key("item|minecraft:tipped_arrow|strength")), unlocked);
     }
 
     @Test
     void aProducedFluidGatesUntilItIsUnlocked()
     {
         List<InputSlot> chocolate = List.of(fluidSlot("create:chocolate", "create:chocolate_bucket"));
-        Set<String> produced = Set.of("fluid|create:chocolate");
+        Set<UnlockKey> produced = Set.of(key("fluid|create:chocolate"));
 
         assertFalse(Unlocks.inputsSatisfied(STRICT, chocolate, Set.of(), Set.of(), produced));
         assertTrue(Unlocks.inputsSatisfied(STRICT, chocolate, Set.of(),
-                Set.of("fluid|create:chocolate"), produced));
+                Set.of(key("fluid|create:chocolate")), produced));
     }
 
     @Test
@@ -142,7 +139,7 @@ class UnlocksTest
         List<InputSlot> chocolate = List.of(fluidSlot("create:chocolate", "create:chocolate_bucket"));
 
         assertTrue(Unlocks.inputsSatisfied(STRICT, chocolate, obtained("create:chocolate_bucket"),
-                Set.of(), Set.of("fluid|create:chocolate")));
+                Set.of(), Set.of(key("fluid|create:chocolate"))));
     }
 
     @Test
@@ -172,9 +169,9 @@ class UnlocksTest
         RecipeIndex index = index();
 
         assertTrue(Unlocks.recipeUnlocked(ProgressionRules.OPEN, index,
-                node(MIXING, List.of(items("create:brass_ingot")), "item|create:brass_sheet"),
+                node(MIXING, List.of(items("create:brass_ingot")), key("item|create:brass_sheet")),
                 Set.of(), Set.of()));
-        assertEquals(Set.of("item|minecraft:oak_planks", "item|minecraft:stick", "item|create:brass_sheet"),
+        assertEquals(Set.of(key("item|minecraft:oak_planks"), key("item|minecraft:stick"), key("item|create:brass_sheet")),
                 Unlocks.unlockedOutputs(ProgressionRules.OPEN, index, Set.of()));
     }
 
@@ -184,9 +181,9 @@ class UnlocksTest
         RecipeIndex index = index();
 
         assertEquals(Set.of(), Unlocks.unlockedOutputs(STRICT, index, Set.of()));
-        assertEquals(Set.of("item|minecraft:oak_planks"),
+        assertEquals(Set.of(key("item|minecraft:oak_planks")),
                 Unlocks.unlockedOutputs(STRICT, index, obtained("minecraft:oak_log")));
-        assertEquals(Set.of("item|minecraft:oak_planks", "item|minecraft:stick"),
+        assertEquals(Set.of(key("item|minecraft:oak_planks"), key("item|minecraft:stick")),
                 Unlocks.unlockedOutputs(STRICT, index, obtained("minecraft:oak_log", "minecraft:oak_planks")));
     }
 
@@ -198,16 +195,15 @@ class UnlocksTest
                 "create:brass_ingot");
 
         assertFalse(Unlocks.unlockedOutputs(STRICT, index, hasIngredientsOnly)
-                .contains("item|create:brass_sheet"));
+                .contains(key("item|create:brass_sheet")));
 
         Set<ResourceLocation> hasMixer = obtained("minecraft:oak_log", "minecraft:oak_planks",
                 "create:brass_ingot", "create:mechanical_mixer");
-        assertTrue(Unlocks.unlockedOutputs(STRICT, index, hasMixer).contains("item|create:brass_sheet"));
+        assertTrue(Unlocks.unlockedOutputs(STRICT, index, hasMixer).contains(key("item|create:brass_sheet")));
     }
 
-    // The same recipe object is listed by several categories: Create re-lists ordinary shaped
-    // recipes under its own mechanical-crafter category. Being locked there must not hide it from
-    // the crafting table, which is what a single recipe-keyed map did.
+    // Create re-lists ordinary shaped recipes under its own mechanical-crafter category, so the
+    // same recipe object belongs to two categories.
     @Test
     void aRecipeListedByTwoCategoriesUnlocksThroughTheOpenOne()
     {
@@ -215,12 +211,12 @@ class UnlocksTest
         RecipeIndex index = RecipeIndex.of(
                 Map.of(
                         CRAFTING, Map.of(shared, node(CRAFTING, List.of(items("minecraft:oak_log")),
-                                "item|minecraft:oak_planks")),
+                                key("item|minecraft:oak_planks"))),
                         AUTOMATIC, Map.of(shared, node(AUTOMATIC, List.of(items("minecraft:oak_log")),
-                                "item|minecraft:oak_planks"))),
+                                key("item|minecraft:oak_planks")))),
                 Map.of(AUTOMATIC, Set.of(rl("create:mechanical_crafter"))));
 
-        assertEquals(Set.of("item|minecraft:oak_planks"),
+        assertEquals(Set.of(key("item|minecraft:oak_planks")),
                 Unlocks.unlockedOutputs(STRICT, index, obtained("minecraft:oak_log")));
         assertTrue(Unlocks.recipeUnlocked(STRICT, index, index.node(CRAFTING, shared),
                 obtained("minecraft:oak_log"), Set.of()));
@@ -243,7 +239,6 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, hasLog, Unlocks.unlockedOutputs(STRICT, index, hasLog)));
     }
 
-    // A machine is worth marking too: obtaining it is what opens its category.
     @Test
     void aCatalystIsMarkedWhenItIsTheMissingPiece()
     {
@@ -262,7 +257,7 @@ class UnlocksTest
         RecipeIndex index = RecipeIndex.of(
                 Map.of(CRAFTING, Map.of("stick", node(CRAFTING,
                         List.of(items("minecraft:oak_planks", "minecraft:birch_planks")),
-                        "item|minecraft:stick"))),
+                        key("item|minecraft:stick")))),
                 Map.of());
 
         assertEquals(obtained("minecraft:oak_planks", "minecraft:birch_planks"),
@@ -273,13 +268,12 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, hasOak, Unlocks.unlockedOutputs(STRICT, index, hasOak)));
     }
 
-    // Under ALL_INPUTS a single item is only worth marking once it is the last one missing.
     @Test
     void allInputs_marksOnlyTheFinalMissingInput()
     {
         RecipeIndex index = RecipeIndex.of(
                 Map.of(CRAFTING, Map.of("torch", node(CRAFTING,
-                        List.of(items("minecraft:stick"), items("minecraft:coal")), "item|minecraft:torch"))),
+                        List.of(items("minecraft:stick"), items("minecraft:coal")), key("item|minecraft:torch")))),
                 Map.of());
 
         assertEquals(Set.of(), Unlocks.unlockingItems(STRICT, index, Set.of(), Set.of()));
@@ -287,14 +281,13 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, obtained("minecraft:stick"), Set.of()));
     }
 
-    // An output already reachable another way is nothing new, so nothing points at it.
     @Test
     void anAlreadyUnlockedOutputIsNotWorthMarking()
     {
         RecipeIndex index = RecipeIndex.of(
                 Map.of(CRAFTING, Map.of(
-                        "torch", node(CRAFTING, List.of(items("minecraft:coal")), "item|minecraft:torch"),
-                        "torch_alt", node(CRAFTING, List.of(items("minecraft:charcoal")), "item|minecraft:torch"))),
+                        "torch", node(CRAFTING, List.of(items("minecraft:coal")), key("item|minecraft:torch")),
+                        "torch_alt", node(CRAFTING, List.of(items("minecraft:charcoal")), key("item|minecraft:torch")))),
                 Map.of());
 
         Set<ResourceLocation> hasCoal = obtained("minecraft:coal");
@@ -329,7 +322,7 @@ class UnlocksTest
         ResourceLocation planks = rl("minecraft:oak_planks");
 
         assertFalse(Unlocks.discovered(Set.of(), Set.of(), planks));
-        assertTrue(Unlocks.discovered(Set.of("item|minecraft:oak_planks"), Set.of(), planks));
+        assertTrue(Unlocks.discovered(Set.of(key("item|minecraft:oak_planks")), Set.of(), planks));
         assertTrue(Unlocks.discovered(Set.of(), Set.of(planks), planks));
     }
 
@@ -344,17 +337,15 @@ class UnlocksTest
         assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
     }
 
-    // Every boat opens its own chest boat, but once one chest boat is in the book the others are
-    // variants of it, not news.
     @Test
     void anItemOpeningOnlyAVariantOfAnOpenRecipeIsNotMarked()
     {
         RecipeIndex index = RecipeIndex.of(
                 Map.of(CRAFTING, Map.of(
                         "oak", new RecipeNode(CRAFTING, List.of(items("minecraft:oak_boat"), items("minecraft:chest")),
-                                Set.of("item|minecraft:oak_chest_boat"), "chest_boat"),
+                                Set.of(key("item|minecraft:oak_chest_boat")), "chest_boat"),
                         "birch", new RecipeNode(CRAFTING, List.of(items("minecraft:birch_boat"), items("minecraft:chest")),
-                                Set.of("item|minecraft:birch_chest_boat"), "chest_boat"))),
+                                Set.of(key("item|minecraft:birch_chest_boat")), "chest_boat"))),
                 Map.of());
 
         Set<ResourceLocation> hasChest = obtained("minecraft:chest");
@@ -371,19 +362,19 @@ class UnlocksTest
     {
         Set<ResourceLocation> hasLog = obtained("minecraft:oak_log");
 
-        assertEquals(Set.of("item|minecraft:oak_planks"), Unlocks.outputsUsing(STRICT, index(),
-                Set.of("item|minecraft:oak_log"), hasLog, Unlocks.unlockedOutputs(STRICT, index(), hasLog)));
+        assertEquals(Set.of(key("item|minecraft:oak_planks")), Unlocks.outputsUsing(STRICT, index(),
+                Set.of(key("item|minecraft:oak_log")), hasLog, Unlocks.unlockedOutputs(STRICT, index(), hasLog)));
     }
 
     // Brass sheets need the mixer, so searching brass must not reveal them before the player has one.
     @Test
     void outputsUsing_leavesOutLockedRecipes()
     {
-        Set<String> brass = Set.of("item|create:brass_ingot");
+        Set<UnlockKey> brass = Set.of(key("item|create:brass_ingot"));
         Set<ResourceLocation> hasBrass = obtained("create:brass_ingot");
 
         assertEquals(Set.of(), Unlocks.outputsUsing(STRICT, index(), brass, hasBrass, Set.of()));
-        assertEquals(Set.of("item|create:brass_sheet"),
+        assertEquals(Set.of(key("item|create:brass_sheet")),
                 Unlocks.outputsUsing(ProgressionRules.OPEN, index(), brass, Set.of(), Set.of()));
     }
 
@@ -393,22 +384,20 @@ class UnlocksTest
         RecipeIndex index = RecipeIndex.of(
                 Map.of(MIXING, Map.of("chocolate", node(MIXING,
                         List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")),
-                        "item|create:bar_of_chocolate"))),
+                        key("item|create:bar_of_chocolate")))),
                 Map.of());
 
-        assertEquals(Set.of("item|create:bar_of_chocolate"), Unlocks.outputsUsing(ProgressionRules.OPEN,
-                index, Set.of("fluid|create:chocolate"), Set.of(), Set.of()));
+        assertEquals(Set.of(key("item|create:bar_of_chocolate")), Unlocks.outputsUsing(ProgressionRules.OPEN,
+                index, Set.of(key("fluid|create:chocolate")), Set.of(), Set.of()));
     }
 
-    // A recipe the index could not read cannot be judged, so what it makes must not be hidden: an
-    // item whose only recipe that is would otherwise never appear.
     @Test
     void whatAnUnreadRecipeMakesIsUnlocked()
     {
-        RecipeIndex index = RecipeIndex.of(Map.of(), Map.of(), Set.of("item|create:brass_sheet"));
+        RecipeIndex index = RecipeIndex.of(Map.of(), Map.of(), Set.of(key("item|create:brass_sheet")));
 
-        assertTrue(index.makes("item|create:brass_sheet"));
-        assertEquals(Set.of("item|create:brass_sheet"), Unlocks.unlockedOutputs(STRICT, index, Set.of()));
+        assertTrue(index.makes(key("item|create:brass_sheet")));
+        assertEquals(Set.of(key("item|create:brass_sheet")), Unlocks.unlockedOutputs(STRICT, index, Set.of()));
     }
 
     @Test
@@ -416,11 +405,11 @@ class UnlocksTest
     {
         RecipeIndex index = RecipeIndex.of(
                 Map.of(MIXING, Map.of("bar", node(MIXING,
-                        List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")), "item|create:bar_of_chocolate"))),
+                        List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")), key("item|create:bar_of_chocolate")))),
                 Map.of(),
-                Set.of("fluid|create:chocolate"));
+                Set.of(key("fluid|create:chocolate")));
 
-        assertTrue(Unlocks.unlockedOutputs(STRICT, index, Set.of()).contains("item|create:bar_of_chocolate"));
+        assertTrue(Unlocks.unlockedOutputs(STRICT, index, Set.of()).contains(key("item|create:bar_of_chocolate")));
     }
 
     @Test
@@ -428,16 +417,16 @@ class UnlocksTest
     {
         RecipeIndex index = index();
 
-        assertTrue(index.makes("item|minecraft:stick"));
-        assertFalse(index.makes("item|minecraft:oak_log"));
+        assertTrue(index.makes(key("item|minecraft:stick")));
+        assertFalse(index.makes(key("item|minecraft:oak_log")));
     }
 
     private static InputSlot fluidSlot(String fluidId, String bucketId)
     {
-        return new InputSlot(Set.of(rl(bucketId)), Set.of("fluid|" + fluidId));
+        return new InputSlot(Set.of(rl(bucketId)), Set.of(UnlockKey.ofFluid(rl(fluidId), "")));
     }
 
-    private static RecipeNode node(String category, List<InputSlot> inputs, String output)
+    private static RecipeNode node(String category, List<InputSlot> inputs, UnlockKey output)
     {
         return new RecipeNode(category, inputs, Set.of(output));
     }
@@ -448,12 +437,12 @@ class UnlocksTest
                 Map.of(
                         CRAFTING, Map.of(
                                 "planks", node(CRAFTING, List.of(items("minecraft:oak_log")),
-                                        "item|minecraft:oak_planks"),
+                                        key("item|minecraft:oak_planks")),
                                 "stick", node(CRAFTING, List.of(items("minecraft:oak_planks")),
-                                        "item|minecraft:stick")),
+                                        key("item|minecraft:stick"))),
                         MIXING, Map.of(
                                 "brass_sheet", node(MIXING, List.of(items("create:brass_ingot")),
-                                        "item|create:brass_sheet"))),
+                                        key("item|create:brass_sheet")))),
                 Map.of(
                         CRAFTING, Set.of(rl("minecraft:crafting_table")),
                         MIXING, Set.of(rl("create:mechanical_mixer"))));

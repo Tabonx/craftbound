@@ -17,15 +17,8 @@ import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.world.level.material.Fluid;
 
-// One slot of a recipe, keeping only what went into it. A category lays its recipe out by calling
-// these setters; everything about where and how the slot would be drawn is dropped on the floor,
-// since the index only ever asks what the slot accepts.
-//
-// Ingredients go through createTypedIngredient, which is also what drops the invalid ones, so a
-// category that offers an unregistered item contributes nothing rather than a broken entry.
-//
-// Everything JEI has asked of a slot on every version lives here. What only some versions ask for is
-// on IngredientSlot, which each generation supplies its own.
+// Keeps only what a slot accepts; layout and drawing calls are ignored. What only some JEI versions
+// ask of a slot is on IngredientSlot, which each generation supplies its own.
 abstract class IngredientSlotBase implements IRecipeSlotBuilder
 {
     private static final int SLOT_SIZE = 16;
@@ -62,9 +55,8 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    // Re-created through the manager rather than taken as given, the same way JEI does it: a
-    // category is free to hand over an ingredient that is no longer valid, and one of those in an
-    // input slot is a requirement nothing can satisfy.
+    // Re-created through the manager as JEI does: an invalid ingredient in an input slot would be a
+    // requirement nothing can satisfy.
     @Override
     public IRecipeSlotBuilder addTypedIngredients(List<ITypedIngredient<?>> ingredients)
     {

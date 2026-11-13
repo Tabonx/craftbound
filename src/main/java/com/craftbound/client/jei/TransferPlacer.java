@@ -2,7 +2,7 @@ package com.craftbound.client.jei;
 
 import java.util.List;
 
-import com.craftbound.client.RecipePlacer;
+import com.craftbound.client.placement.RecipePlacer;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
@@ -13,16 +13,14 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
-// Places through the transfer handler a mod gave JEI for its screen, as JEI's own "+" button does:
-// Create's stock keeper adds the recipe to its order, a storage terminal fills its grid.
+// Places through the transfer handler a mod gave JEI for its screen, as JEI's own "+" button does.
 public final class TransferPlacer implements RecipePlacer
 {
     private static final IRecipeTransferError NO_HANDLER = () -> IRecipeTransferError.Type.INTERNAL;
 
     private final AbstractContainerMenu menu;
 
-    // The book asks every frame, and a handler may count a whole storage network to answer, so
-    // the answer is kept for the rest of the tick.
+    // A handler may count a whole storage network to answer, so the answer is kept for the tick.
     private IRecipeLayoutDrawable<?> checked;
     private int checkedTick;
     private IRecipeTransferError checkedError;
@@ -54,7 +52,6 @@ public final class TransferPlacer implements RecipePlacer
         checked = null;
     }
 
-    // The handler's own words, such as Create's "not in stock" or "already ordering this recipe".
     @Override
     public List<Component> refusal(IRecipeLayoutDrawable<?> layout)
     {
@@ -62,7 +59,6 @@ public final class TransferPlacer implements RecipePlacer
         return error == null ? List.of() : TransferErrors.tooltip(error);
     }
 
-    // The handler knows what is short, Create counting the stock behind the keeper, and marks it.
     @Override
     public void showMissing(GuiGraphics graphics, IRecipeLayoutDrawable<?> layout, int mouseX, int mouseY)
     {
@@ -71,7 +67,6 @@ public final class TransferPlacer implements RecipePlacer
             error.showError(graphics, mouseX, mouseY, layout.getRecipeSlotsView(), 0, 0);
     }
 
-    // The first tab with a recipe the screen takes, so a brewing stand opens on brewing.
     @Override
     public int menuGroup(List<RecipeGroup> groups)
     {
