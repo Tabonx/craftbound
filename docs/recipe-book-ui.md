@@ -171,7 +171,7 @@ makeable the moment its ingredients were in hand. `progression/create/HeatRequir
 condition into **extra input slots** (heated → Blaze Burner; superheated → Blaze Burner *and* Blaze
 Cake, as two slots, since a burner alone only reaches "heated"), which is exactly what a heat source
 is: another thing you must have obtained. `Unlocks` stays free of any Create knowledge: the index
-builder asks `client/Integrations` for each recipe's hidden requirements, and Create's answer comes
+builder asks `client/integration/Integrations` for each recipe's hidden requirements, and Create's answer comes
 from `client/create/CreateIntegration`.
 
 ### Companion catalysts
@@ -190,7 +190,7 @@ built on JEI's plugin system, not on Create. Everything that names a Create or P
 point for what a mod adds beyond what it tells JEI: requirements a recipe hides from its slots, and
 how to place recipes into and count stock from a screen the mod owns.
 
-- `client/Integrations` is the only place that asks whether a mod is loaded, and the one shared file
+- `client/integration/Integrations` is the only place that asks whether a mod is loaded, and the one shared file
   that names `CreateIntegration` and `PonderIntegration`, so their classes are never resolved
   without them.
 - Each integration has its own `IntegrationGuard` and wraps every call into the other mod's classes

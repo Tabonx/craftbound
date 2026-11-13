@@ -2,7 +2,7 @@ package com.craftbound.client.jei;
 
 import java.util.List;
 
-import com.craftbound.client.BookRail;
+import com.craftbound.client.book.BookRail;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.category.IRecipeCategory;

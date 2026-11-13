@@ -1,9 +1,9 @@
 package com.craftbound.upgrade;
 
 import com.craftbound.Craftbound;
-import com.craftbound.CraftboundAttachments;
-import com.craftbound.CraftboundItems;
-import com.craftbound.ServerLevels;
+import com.craftbound.platform.CraftboundAttachments;
+import com.craftbound.platform.CraftboundItems;
+import com.craftbound.platform.ServerLevels;
 import com.craftbound.upgrade.BookUpgrade.DeathOutcome;
 
 import net.minecraft.server.level.ServerPlayer;

@@ -2,7 +2,7 @@ package com.craftbound.client.jei;
 
 import java.util.List;
 
-import com.craftbound.client.RecipePlacer;
+import com.craftbound.client.placement.RecipePlacer;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;

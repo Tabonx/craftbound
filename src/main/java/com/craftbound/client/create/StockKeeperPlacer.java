@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.craftbound.client.IntegrationGuard;
-import com.craftbound.client.RecipePlacer;
+import com.craftbound.client.integration.IntegrationGuard;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.client.placement.RecipePlacer;
 import com.simibubi.create.content.logistics.stockTicker.CraftableBigItemStack;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen;

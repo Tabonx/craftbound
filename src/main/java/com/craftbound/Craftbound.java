@@ -1,5 +1,7 @@
 package com.craftbound;
 
+import com.craftbound.platform.CraftboundAttachments;
+import com.craftbound.platform.CraftboundItems;
 import com.craftbound.progression.ProgressionConfig;
 
 import net.neoforged.bus.api.IEventBus;

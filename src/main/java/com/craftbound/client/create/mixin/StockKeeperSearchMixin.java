@@ -6,9 +6,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.craftbound.client.BookScreens;
-import com.craftbound.client.Screens;
 import com.craftbound.client.jei.JeiSearch;
+import com.craftbound.client.screen.BookScreens;
+import com.craftbound.client.screen.Screens;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen;
 
 // Create's stock keeper takes JEI's search text only while JEI's own search field has focus, and

@@ -3,8 +3,8 @@ package com.craftbound.client.create;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import com.craftbound.client.BookTooltips;
-import com.craftbound.client.IntegrationGuard;
+import com.craftbound.client.book.BookTooltips;
+import com.craftbound.client.integration.IntegrationGuard;
 import com.craftbound.client.progression.Progression;
 
 import net.createmod.catnip.registry.RegisteredObjectsHelper;

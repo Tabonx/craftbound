@@ -3,10 +3,10 @@ package com.craftbound.client.create;
 import java.util.List;
 import java.util.Optional;
 
-import com.craftbound.client.BookIntegration;
-import com.craftbound.client.IntegrationGuard;
-import com.craftbound.client.MenuBinding;
-import com.craftbound.client.RecipePlacer;
+import com.craftbound.client.integration.BookIntegration;
+import com.craftbound.client.integration.IntegrationGuard;
+import com.craftbound.client.integration.MenuBinding;
+import com.craftbound.client.placement.RecipePlacer;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.create.HeatRequirement;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;

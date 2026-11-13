@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.craftbound.client.BookScreens;
+import com.craftbound.client.screen.BookScreens;
 
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 

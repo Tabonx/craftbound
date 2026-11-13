@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.craftbound.client.BookmarkKeys;
+import com.craftbound.client.bookmarks.BookmarkKeys;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DynamicOps;
 

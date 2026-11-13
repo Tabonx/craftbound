@@ -1,9 +1,9 @@
 package com.craftbound.upgrade;
 
 import com.craftbound.ClientHooks;
-import com.craftbound.CraftboundAttachments;
-import com.craftbound.PlayerState;
-import com.craftbound.ServerLevels;
+import com.craftbound.platform.CraftboundAttachments;
+import com.craftbound.platform.PlayerState;
+import com.craftbound.platform.ServerLevels;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;

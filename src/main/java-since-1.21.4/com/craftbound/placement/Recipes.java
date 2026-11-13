@@ -2,7 +2,7 @@ package com.craftbound.placement;
 
 import java.util.Optional;
 
-import com.craftbound.ServerLevels;
+import com.craftbound.platform.ServerLevels;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.Packet;

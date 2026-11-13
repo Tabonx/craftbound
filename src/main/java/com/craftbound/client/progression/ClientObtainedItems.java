@@ -5,12 +5,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.craftbound.ObtainedItems;
-import com.craftbound.PlayerItems;
 import com.craftbound.client.ServerSupport;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
 import com.craftbound.client.storage.WorldScopedStore;
+import com.craftbound.obtained.ObtainedItems;
+import com.craftbound.obtained.PlayerItems;
 import com.mojang.serialization.JsonOps;
 
 import net.minecraft.client.Minecraft;

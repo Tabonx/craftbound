@@ -3,8 +3,8 @@ package com.craftbound.client.progression;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.craftbound.client.Canvas;
-import com.craftbound.client.VersionedToast;
+import com.craftbound.client.compat.Canvas;
+import com.craftbound.client.compat.VersionedToast;
 import com.craftbound.client.jei.BookIngredient;
 
 import net.minecraft.client.gui.Font;

@@ -14,7 +14,7 @@ import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
-import com.craftbound.client.Integrations;
+import com.craftbound.client.integration.Integrations;
 import com.craftbound.progression.CatalystCompanions;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;

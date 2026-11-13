@@ -1,8 +1,8 @@
 package com.craftbound.upgrade;
 
-import com.craftbound.CraftboundAttachments;
-import com.craftbound.CraftboundItems;
-import com.craftbound.PlayerState;
+import com.craftbound.platform.CraftboundAttachments;
+import com.craftbound.platform.CraftboundItems;
+import com.craftbound.platform.PlayerState;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;

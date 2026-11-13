@@ -2,8 +2,8 @@ package com.craftbound.client.jei;
 
 import java.util.Optional;
 
-import com.craftbound.client.BookmarkEntry;
-import com.craftbound.client.BookmarkKeys;
+import com.craftbound.client.bookmarks.BookmarkEntry;
+import com.craftbound.client.bookmarks.BookmarkKeys;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DynamicOps;
 

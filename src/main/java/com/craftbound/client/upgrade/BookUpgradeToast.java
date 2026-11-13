@@ -1,8 +1,8 @@
 package com.craftbound.client.upgrade;
 
-import com.craftbound.CraftboundItems;
-import com.craftbound.client.Canvas;
-import com.craftbound.client.VersionedToast;
+import com.craftbound.client.compat.Canvas;
+import com.craftbound.client.compat.VersionedToast;
+import com.craftbound.platform.CraftboundItems;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

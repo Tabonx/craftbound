@@ -2,7 +2,9 @@ package com.craftbound.client;
 
 import java.util.function.Supplier;
 
-import com.craftbound.PlayerItems;
+import com.craftbound.client.book.BookCatalog;
+import com.craftbound.client.book.BookState;
+import com.craftbound.client.bookmarks.Bookmarks;
 import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.RecipeIndexBuilder;
 import com.craftbound.client.jei.RecipeIndexSnapshot;
@@ -13,6 +15,7 @@ import com.craftbound.client.progression.ProgressionToasts;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldScopedStore;
 import com.craftbound.client.upgrade.ClientBookUpgrade;
+import com.craftbound.obtained.PlayerItems;
 import com.craftbound.progression.ProgressionConfig;
 
 import net.minecraft.client.Minecraft;
@@ -71,23 +74,23 @@ public final class ClientSession
         return progression;
     }
 
-    BookCatalog bookCatalog()
+    public BookCatalog bookCatalog()
     {
         return bookCatalog;
     }
 
-    BookState bookState(Object screen)
+    public BookState bookState(Object screen)
     {
         return bookStates.of(screen);
     }
 
-    static void screenClosed(Object screen)
+    public static void screenClosed(Object screen)
     {
         if (current != null)
             current.bookStates.closed(screen);
     }
 
-    WorldScopedStore<Bookmarks> bookmarks()
+    public WorldScopedStore<Bookmarks> bookmarks()
     {
         return bookmarks.get();
     }

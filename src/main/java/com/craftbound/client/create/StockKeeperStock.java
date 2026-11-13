@@ -2,8 +2,8 @@ package com.craftbound.client.create;
 
 import java.util.Set;
 
-import com.craftbound.client.CraftableItems;
-import com.craftbound.client.IntegrationGuard;
+import com.craftbound.client.integration.IntegrationGuard;
+import com.craftbound.client.placement.CraftableItems;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;

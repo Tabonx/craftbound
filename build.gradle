@@ -169,7 +169,7 @@ tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
 def hasCreate = project.hasProperty('create_version')
 
 // Readable as `//? if create` in source, for the one place that names the Create integration from a
-// file that is otherwise shared: client/Integrations. The integration itself is excluded below.
+// file that is otherwise shared: client/integration/Integrations. The integration itself is excluded below.
 stonecutter.constants.put('create', hasCreate)
 
 // Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's

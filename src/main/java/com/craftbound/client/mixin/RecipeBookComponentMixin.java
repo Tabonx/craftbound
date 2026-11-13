@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.craftbound.client.BookScreens;
+import com.craftbound.client.screen.BookScreens;
 
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 
