@@ -2,13 +2,13 @@ package com.craftbound.client;
 
 import java.util.Set;
 
-import com.craftbound.ClientReceiver;
+import com.craftbound.ClientHooks;
 import com.craftbound.client.progression.ClientObtainedItems;
 import com.craftbound.client.upgrade.ClientBookUpgrade;
 
 import net.minecraft.resources.ResourceLocation;
 
-final class ClientPackets implements ClientReceiver
+final class ClientSideHooks implements ClientHooks
 {
     @Override
     public void obtainedItems(Set<ResourceLocation> items)
@@ -20,5 +20,11 @@ final class ClientPackets implements ClientReceiver
     public void bookUpgrade(boolean bound)
     {
         ClientBookUpgrade.accept(bound);
+    }
+
+    @Override
+    public boolean bookUpgraded()
+    {
+        return ClientBookUpgrade.bound();
     }
 }

@@ -1,7 +1,7 @@
 package com.craftbound.client;
 
 import com.craftbound.Craftbound;
-import com.craftbound.CraftboundNetwork;
+import com.craftbound.ClientHooks;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
@@ -12,7 +12,7 @@ public final class CraftboundClient
 {
     public CraftboundClient()
     {
-        CraftboundNetwork.receiveOnClient(new ClientPackets());
+        ClientHooks.install(new ClientSideHooks());
         Integrations.load();
     }
 }

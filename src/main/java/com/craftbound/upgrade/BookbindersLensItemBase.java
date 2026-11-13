@@ -1,5 +1,6 @@
 package com.craftbound.upgrade;
 
+import com.craftbound.ClientHooks;
 import com.craftbound.CraftboundAttachments;
 import com.craftbound.PlayerState;
 import com.craftbound.ServerLevels;
@@ -23,12 +24,12 @@ public abstract class BookbindersLensItemBase extends Item
         super(properties);
     }
 
-    // Whether the use went through. Only the server knows whether the book is already bound, so the
-    // client always goes ahead and announces the bind once the server reports it.
+    // Whether the use went through. The client answers from what the server last told it, and
+    // announces the bind once the server reports it.
     protected static boolean bind(Player player, ItemStack stack)
     {
         if (!(player instanceof ServerPlayer serverPlayer))
-            return true;
+            return !ClientHooks.get().bookUpgraded();
         if (serverPlayer.getData(CraftboundAttachments.BOOK_UPGRADED))
             return false;
 

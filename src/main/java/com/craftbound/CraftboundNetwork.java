@@ -13,13 +13,6 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 @EventBusSubscriber(modid = Craftbound.MODID)
 public final class CraftboundNetwork
 {
-    private static ClientReceiver client = ClientReceiver.NONE;
-
-    public static void receiveOnClient(ClientReceiver receiver)
-    {
-        client = receiver;
-    }
-
     @SubscribeEvent
     public static void onRegisterPayloads(final RegisterPayloadHandlersEvent event)
     {
@@ -30,9 +23,9 @@ public final class CraftboundNetwork
                 .playToServer(PlaceRecipePayload.TYPE, PlaceRecipePayload.STREAM_CODEC, PlaceRecipeHandler::handle)
                 .playToServer(UnbindLensPayload.TYPE, UnbindLensPayload.STREAM_CODEC, UnbindLensHandler::handle)
                 .playToClient(ObtainedItemsPayload.TYPE, ObtainedItemsPayload.STREAM_CODEC,
-                        (payload, context) -> client.obtainedItems(payload.items()))
+                        (payload, context) -> ClientHooks.get().obtainedItems(payload.items()))
                 .playToClient(BookUpgradePayload.TYPE, BookUpgradePayload.STREAM_CODEC,
-                        (payload, context) -> client.bookUpgrade(payload.bound()));
+                        (payload, context) -> ClientHooks.get().bookUpgrade(payload.bound()));
     }
 
     private CraftboundNetwork() {}
