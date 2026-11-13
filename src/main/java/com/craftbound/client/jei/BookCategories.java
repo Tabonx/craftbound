@@ -2,7 +2,11 @@ package com.craftbound.client.jei;
 
 import java.util.Set;
 
+import mezz.jei.api.constants.ModIds;
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+
+import net.minecraft.resources.ResourceLocation;
 
 // Which of JEI's categories the book is about.
 //
@@ -18,25 +22,32 @@ public final class BookCategories
 {
     private static final String TAG_RECIPE_PATH_PREFIX = "tag_recipes/";
 
-    // The categories vanilla's recipe book shows, the only ones whose recipe groups it reads.
-    private static final Set<String> VANILLA_BOOK = Set.of(
-            "minecraft:crafting", "minecraft:smelting", "minecraft:blasting", "minecraft:smoking");
-
     static boolean isBrowsable(IRecipeCategory<?> category)
     {
-        return isBrowsable(category.getRecipeType().getUid().getPath());
+        return isBrowsable(category.getRecipeType().getUid());
     }
 
-    public static boolean isBrowsable(String recipeTypePath)
+    public static boolean isBrowsable(ResourceLocation recipeTypeUid)
     {
-        return !recipeTypePath.startsWith(TAG_RECIPE_PATH_PREFIX);
+        return !(recipeTypeUid.getNamespace().equals(ModIds.JEI_ID)
+                && recipeTypeUid.getPath().startsWith(TAG_RECIPE_PATH_PREFIX));
     }
 
     // A recipe group means "variants of one recipe" only where vanilla's book reads it. Elsewhere a
     // mod may fill it with anything: Create gives every machine recipe the group "processing".
     public static boolean readsGroups(String categoryUid)
     {
-        return VANILLA_BOOK.contains(categoryUid);
+        return VanillaBook.UIDS.contains(categoryUid);
+    }
+
+    // The categories vanilla's recipe book shows, the only ones whose recipe groups it reads.
+    private static final class VanillaBook
+    {
+        private static final Set<String> UIDS = Set.of(
+                RecipeTypes.CRAFTING.getUid().toString(),
+                RecipeTypes.SMELTING.getUid().toString(),
+                RecipeTypes.BLASTING.getUid().toString(),
+                RecipeTypes.SMOKING.getUid().toString());
     }
 
     private BookCategories() {}
