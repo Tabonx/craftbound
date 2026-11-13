@@ -21,6 +21,13 @@ public final class BookUpgrade
         return keepInventory ? new DeathOutcome(true, false) : new DeathOutcome(false, true);
     }
 
+    // The client announces a bind when the server's answer turns from unbound to bound. The first
+    // answer after joining is only where the client starts from, so a book bound long ago stays quiet.
+    public static boolean announces(boolean synced, boolean wasBound, boolean bound)
+    {
+        return synced && !wasBound && bound;
+    }
+
     public record DeathOutcome(boolean keepBound, boolean dropLens) {}
 
     private BookUpgrade() {}

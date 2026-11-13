@@ -17,10 +17,8 @@ public class BookbindersLensItem extends BookbindersLensItemBase
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand)
     {
         ItemStack stack = player.getItemInHand(hand);
-        if (alreadyBound(player))
-            return InteractionResultHolder.pass(stack);
-
-        bind(level, player, stack);
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+        return bind(player, stack)
+                ? InteractionResultHolder.sidedSuccess(stack, level.isClientSide())
+                : InteractionResultHolder.pass(stack);
     }
 }

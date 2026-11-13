@@ -16,10 +16,14 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 public final class ClientBookUpgrade
 {
     private static boolean bound = false;
+    private static boolean synced = false;
 
     public static void accept(boolean value)
     {
+        if (BookUpgrade.announces(synced, bound, value))
+            BookUpgradeToast.show();
         bound = value;
+        synced = true;
     }
 
     // The next server says whether the book is upgraded there; until it does, it is not.
@@ -27,6 +31,7 @@ public final class ClientBookUpgrade
     public static void onLoggingOut(final ClientPlayerNetworkEvent.LoggingOut event)
     {
         bound = false;
+        synced = false;
     }
 
     public static boolean hintsUnlocked()

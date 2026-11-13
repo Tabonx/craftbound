@@ -47,4 +47,23 @@ class BookUpgradeTest
         assertEquals(new DeathOutcome(false, false), BookUpgrade.onDeath(false, false));
         assertEquals(new DeathOutcome(false, false), BookUpgrade.onDeath(false, true));
     }
+
+    @Test
+    void bindingAnnouncesItself()
+    {
+        assertTrue(BookUpgrade.announces(true, false, true));
+    }
+
+    @Test
+    void aBookBoundBeforeJoiningStaysQuiet()
+    {
+        assertFalse(BookUpgrade.announces(false, false, true));
+    }
+
+    @Test
+    void resendingOrUnbindingStaysQuiet()
+    {
+        assertFalse(BookUpgrade.announces(true, true, true));
+        assertFalse(BookUpgrade.announces(true, true, false));
+    }
 }

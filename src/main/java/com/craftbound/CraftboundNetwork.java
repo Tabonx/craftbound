@@ -1,7 +1,5 @@
 package com.craftbound;
 
-import com.craftbound.client.progression.ClientObtainedItems;
-import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.placement.PlaceRecipeHandler;
 import com.craftbound.placement.PlaceRecipePayload;
 import com.craftbound.upgrade.BookUpgradePayload;
@@ -11,11 +9,17 @@ import com.craftbound.upgrade.UnbindLensPayload;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 @EventBusSubscriber(modid = Craftbound.MODID)
 public final class CraftboundNetwork
 {
+    private static ClientReceiver client = ClientReceiver.NONE;
+
+    public static void receiveOnClient(ClientReceiver receiver)
+    {
+        client = receiver;
+    }
+
     @SubscribeEvent
     public static void onRegisterPayloads(final RegisterPayloadHandlersEvent event)
     {
@@ -26,21 +30,9 @@ public final class CraftboundNetwork
                 .playToServer(PlaceRecipePayload.TYPE, PlaceRecipePayload.STREAM_CODEC, PlaceRecipeHandler::handle)
                 .playToServer(UnbindLensPayload.TYPE, UnbindLensPayload.STREAM_CODEC, UnbindLensHandler::handle)
                 .playToClient(ObtainedItemsPayload.TYPE, ObtainedItemsPayload.STREAM_CODEC,
-                        CraftboundNetwork::receiveObtainedItems)
+                        (payload, context) -> client.obtainedItems(payload.items()))
                 .playToClient(BookUpgradePayload.TYPE, BookUpgradePayload.STREAM_CODEC,
-                        CraftboundNetwork::receiveBookUpgrade);
-    }
-
-    // The client classes are named inside a method rather than by the registration itself, so a
-    // dedicated server never loads them.
-    private static void receiveObtainedItems(ObtainedItemsPayload payload, IPayloadContext context)
-    {
-        ClientObtainedItems.accept(payload.items());
-    }
-
-    private static void receiveBookUpgrade(BookUpgradePayload payload, IPayloadContext context)
-    {
-        ClientBookUpgrade.accept(payload.bound());
+                        (payload, context) -> client.bookUpgrade(payload.bound()));
     }
 
     private CraftboundNetwork() {}
