@@ -1,14 +1,20 @@
-package com.craftbound.progression;
+package com.craftbound.platform;
 
 import java.util.List;
 import java.util.Set;
+
+import com.craftbound.progression.ProgressionRules;
+import com.craftbound.progression.UnlockRule;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 // Server config, so a pack decides how progression behaves and every client on the server agrees:
 // NeoForge syncs SERVER configs to clients, and the book filters client-side against them. On a
 // server without Craftbound nothing is synced, so the client's own copy decides.
-public final class ProgressionConfig
+//
+// Until the config is loaded every value is its declared default, so the book never has to
+// special-case the window between joining and the server's config arriving.
+public final class CraftboundConfig
 {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -41,7 +47,7 @@ public final class ProgressionConfig
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
-    public static ProgressionRules rules()
+    public static ProgressionRules progression()
     {
         return new ProgressionRules(value(ENABLED), value(RULE), value(GATE_CATEGORIES),
                 Set.copyOf(value(EXEMPT_CATEGORIES)));
@@ -52,12 +58,10 @@ public final class ProgressionConfig
         return value(GATE_HINTS);
     }
 
-    // Falls back to the declared default until the config is loaded, so the book never has to
-    // special-case the window between joining and the server's config arriving.
     private static <T> T value(ModConfigSpec.ConfigValue<T> value)
     {
         return SPEC.isLoaded() ? value.get() : value.getDefault();
     }
 
-    private ProgressionConfig() {}
+    private CraftboundConfig() {}
 }

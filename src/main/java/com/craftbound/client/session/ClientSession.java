@@ -16,7 +16,7 @@ import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldScopedStore;
 import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.obtained.PlayerItems;
-import com.craftbound.progression.ProgressionConfig;
+import com.craftbound.platform.CraftboundConfig;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -37,7 +37,7 @@ public final class ClientSession
     private final BookCatalog bookCatalog = new BookCatalog();
     private final ScreenScoped<BookState> bookStates = new ScreenScoped<>(BookState::new);
     private final ProgressionCache progression = new ProgressionCache(obtained::current, heldVariants::current,
-            ProgressionConfig::rules, () -> RecipeIndexBuilder.current().map(RecipeIndexSnapshot::index));
+            CraftboundConfig::progression, () -> RecipeIndexBuilder.current().map(RecipeIndexSnapshot::index));
 
     // Begun on first use as well, so state the server sends while the client logs in has a home.
     public static ClientSession current()

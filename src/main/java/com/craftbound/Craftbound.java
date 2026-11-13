@@ -1,8 +1,8 @@
 package com.craftbound;
 
 import com.craftbound.platform.CraftboundAttachments;
+import com.craftbound.platform.CraftboundConfig;
 import com.craftbound.platform.CraftboundItems;
-import com.craftbound.progression.ProgressionConfig;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -21,6 +21,6 @@ public class Craftbound
         CraftboundAttachments.ATTACHMENT_TYPES.register(modEventBus);
         CraftboundItems.ITEMS.register(modEventBus);
         modEventBus.addListener(CraftboundItems::addToCreativeTabs);
-        modContainer.registerConfig(ModConfig.Type.SERVER, ProgressionConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.SERVER, CraftboundConfig.SPEC);
     }
 }

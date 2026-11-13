@@ -282,8 +282,9 @@ It begins at login and is dropped at logout, so no state carries from one world 
 `client/jei/JeiSession` holds the JEI runtime, and its generation moves on every start and stop,
 which is how the index, the search cache and the book know to rebuild after a JEI reload.
 
-`ProgressionConfig` is a **server** config, so a pack decides the behaviour and every client agrees:
-`enabled`, `rule` (`ALL_INPUTS` / `ANY_INPUT`), `gateCategories`, and `exemptCategories`.
+`platform/CraftboundConfig` is a **server** config, so a pack decides the behaviour and every client agrees:
+`enabled`, `rule` (`ALL_INPUTS` / `ANY_INPUT`), `gateCategories`, `exemptCategories` and
+`gateHintsBehindLens`. Until it loads, every value is the default its spec declares.
 
 ## Place button (already implemented)
 The recipe state carries a place button in the top strip, where the craftable filter sits while
