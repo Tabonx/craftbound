@@ -64,7 +64,10 @@ shifts whenever recipes are added or removed. `RecipeOrder` ranks the ones the p
 right now first (stable sort, so everything else keeps its relative order), judged from the
 recipe's own JEI input slots so it works for Create categories as well as vanilla ones. It is
 computed once, when the recipe is opened: re-ranking live would make recipes jump under the cursor.
-Counts are ignored: this ranks recipes, it does not promise the craft fits.
+Counts are ignored: this ranks recipes, it does not promise the craft fits. "Can make" is judged
+from the same items the place button counts, `PlayerItems.craftingPool`: the main inventory and a
+crafting grid, never armor, the offhand or the cursor. A recipe ranked first is then one the button
+would place.
 
 ### Per-method recipe body
 Every recipe kind, vanilla crafting and Create/machine alike, is rendered the same way: by
@@ -152,7 +155,9 @@ in hand means no mixing tab and no mixing recipes anywhere.
 - **`minecraft:crafting` is exempt from category gating** by default. Gating it on owning a crafting
   table strands a new player, who needs the crafting category to find out how a table is made.
 - Anything the index could not read, such as a category that throws while laying a recipe out, counts as
-  unlocked. Showing a recipe early is recoverable; hiding one forever is not.
+  unlocked. Showing a recipe early is recoverable; hiding one forever is not. What such a recipe
+  makes is read from JEI's own layout of it instead and kept as the index's `unjudgedOutputs`,
+  which are always unlocked, so an item whose only recipe is unreadable still reaches the grid.
 
 ### Requirements a category hides
 Create's basin recipes need a heat source under the basin, but `BasinCategory` paints that in
@@ -248,16 +253,28 @@ Obtaining an item that unlocks something pops vanilla's recipe toast in the top-
 as the popup players already know. `RecipeUnlockToast` re-implements it over items because
 `net.minecraft`'s `RecipeToast` needs a `RecipeHolder`, which JEI-sourced machine recipes have no
 equivalent of. `ProgressionToasts` polls on a client tick rather than leaning on the book's own
-refresh: unlocks happen while the player is out mining, not while the book is open. The first pass
-over a fresh index is a silent baseline: announcing everything already unlocked would bury the
-player in toasts on every world join.
+refresh: unlocks happen while the player is out mining, not while the book is open. The first state
+with both the recipe index and the server's obtained set in is a silent baseline, and so is a new
+index after JEI reloads: announcing everything already unlocked would bury the player in toasts on
+every world join.
 
 Layering: `progression/Unlocks` is the whole rule set as pure functions over
 `RecipeIndex` / `RecipeNode` (plain ids and sets, unit-tested without the game).
 `client/jei/RecipeIndexBuilder` + `SlotIngredientCollector` reduce every recipe JEI knows to that
 data in one pass, running each category's `setRecipe` against a collector that builds nothing
-drawable. `client/progression/Progression` caches the index and the derived unlocked set, rebuilding
-when the obtained set grows (detected by its size, since it only grows).
+drawable. The browse grid lists what that index says something makes, so producibility and unlock
+state come from one walk. `client/progression/ProgressionCache` derives the unlocked set from the
+index and the obtained set, and recomputes when either changes, judged by reference and size first
+and by content only after one moved. Every change bumps its `version()`, and each reader, the open
+book and the toast tick, compares that against the last version it acted on, so neither can take a
+change away from the other. `client/jei` never asks progression directly: it takes a `RecipeGate`,
+which the cache implements.
+
+`client/ClientSession` holds everything the client keeps for one connection: the obtained and
+held-variant tracking, the book upgrade, the stores in the config folder and the progression cache.
+It begins at login and is dropped at logout, so no state carries from one world into the next.
+`client/jei/JeiSession` holds the JEI runtime, and its generation moves on every start and stop,
+which is how the index, the search cache and the book know to rebuild after a JEI reload.
 
 `ProgressionConfig` is a **server** config, so a pack decides the behaviour and every client agrees:
 `enabled`, `rule` (`ALL_INPUTS` / `ANY_INPUT`), `gateCategories`, and `exemptCategories`.
