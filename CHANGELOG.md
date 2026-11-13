@@ -50,6 +50,8 @@
 - The book keeps the recipe it shows, its page and its tab when the screen beside it is laid out
   again, as happens on resizing the window or closing and opening the book. It also no longer
   reloads every item each time.
+- Typing a search or switching the craftable filter now shows the first page of results, as
+  vanilla's book does, instead of keeping the page the grid was on.
 - A click right after the book changes, such as the first click on a recipe you just opened or on
   the place button as it appears, now lands on what the book shows instead of what it showed a
   moment before.

@@ -119,9 +119,9 @@ final class BrowsePanel implements BookPanel
 
     private void refilter()
     {
-        state.entries = new BrowseQuery(state.tab, search.getValue(), filtering()).entries(catalog,
-                item -> item.item().map(state.craftable::contains).orElse(false));
-        state.pager.fill(state.entries.size(), state.tab);
+        BrowseQuery query = new BrowseQuery(state.tab, search.getValue(), filtering());
+        state.entries = query.entries(catalog, item -> item.item().map(state.craftable::contains).orElse(false));
+        state.pager.fill(state.entries.size(), query);
         variants.close();
     }
 
