@@ -30,12 +30,12 @@ public abstract class LooseWidget extends AbstractWidget
     @Override
     public boolean charTyped(CharacterEvent event)
     {
-        return typed((char) event.codepoint(), 0);
+        return typed(event.codepoint(), 0);
     }
 
     protected abstract boolean mousePressed(double mouseX, double mouseY, int button, boolean doubleClick);
 
     protected abstract boolean keyDown(int keyCode, int scanCode, int modifiers);
 
-    protected abstract boolean typed(char codePoint, int modifiers);
+    protected abstract boolean typed(int codePoint, int modifiers);
 }

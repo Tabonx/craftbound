@@ -27,9 +27,13 @@ public final class Input
         return target.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    public static boolean charTyped(GuiEventListener target, char codePoint, int modifiers)
+    // This generation types a character outside the basic plane as its two halves, one after the other.
+    public static boolean charTyped(GuiEventListener target, int codePoint, int modifiers)
     {
-        return target.charTyped(codePoint, modifiers);
+        boolean taken = false;
+        for (char half : Character.toChars(codePoint))
+            taken |= target.charTyped(half, modifiers);
+        return taken;
     }
 
     // Shift is asked of the window rather than the screen: newer versions only report it on the

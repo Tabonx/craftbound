@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.craftbound.client.RecipeBookScreenTweaks;
+import com.craftbound.client.BookScreens;
 
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 
@@ -26,6 +26,6 @@ public abstract class RecipeBookComponentMixin
     @Inject(method = "updateScreenPosition", at = @At("HEAD"), cancellable = true)
     private void craftbound$placeScreen(int width, int imageWidth, CallbackInfoReturnable<Integer> cir)
     {
-        cir.setReturnValue(RecipeBookScreenTweaks.hostedLeftPos(width, imageWidth));
+        cir.setReturnValue(BookScreens.hostedLeftPos(width, imageWidth));
     }
 }

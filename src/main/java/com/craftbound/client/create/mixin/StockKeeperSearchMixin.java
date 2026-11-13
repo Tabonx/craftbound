@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.craftbound.client.RecipeBookScreenTweaks;
+import com.craftbound.client.BookScreens;
 import com.craftbound.client.Screens;
 import com.craftbound.client.jei.JeiSearch;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen;
@@ -22,7 +22,7 @@ public class StockKeeperSearchMixin
     @Inject(method = "shouldSyncFromJEI", at = @At("HEAD"), cancellable = true)
     private void craftbound$syncFromBook(CallbackInfoReturnable<Boolean> cir)
     {
-        if (RecipeBookScreenTweaks.isSearching(Screens.current())
+        if (BookScreens.isSearching(Screens.current())
                 && !previousJEISearchText.equals(JeiSearch.query()))
             cir.setReturnValue(true);
     }

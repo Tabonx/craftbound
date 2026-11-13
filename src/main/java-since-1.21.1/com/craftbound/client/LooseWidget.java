@@ -34,5 +34,5 @@ public abstract class LooseWidget extends AbstractWidget
 
     protected abstract boolean keyDown(int keyCode, int scanCode, int modifiers);
 
-    protected abstract boolean typed(char codePoint, int modifiers);
+    protected abstract boolean typed(int codePoint, int modifiers);
 }

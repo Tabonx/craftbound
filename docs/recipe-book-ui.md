@@ -44,6 +44,11 @@ The book is a single vanilla-width column with two swappable states:
 2. **Recipe**: clicking an output **replaces the grid in the same column** with how that item
    is made. A **back button** (`‹ items`) returns to the browse grid.
 
+The book keeps what it shows, the tab, the page and an open recipe, for as long as its screen stays
+open, through every time that screen is laid out again: toggling the book, resizing the window,
+making room for a mod's side panel. A screen opened anew starts from the grid's first page, like
+vanilla's, and a recipe built before JEI reloaded is closed rather than shown on. Whether the book is open, and whether it lists only what can be made, lasts the whole game.
+
 There is **one predictable behavior**: click → show the recipe. Nothing is ever filled into the
 open screen unless the player asks for it with the place button (see below).
 
@@ -271,7 +276,8 @@ change away from the other. `client/jei` never asks progression directly: it tak
 which the cache implements.
 
 `client/ClientSession` holds everything the client keeps for one connection: the obtained and
-held-variant tracking, the book upgrade, the stores in the config folder and the progression cache.
+held-variant tracking, the book upgrade, the stores in the config folder, the progression cache, the
+book's catalogue and what the book shows on the open screen, which is dropped as that screen closes.
 It begins at login and is dropped at logout, so no state carries from one world into the next.
 `client/jei/JeiSession` holds the JEI runtime, and its generation moves on every start and stop,
 which is how the index, the search cache and the book know to rebuild after a JEI reload.

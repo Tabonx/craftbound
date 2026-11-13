@@ -28,6 +28,8 @@
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 - On Minecraft 1.21.4 and newer, a recipe that asks for an item with particular contents, such as
   one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
+- A modded crafting screen with another button the size of the recipe book's no longer loses that
+  button in place of the recipe book's.
 - A recipe now counts as one you can make, for listing it first and for the place button alike,
   from the same items: your main inventory and the crafting grid. Worn armor, the offhand and the
   item on the cursor no longer move a recipe to the front that the place button then refuses.
@@ -47,6 +49,18 @@
   tab instead of Miscellaneous, as they do on 1.21.1.
 - A Create update that no longer fits the book now switches off only the book's Create features,
   such as the stock keeper and basin heat, instead of crashing the game.
+- The book keeps the recipe it shows, its page and its tab when the screen beside it is laid out
+  again, as happens on resizing the window or closing and opening the book. It also no longer
+  reloads every item each time.
+- Typing a search or switching the craftable filter now shows the first page of results, as
+  vanilla's book does, instead of keeping the page the grid was on.
+- A click right after the book changes, such as the first click on a recipe you just opened or on
+  the place button as it appears, now lands on what the book shows instead of what it showed a
+  moment before.
+- A newly unlocked item with variants no longer finishes its highlight early while its variants
+  panel is open.
+- On Minecraft 1.21.10 and newer, the book's search keeps characters outside the basic plane, such
+  as emoji, instead of mangling them.
 
 ## 0.1.8
 

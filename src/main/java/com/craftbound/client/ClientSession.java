@@ -31,6 +31,8 @@ public final class ClientSession
     private final ClientBookUpgrade bookUpgrade = new ClientBookUpgrade();
     private final Supplier<WorldScopedStore<Bookmarks>> bookmarks =
             stores.lazy("craftbound-bookmarks.json", Bookmarks.CODEC, Bookmarks::new);
+    private final BookCatalog bookCatalog = new BookCatalog();
+    private final ScreenScoped<BookState> bookStates = new ScreenScoped<>(BookState::new);
     private final ProgressionCache progression = new ProgressionCache(obtained::current, heldVariants::current,
             ProgressionConfig::rules, () -> RecipeIndexBuilder.current().map(RecipeIndexSnapshot::index));
 
@@ -67,6 +69,22 @@ public final class ClientSession
     public ProgressionCache progression()
     {
         return progression;
+    }
+
+    BookCatalog bookCatalog()
+    {
+        return bookCatalog;
+    }
+
+    BookState bookState(Object screen)
+    {
+        return bookStates.of(screen);
+    }
+
+    static void screenClosed(Object screen)
+    {
+        if (current != null)
+            current.bookStates.closed(screen);
     }
 
     WorldScopedStore<Bookmarks> bookmarks()

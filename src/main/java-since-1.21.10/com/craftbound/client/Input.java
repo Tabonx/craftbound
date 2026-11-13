@@ -36,7 +36,7 @@ public final class Input
         return target.keyPressed(new KeyEvent(keyCode, scanCode, modifiers));
     }
 
-    public static boolean charTyped(GuiEventListener target, char codePoint, int modifiers)
+    public static boolean charTyped(GuiEventListener target, int codePoint, int modifiers)
     {
         //? if >=26.1 {
         /*return target.charTyped(new CharacterEvent(codePoint));
