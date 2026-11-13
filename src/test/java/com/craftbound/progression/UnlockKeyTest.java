@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 
 import net.minecraft.resources.ResourceLocation;
@@ -27,26 +25,6 @@ class UnlockKeyTest
         assertEquals("fluid|minecraft:lava", UnlockKey.ofFluid(LAVA, "").toString());
         assertEquals("fluid|create:potion|strength", UnlockKey.ofFluid(POTION, "strength").toString());
         assertEquals("mymod:weird_type|whatever", UnlockKey.ofIngredient("mymod:weird_type", "whatever").toString());
-    }
-
-    @Test
-    void everyKindRoundTrips()
-    {
-        for (UnlockKey key : new UnlockKey[] {
-                UnlockKey.ofItem(STICK),
-                UnlockKey.ofItem(WATER_BOTTLE, "water"),
-                UnlockKey.ofFluid(LAVA, ""),
-                UnlockKey.ofFluid(POTION, "strength"),
-                UnlockKey.ofIngredient("mymod:weird_type", "whatever|more")})
-            assertEquals(Optional.of(key), UnlockKey.parse(key.toString()));
-    }
-
-    @Test
-    void aSubtypeContainingTheSeparatorStillYieldsTheFluidId()
-    {
-        UnlockKey parsed = UnlockKey.parse("fluid|create:potion|long|strength").orElseThrow();
-
-        assertEquals(UnlockKey.ofFluid(POTION, "long|strength"), parsed);
     }
 
     @Test
@@ -85,17 +63,5 @@ class UnlockKeyTest
     void itemsAndFluidsOfTheSameNameAreDifferentKeys()
     {
         assertNotEquals(UnlockKey.ofItem(LAVA), UnlockKey.ofFluid(LAVA, ""));
-    }
-
-    @Test
-    void textWithoutASeparatorIsNotAKey()
-    {
-        assertTrue(UnlockKey.parse("minecraft:stick").isEmpty());
-    }
-
-    @Test
-    void aMalformedIdIsNotParsed()
-    {
-        assertTrue(UnlockKey.parse("item|NOT AN ID").isEmpty());
     }
 }

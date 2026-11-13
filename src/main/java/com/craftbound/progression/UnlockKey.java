@@ -1,8 +1,5 @@
 package com.craftbound.progression;
 
-import java.util.List;
-import java.util.Optional;
-
 import net.minecraft.resources.ResourceLocation;
 
 // How progression names the things a recipe produces: the registry id, plus JEI's subtype where one
@@ -67,27 +64,5 @@ public record UnlockKey(Kind kind, String id, String subtype)
     public String toString()
     {
         return subtype.isEmpty() ? kind.prefix + id : kind.prefix + id + SEPARATOR + subtype;
-    }
-
-    // Reads back what toString wrote. Ids never contain the separator, so the first one after the
-    // id starts the subtype.
-    public static Optional<UnlockKey> parse(String text)
-    {
-        for (Kind kind : List.of(Kind.ITEM, Kind.FLUID))
-            if (text.startsWith(kind.prefix))
-                return registry(kind, text.substring(kind.prefix.length()));
-        int split = text.indexOf(SEPARATOR);
-        return split < 0
-                ? Optional.empty()
-                : Optional.of(ofIngredient(text.substring(0, split), text.substring(split + 1)));
-    }
-
-    private static Optional<UnlockKey> registry(Kind kind, String rest)
-    {
-        int split = rest.indexOf(SEPARATOR);
-        String id = split < 0 ? rest : rest.substring(0, split);
-        String subtype = split < 0 ? "" : rest.substring(split + 1);
-        return Optional.ofNullable(ResourceLocation.tryParse(id))
-                .map(parsed -> new UnlockKey(kind, parsed.toString(), subtype));
     }
 }
