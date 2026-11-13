@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.craftbound.client.RecipeBookScreenTweaks;
+import com.craftbound.client.BookScreens;
 
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
@@ -22,7 +22,7 @@ public abstract class ContainerScreenLayoutMixin
     private void craftbound$makeRoomForBook(CallbackInfo ci)
     {
         AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-        if (RecipeBookScreenTweaks.docksBeside(screen))
-            screen.width = RecipeBookScreenTweaks.besideScreenWidth(screen, imageWidth);
+        if (BookScreens.docksBeside(screen))
+            screen.width = BookScreens.besideScreenWidth(screen, imageWidth);
     }
 }
