@@ -41,22 +41,22 @@ public final class ProgressionConfig
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
-    // Falls back to the defaults until the config is loaded, so the book never has to special-case
-    // the window between joining and the server's config arriving.
-    private static final ProgressionRules DEFAULTS =
-            new ProgressionRules(true, UnlockRule.ALL_INPUTS, true, Set.of("minecraft:crafting"));
-
     public static ProgressionRules rules()
     {
-        if (!SPEC.isLoaded())
-            return DEFAULTS;
-        return new ProgressionRules(ENABLED.get(), RULE.get(), GATE_CATEGORIES.get(),
-                Set.copyOf(EXEMPT_CATEGORIES.get()));
+        return new ProgressionRules(value(ENABLED), value(RULE), value(GATE_CATEGORIES),
+                Set.copyOf(value(EXEMPT_CATEGORIES)));
     }
 
     public static boolean gateHintsBehindLens()
     {
-        return !SPEC.isLoaded() || GATE_HINTS.get();
+        return value(GATE_HINTS);
+    }
+
+    // Falls back to the declared default until the config is loaded, so the book never has to
+    // special-case the window between joining and the server's config arriving.
+    private static <T> T value(ModConfigSpec.ConfigValue<T> value)
+    {
+        return SPEC.isLoaded() ? value.get() : value.getDefault();
     }
 
     private ProgressionConfig() {}
