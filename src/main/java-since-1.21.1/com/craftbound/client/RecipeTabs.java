@@ -1,9 +1,6 @@
 package com.craftbound.client;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.craftbound.client.jei.BookIngredient;
+import java.util.function.BiConsumer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.HolderLookup;
@@ -14,28 +11,16 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// Which ribbon each item belongs on, taken from the book category vanilla already stores on every
-// crafting and cooking recipe, so any mod shipping ordinary recipes is categorised for free.
-// Anything else (Create's mixing, pressing, and the rest) has no such category and falls to Misc,
-// which is where vanilla puts an uncategorised recipe too.
-public final class ItemCategories
+// The result of every recipe the client knows, with the ribbon its book category puts it on. This
+// generation gives the client the recipes themselves.
+final class RecipeTabs
 {
-    public static final ItemCategories EMPTY = new ItemCategories(Map.of());
-
-    private final Map<Item, BrowseTab> byItem;
-
-    private ItemCategories(Map<Item, BrowseTab> byItem)
-    {
-        this.byItem = byItem;
-    }
-
-    public static ItemCategories fromClientRecipes()
+    static void forEach(BiConsumer<Item, BrowseTab> out)
     {
         var level = Minecraft.getInstance().level;
         if (level == null)
-            return EMPTY;
+            return;
 
-        Map<Item, BrowseTab> byItem = new HashMap<>();
         for (RecipeHolder<?> holder : level.getRecipeManager().getRecipes())
         {
             BrowseTab tab = tabOf(holder.value());
@@ -43,17 +28,11 @@ public final class ItemCategories
                 continue;
             ItemStack result = resultOf(holder.value(), level.registryAccess());
             if (!result.isEmpty())
-                byItem.putIfAbsent(result.getItem(), tab);
+                out.accept(result.getItem(), tab);
         }
-        return new ItemCategories(byItem);
     }
 
-    public BrowseTab tabOf(BookIngredient ingredient)
-    {
-        return ingredient.item().map(byItem::get).orElse(BrowseTab.MISC);
-    }
-
-    private static BrowseTab tabOf(Recipe<?> recipe)
+    static BrowseTab tabOf(Recipe<?> recipe)
     {
         if (recipe instanceof CraftingRecipe crafting)
             return BrowseTab.of(crafting.category());
@@ -75,4 +54,6 @@ public final class ItemCategories
             return ItemStack.EMPTY;
         }
     }
+
+    private RecipeTabs() {}
 }

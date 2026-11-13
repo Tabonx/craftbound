@@ -4,8 +4,11 @@ import java.util.List;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
+//? if <1.21.11 {
 import mezz.jei.api.gui.ingredient.IRecipeSlotTooltipCallback;
+//?}
 import mezz.jei.api.helpers.IPlatformFluidHelper;
+import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
 
@@ -20,9 +23,8 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
 
-// This generation of JEI names every one of these "add" and still asks for the tooltip callback it
-// later removed. They all funnel into the same place: whatever the slot accepts, recorded as a
-// typed ingredient.
+// JEI from this generation on names every one of these "add". They all funnel into the same place:
+// whatever the slot accepts, recorded as a typed ingredient.
 final class IngredientSlot extends IngredientSlotBase
 {
     IngredientSlot(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
@@ -30,12 +32,14 @@ final class IngredientSlot extends IngredientSlotBase
         super(manager, fluids);
     }
 
+    //? if <1.21.11 {
     @SuppressWarnings("removal")
     @Override
     public IRecipeSlotBuilder addTooltipCallback(IRecipeSlotTooltipCallback callback)
     {
         return this;
     }
+    //?}
 
     @Override
     public IRecipeSlotBuilder addItemStacks(List<ItemStack> itemStacks)
@@ -48,15 +52,16 @@ final class IngredientSlot extends IngredientSlotBase
     @Override
     public <I> IRecipeSlotBuilder add(ITypedIngredient<I> ingredient)
     {
-        ingredients.add(ingredient);
+        addTyped(ingredient);
         return this;
     }
 
+    // Read off the display, as JEI does, so a NeoForge ingredient that asks for particular
+    // components shows the stacks that carry them.
     @Override
     public IRecipeSlotBuilder add(Ingredient ingredient)
     {
-        ingredient.items().forEach(item -> add(new ItemStack(item)));
-        return this;
+        return add(ingredient.display());
     }
 
     @Override
@@ -96,6 +101,43 @@ final class IngredientSlot extends IngredientSlotBase
     {
         return addFluidIngredient(fluid, amount, components);
     }
+
+    //? if >=1.21.11 {
+    /*@Override
+    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, Ingredient ingredient)
+    {
+        return add(ingredient);
+    }
+
+    @Override
+    public <I> IRecipeSlotBuilder add(IIngredientType<I> type, SlotDisplay slotDisplay)
+    {
+        return add(slotDisplay);
+    }
+    *///?}
+
+    //? if >=26.1 {
+    /*@Override
+    public IRecipeSlotBuilder setFluidRenderer(long capacity, boolean showCapacity, int width, int height,
+            mezz.jei.api.gui.drawable.TilingDirection tilingDirection)
+    {
+        return this;
+    }
+
+    @Override
+    public IRecipeSlotBuilder add(net.minecraft.world.item.ItemStackTemplate itemStackTemplate)
+    {
+        return add(itemStackTemplate.create());
+    }
+
+    // Slot contents only resolve to actual ingredients against the level's context. Without it
+    // every slot resolves to nothing and the index reads every recipe as requiring no inputs.
+    @Override
+    public ContextMap getContextMap()
+    {
+        return contextMap();
+    }
+    *///?}
 
     private static ContextMap contextMap()
     {

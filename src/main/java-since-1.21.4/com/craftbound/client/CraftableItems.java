@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.craftbound.placement.RecipePlacement;
+import com.craftbound.placement.Recipes;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
@@ -46,7 +47,7 @@ public final class CraftableItems
         SearchRecipeBookCategory category = searchCategoryFor(menu.getRecipeBookType());
         for (RecipeCollection collection : minecraft.player.getRecipeBook().getCollection(category))
             for (RecipeDisplayEntry entry : collection.getRecipes())
-                if (RecipePlacement.fits(menu, entry.display()) && entry.canCraft(contents))
+                if (Recipes.fits(menu, entry.display()) && entry.canCraft(contents))
                     for (ItemStack stack : entry.resultItems(context))
                         if (!stack.isEmpty())
                             result.add(stack.getItem());

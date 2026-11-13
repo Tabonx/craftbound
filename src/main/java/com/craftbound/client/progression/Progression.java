@@ -144,7 +144,7 @@ public final class Progression
                 .orElse(false);
     }
 
-    public static boolean unlocksMore(ResourceLocation itemId)
+    private static boolean unlocksMore(ResourceLocation itemId)
     {
         return ClientBookUpgrade.hintsUnlocked() && unlockingItems.contains(itemId);
     }

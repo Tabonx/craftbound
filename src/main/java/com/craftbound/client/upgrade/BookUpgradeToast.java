@@ -2,7 +2,7 @@ package com.craftbound.client.upgrade;
 
 import com.craftbound.CraftboundItems;
 import com.craftbound.client.Canvas;
-import com.craftbound.client.Toasts;
+import com.craftbound.client.VersionedToast;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -14,30 +14,25 @@ import net.minecraft.world.item.ItemStack;
 
 // Announces that the lens has been bound, in the shape of vanilla's recipe toast so it reads as
 // part of the book rather than as a new kind of popup.
-//
-// What the toast is and how long it stays are here; how a version asks it to draw and to decide
-// is on BookUpgradeToast.
-public abstract class BookUpgradeToastBase implements Toast
+public final class BookUpgradeToast extends VersionedToast
 {
-    protected static final ResourceLocation BACKGROUND_SPRITE =
-            ResourceLocation.withDefaultNamespace("toast/recipe");
-    protected static final Component TITLE_TEXT = Component.translatable("craftbound.upgrade.toast.title");
-    protected static final Component DESCRIPTION_TEXT =
-            Component.translatable("craftbound.upgrade.toast.description");
-    protected static final long DISPLAY_TIME = 5000L;
-    protected static final int TITLE_COLOR = -11534256;
-    protected static final int DESCRIPTION_COLOR = -16777216;
+    private static final ResourceLocation BACKGROUND_SPRITE = ResourceLocation.withDefaultNamespace("toast/recipe");
+    private static final Component TITLE_TEXT = Component.translatable("craftbound.upgrade.toast.title");
+    private static final Component DESCRIPTION_TEXT = Component.translatable("craftbound.upgrade.toast.description");
+    private static final long DISPLAY_TIME = 5000L;
+    private static final int TITLE_COLOR = -11534256;
+    private static final int DESCRIPTION_COLOR = -16777216;
 
-    protected Toast.Visibility visibility = Toast.Visibility.SHOW;
     private long lastChanged;
     private boolean changed = true;
 
     public static void show()
     {
-        Toasts.of(Minecraft.getInstance()).addToast(new BookUpgradeToast());
+        Minecraft.getInstance().getToasts().addToast(new BookUpgradeToast());
     }
 
-    protected void advance(double displayTimeMultiplier, long fullyVisibleForMs)
+    @Override
+    protected Toast.Visibility advance(double displayTimeMultiplier, long fullyVisibleForMs)
     {
         if (changed)
         {
@@ -45,12 +40,13 @@ public abstract class BookUpgradeToastBase implements Toast
             changed = false;
         }
 
-        visibility = fullyVisibleForMs - lastChanged >= DISPLAY_TIME * displayTimeMultiplier
+        return fullyVisibleForMs - lastChanged >= DISPLAY_TIME * displayTimeMultiplier
                 ? Toast.Visibility.HIDE
                 : Toast.Visibility.SHOW;
     }
 
-    protected void draw(GuiGraphics graphics, Font font)
+    @Override
+    protected void draw(GuiGraphics graphics, Font font, long fullyVisibleForMs)
     {
         Canvas.sprite(graphics, BACKGROUND_SPRITE, 0, 0, width(), height());
         graphics.drawString(font, TITLE_TEXT, 30, 7, TITLE_COLOR, false);

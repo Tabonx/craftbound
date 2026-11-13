@@ -6,9 +6,6 @@ import java.util.Optional;
 
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
-//? if >=26.1.2 {
-/*import mezz.jei.api.gui.drawable.TilingDirection;
-*///?}
 import mezz.jei.api.gui.ingredient.IRecipeSlotRichTooltipCallback;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.IIngredientRenderer;
@@ -27,15 +24,15 @@ import net.minecraft.world.level.material.Fluid;
 // Ingredients go through createTypedIngredient, which is also what drops the invalid ones, so a
 // category that offers an unregistered item contributes nothing rather than a broken entry.
 //
-// Everything JEI has asked of a slot on every version lives here. The methods newer JEI added, and
-// the one it removed, are on IngredientSlot, which each generation supplies its own.
+// Everything JEI has asked of a slot on every version lives here. What only some versions ask for is
+// on IngredientSlot, which each generation supplies its own.
 abstract class IngredientSlotBase implements IRecipeSlotBuilder
 {
     private static final int SLOT_SIZE = 16;
 
     private final IIngredientManager manager;
     private final IPlatformFluidHelper<?> fluids;
-    protected final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
+    private final List<ITypedIngredient<?>> ingredients = new ArrayList<>();
 
     IngredientSlotBase(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
     {
@@ -56,24 +53,12 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    //? if <1.21.4 {
-    @Override
-    public <I> IRecipeSlotBuilder addIngredient(IIngredientType<I> type, I ingredient)
-    {
-        return add(type, ingredient);
-    }
-    //?}
-
     @Override
     public IRecipeSlotBuilder addIngredientsUnsafe(List<?> ingredients)
     {
         for (Object ingredient : ingredients)
             if (ingredient != null)
-                //? if >=1.21.5 {
-                /*manager.createTypedIngredient(ingredient, false).ifPresent(this.ingredients::add);
-                *///?} else {
-                manager.createTypedIngredient(ingredient).ifPresent(this.ingredients::add);
-                //?}
+                JeiCompat.typed(manager, ingredient).ifPresent(this.ingredients::add);
         return this;
     }
 
@@ -88,7 +73,7 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    private <I> void addTyped(ITypedIngredient<I> ingredient)
+    protected final <I> void addTyped(ITypedIngredient<I> ingredient)
     {
         add(ingredient.getType(), ingredient.getIngredient());
     }
@@ -97,29 +82,9 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
     public IRecipeSlotBuilder addOptionalTypedIngredients(List<Optional<ITypedIngredient<?>>> ingredients)
     {
         for (Optional<ITypedIngredient<?>> ingredient : ingredients)
-            ingredient.ifPresent(this.ingredients::add);
+            ingredient.ifPresent(this::addTyped);
         return this;
     }
-
-    //? if <1.21.4 {
-    @Override
-    public IRecipeSlotBuilder addFluidStack(Fluid fluid)
-    {
-        return addFluidIngredient(fluid, fluids.bucketVolume(), DataComponentPatch.EMPTY);
-    }
-
-    @Override
-    public IRecipeSlotBuilder addFluidStack(Fluid fluid, long amount)
-    {
-        return addFluidIngredient(fluid, amount, DataComponentPatch.EMPTY);
-    }
-
-    @Override
-    public IRecipeSlotBuilder addFluidStack(Fluid fluid, long amount, DataComponentPatch components)
-    {
-        return addFluidIngredient(fluid, amount, components);
-    }
-    //?}
 
     protected final IRecipeSlotBuilder addFluidIngredient(Fluid fluid, long amount, DataComponentPatch components)
     {
@@ -139,17 +104,10 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return add(type, helper.create(fluid.builtInRegistryHolder(), amount, components));
     }
 
-    //? if >=1.21.4 {
-    /*@Override
-    *///?}
     public <I> IRecipeSlotBuilder add(IIngredientType<I> type, I ingredient)
     {
         if (ingredient != null)
-            //? if >=1.21.5 {
-            /*manager.createTypedIngredient(type, ingredient, false).ifPresent(ingredients::add);
-            *///?} else {
-            manager.createTypedIngredient(type, ingredient).ifPresent(ingredients::add);
-            //?}
+            JeiCompat.typed(manager, type, ingredient).ifPresent(ingredients::add);
         return this;
     }
 
@@ -207,15 +165,6 @@ abstract class IngredientSlotBase implements IRecipeSlotBuilder
         return this;
     }
 
-    //? if >=26.1.2 {
-    /*@Override
-    public IRecipeSlotBuilder setFluidRenderer(long capacity, boolean showCapacity, int width, int height,
-            TilingDirection tilingDirection)
-    {
-        return this;
-    }
-
-    *///?}
     @Override
     public <T> IRecipeSlotBuilder setCustomRenderer(IIngredientType<T> type, IIngredientRenderer<T> renderer)
     {

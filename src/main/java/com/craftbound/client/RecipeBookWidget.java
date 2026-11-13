@@ -17,6 +17,7 @@ import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipeRender;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiCompat;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.ponder.PonderGate;
 import com.craftbound.client.progression.Progression;
@@ -30,11 +31,6 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-//? if >=1.21.10 {
-/*import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
@@ -55,7 +51,7 @@ import net.minecraft.world.item.TooltipFlag;
 // The recipe book as a real screen widget so it renders in order and receives clicks, scroll and
 // typed characters. Hosts a vanilla EditBox for search and ImageButtons for page arrows so it
 // inherits their bezel, hover highlight and click sound. Geometry mirrors vanilla's RecipeBookPage.
-public final class RecipeBookWidget extends AbstractWidget
+public final class RecipeBookWidget extends LooseWidget
 {
     public static final int WIDTH = RecipeBookLayout.BOOK_WIDTH;
     public static final int HEIGHT = RecipeBookLayout.BOOK_HEIGHT;
@@ -732,62 +728,19 @@ public final class RecipeBookWidget extends AbstractWidget
         return getWidth() - 2 * BODY_X;
     }
 
-    // The vanilla hooks, which are all that differ between Minecraft versions: newer ones extract
-    // render state instead of drawing, and hand input over as event records. Everything below is
-    // the book itself and is shared.
-    //? if >=26.1 {
-    /*@Override
-    protected void extractWidgetRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
-    {
-        drawBook(graphics, mouseX, mouseY, partialTick);
-    }
-    *///?} else {
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         drawBook(graphics, mouseX, mouseY, partialTick);
     }
-    //?}
 
     // Clicks reach the book from the host before the screen sees them (see click), never as a child
     // of the screen, which would offer them to its own widgets first.
-    //? if >=1.21.10 {
-    /*@Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
+    @Override
+    protected boolean mousePressed(double mouseX, double mouseY, int button, boolean doubleClick)
     {
         return false;
     }
-
-    @Override
-    public boolean charTyped(CharacterEvent event)
-    {
-        return typed((char) event.codepoint(), 0);
-    }
-
-    @Override
-    public boolean keyPressed(KeyEvent event)
-    {
-        return pressed(event.key(), event.scancode(), event.modifiers());
-    }
-    *///?} else {
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean charTyped(char codePoint, int modifiers)
-    {
-        return typed(codePoint, modifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
-    {
-        return pressed(keyCode, scanCode, modifiers);
-    }
-    //?}
 
     private void drawBook(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
@@ -1033,11 +986,7 @@ public final class RecipeBookWidget extends AbstractWidget
             {
                 Canvas.push(graphics);
                 Canvas.translate(graphics, slot.offset().x(), slot.offset().y());
-                //? if >=1.21.11 {
-                /*slot.slot().draw(graphics, true);
-                *///?} else {
-                slot.slot().drawHoverOverlays(graphics);
-                //?}
+                JeiCompat.drawHighlight(slot.slot(), graphics);
                 Canvas.pop(graphics);
             }
             Canvas.pop(graphics);
@@ -1051,13 +1000,7 @@ public final class RecipeBookWidget extends AbstractWidget
     // under the cursor. The mod name itself is never in here, since JEI only adds that as it draws.
     private static List<Component> slotTooltip(IRecipeSlotDrawable slot)
     {
-        //? if >=1.21.5 {
-        /*Minecraft minecraft = Minecraft.getInstance();
-        TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
-        List<Component> lines = CraftboundJeiPlugin.getTooltip(slot, flag);
-        *///?} else {
-        List<Component> lines = slot.getTooltip();
-        //?}
+        List<Component> lines = CraftboundJeiPlugin.tooltip(slot);
         List<Component> kept = new ArrayList<>(lines.size());
         for (int i = 0; i < lines.size(); i++)
         {
@@ -1327,12 +1270,14 @@ public final class RecipeBookWidget extends AbstractWidget
         return true;
     }
 
-    private boolean typed(char codePoint, int modifiers)
+    @Override
+    protected boolean typed(char codePoint, int modifiers)
     {
         return visible && Input.charTyped(search, codePoint, modifiers);
     }
 
-    private boolean pressed(int keyCode, int scanCode, int modifiers)
+    @Override
+    protected boolean keyDown(int keyCode, int scanCode, int modifiers)
     {
         if (!visible)
             return false;

@@ -26,6 +26,10 @@
   remembered item variants, and variants from a removed mod come back when it is installed again.
 - When one of the book's files in the config folder cannot be read in full, it is now kept beside
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
+- On Minecraft 1.21.4 and newer, a recipe that asks for an item with particular contents, such as
+  one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
+- On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
+  tab instead of Miscellaneous, as they do on 1.21.1.
 
 ## 0.1.8
 

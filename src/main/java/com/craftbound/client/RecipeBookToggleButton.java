@@ -1,7 +1,5 @@
 package com.craftbound.client;
 
-import java.util.function.BooleanSupplier;
-
 import com.craftbound.Craftbound;
 import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.upgrade.UnbindLensPayload;
@@ -20,9 +18,7 @@ import net.minecraft.sounds.SoundEvents;
 // once the book carries the upgrade, so the upgraded book is visible before it is even opened.
 // Shift + right-click pries the lens back out. Left alone otherwise: no tooltip, so the button
 // behaves exactly as vanilla's does.
-//
-// Drawing and clicking are what each version overrides; both are on RecipeBookToggleButton.
-public abstract class RecipeBookToggleButtonBase extends ImageButton
+public final class RecipeBookToggleButton extends ImageButton
 {
     public static final int WIDTH = 20;
     public static final int HEIGHT = 18;
@@ -30,12 +26,28 @@ public abstract class RecipeBookToggleButtonBase extends ImageButton
     private static final ResourceLocation UPGRADE_OVERLAY =
             ResourceLocation.fromNamespaceAndPath(Craftbound.MODID, "recipe_book/book_upgrade");
 
-    protected RecipeBookToggleButtonBase(int x, int y, Button.OnPress onPress)
+    public RecipeBookToggleButton(int x, int y, Button.OnPress onPress)
     {
         super(x, y, WIDTH, HEIGHT, RecipeBookComponent.RECIPE_BUTTON_SPRITES, onPress, CommonComponents.EMPTY);
     }
 
-    protected void drawUpgradeHint(GuiGraphics graphics)
+    //? if >=1.21.11 {
+    /*@Override
+    public void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        super.renderContents(graphics, mouseX, mouseY, partialTick);
+        drawUpgradeHint(graphics);
+    }
+    *///?} else {
+    @Override
+    public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
+    {
+        super.renderWidget(graphics, mouseX, mouseY, partialTick);
+        drawUpgradeHint(graphics);
+    }
+    //?}
+
+    private void drawUpgradeHint(GuiGraphics graphics)
     {
         if (ClientBookUpgrade.hintsActive())
             Canvas.sprite(graphics, UPGRADE_OVERLAY, getX(), getY(), WIDTH, HEIGHT);
@@ -44,11 +56,11 @@ public abstract class RecipeBookToggleButtonBase extends ImageButton
     // Shift + right-click takes the lens back, which only the server can do; the book is only ever
     // bound on a server that has Craftbound, so the payload always has a channel to travel on. The
     // modifier is there because losing the upgrade to a stray click would be a poor surprise.
-    protected boolean unbindOr(double mouseX, double mouseY, int button, BooleanSupplier fallback)
+    public boolean unbind(double mouseX, double mouseY, int button)
     {
         if (button != 1 || !Input.shiftDown() || !visible || !isMouseOver(mouseX, mouseY)
                 || !ClientBookUpgrade.bound())
-            return fallback.getAsBoolean();
+            return false;
 
         Net.toServer(new UnbindLensPayload());
         Minecraft.getInstance().getSoundManager()

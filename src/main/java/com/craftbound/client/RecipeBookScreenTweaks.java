@@ -93,7 +93,8 @@ public final class RecipeBookScreenTweaks
         {
             if (toggle.isMouseOver(mouseX, mouseY))
             {
-                Input.click(toggle, mouseX, mouseY, button);
+                if (!toggle.unbind(mouseX, mouseY, button))
+                    Input.click(toggle, mouseX, mouseY, button);
                 return true;
             }
             if (book.visible && (book.click(mouseX, mouseY, button, doubleClick) || owns(mouseX, mouseY)))
@@ -164,8 +165,8 @@ public final class RecipeBookScreenTweaks
         int y = insideToggleY(screen);
         for (Slot slot : screen.getMenu().slots)
         {
-            if (slot.x < INSIDE_TOGGLE_X + RecipeBookToggleButtonBase.WIDTH + 1 && slot.x + 17 > INSIDE_TOGGLE_X
-                    && slot.y < y + RecipeBookToggleButtonBase.HEIGHT + 1 && slot.y + 17 > y)
+            if (slot.x < INSIDE_TOGGLE_X + RecipeBookToggleButton.WIDTH + 1 && slot.x + 17 > INSIDE_TOGGLE_X
+                    && slot.y < y + RecipeBookToggleButton.HEIGHT + 1 && slot.y + 17 > y)
                 return false;
         }
         return true;
@@ -427,20 +428,12 @@ public final class RecipeBookScreenTweaks
 
     private static int left(AbstractContainerScreen<?> screen)
     {
-        //? if >=26.1.2 {
-        /*return screen.getLeftPos();
-        *///?} else {
-        return screen.getGuiLeft();
-        //?}
+        return ((ContainerScreenAccessor) screen).craftbound$getLeftPos();
     }
 
     private static int top(AbstractContainerScreen<?> screen)
     {
-        //? if >=26.1.2 {
-        /*return screen.getTopPos();
-        *///?} else {
-        return screen.getGuiTop();
-        //?}
+        return ((ContainerScreenAccessor) screen).craftbound$getTopPos();
     }
 
     private static int imageWidth(AbstractContainerScreen<?> screen)
