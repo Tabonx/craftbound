@@ -45,8 +45,8 @@ public final class CraftableItems
         return result;
     }
 
-    // Crafting recipes made from a pool other than the player's inventory, such as the stock behind
-    // Create's stock keeper, which orders crafts for any 3x3 recipe.
+    // Crafting recipes made from a pool other than the player's inventory, such as the stock a
+    // storage screen can order 3x3 crafts from.
     public static Set<Item> craftableFrom(StackedContents contents)
     {
         Minecraft minecraft = Minecraft.getInstance();

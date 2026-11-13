@@ -15,20 +15,19 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // Create's transfer handler adds a recipe to the stock keeper's order once and refuses it after
 // that. Placing it again raises the amount instead, as scrolling over the ordered recipe does.
-public final class StockKeeperPlacer implements RecipePlacer
+final class StockKeeperPlacer implements RecipePlacer
 {
     private final RecipePlacer transfer;
     private final StockKeeperRequestMenu menu;
 
-    public StockKeeperPlacer(RecipePlacer transfer, AbstractContainerMenu menu)
+    StockKeeperPlacer(RecipePlacer transfer, StockKeeperRequestMenu menu)
     {
         this.transfer = transfer;
-        this.menu = (StockKeeperRequestMenu) menu;
+        this.menu = menu;
     }
 
     @Override

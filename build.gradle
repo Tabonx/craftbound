@@ -168,8 +168,8 @@ tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
 // player without Create installed sees a book with no Create categories.
 def hasCreate = project.hasProperty('create_version')
 
-// Readable as `//? if create` in source, for the one place where Create code sits in a file that is
-// otherwise shared. Whole files that only exist for Create are excluded below instead.
+// Readable as `//? if create` in source, for the one place that names the Create integration from a
+// file that is otherwise shared: client/Integrations. The integration itself is excluded below.
 stonecutter.constants.put('create', hasCreate)
 
 // Types Mojang renamed or moved without changing what they do. The source is written in 1.21.1's
@@ -297,15 +297,11 @@ def stageVersionedSources = tasks.register('stageVersionedSources', Sync) {
 
 sourceSets.main.java.srcDir stageVersionedSources
 
-// The Ponder integration is the one part of the mod that cannot exist without Create. PonderGate is
-// deliberately not in here: it only tracks whether the book is drawing a tooltip and touches nothing
-// Create owns, so the book keeps working with it on every version.
+// Everything that names a Create or Ponder class lives in client/create, so a version without Create
+// drops the whole directory and its mixin config.
 if (!hasCreate) {
-    sourceSets.main.java.exclude 'com/craftbound/client/ponder/CraftboundPonderPlugin.java',
-            'com/craftbound/client/ponder/PonderVisibility.java',
-            'com/craftbound/client/ponder/mixin/**',
-            'com/craftbound/client/create/**'
-    sourceSets.main.resources.exclude 'craftbound.ponder.mixins.json'
+    sourceSets.main.java.exclude 'com/craftbound/client/create/**'
+    sourceSets.main.resources.exclude 'craftbound.create.mixins.json'
 }
 
 dependencies {
@@ -376,7 +372,7 @@ tasks.withType(ProcessResources).configureEach {
             pack_formats           : modern
                     ? "\"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
                     : "\"pack_format\": ${pack_format}",
-            ponder_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.ponder.mixins.json\"" : '',
+            create_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.create.mixins.json\"" : '',
             create_dependency      : hasCreate ? [
                     '# Create is optional: without it the book simply has no Create categories to show. It must still',
                     '# load first, so its recipe categories are registered before the book reads them.',

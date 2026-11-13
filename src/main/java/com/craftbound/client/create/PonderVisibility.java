@@ -1,35 +1,44 @@
-package com.craftbound.client.ponder;
+package com.craftbound.client.create;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
+import com.craftbound.client.BookTooltips;
+import com.craftbound.client.IntegrationGuard;
 import com.craftbound.client.progression.Progression;
-import com.mojang.logging.LogUtils;
-
-import org.slf4j.Logger;
 
 import net.createmod.catnip.registry.RegisteredObjectsHelper;
 import net.createmod.ponder.foundation.PonderIndex;
 import net.createmod.ponder.foundation.PonderTag;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
-// What Ponder is allowed to list: only what the player can ponder, the same rule the book applies
-// to its own entries (see PonderGate). Listing everything the book names would hand out a tour of
-// every machine whose recipe is unlocked but never made.
+// What Ponder is allowed to show: only what the player can ponder. Listing everything the book names
+// would hand out a tour of every machine whose recipe is unlocked but never made.
 //
-// Every Ponder listing goes through this one class rather than asking Progression directly, so the
-// index and the category screens cannot drift apart as Ponder's own screens change.
+// Every Ponder screen goes through this one class rather than asking Progression directly, so the
+// index and the category screens cannot drift apart as Ponder's own screens change. Every answer is
+// "show everything" once the Create integration is switched off: the filtering is cosmetic.
 public final class PonderVisibility
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static IntegrationGuard guard = new IntegrationGuard("Create");
 
-    // Create is an optional dependency on a version range with no upper bound, so its Ponder API
-    // can move under us. Every call into it is answered "show everything" once that happens: the
-    // filtering is cosmetic, and losing it beats taking the game down with a link error.
-    private static boolean available = true;
+    static void guardedBy(IntegrationGuard createGuard)
+    {
+        guard = createGuard;
+    }
+
+    // An item lying in a chest may be pondered: the player is looking at the real thing. An entry in
+    // the book may not, until they have actually held one, or the book would hand out a tour of
+    // every machine it lists.
+    public static boolean blocksShortcut(ItemStack stack)
+    {
+        return guarded(() -> BookTooltips.building() && !stack.isEmpty()
+                && !Progression.canPonder(id(stack.getItem())), false);
+    }
 
     public static boolean isHidden(ItemLike itemLike)
     {
@@ -75,21 +84,9 @@ public final class PonderVisibility
                 true);
     }
 
-    private static boolean guarded(BooleanSupplier call, boolean whenUnavailable)
+    private static boolean guarded(Supplier<Boolean> call, boolean whenDisabled)
     {
-        if (!available)
-            return whenUnavailable;
-
-        try
-        {
-            return call.getAsBoolean();
-        }
-        catch (LinkageError e)
-        {
-            available = false;
-            LOGGER.error("Ponder integration disabled: this version of Create no longer fits it", e);
-            return whenUnavailable;
-        }
+        return guard.call(call, () -> whenDisabled);
     }
 
     private PonderVisibility() {}

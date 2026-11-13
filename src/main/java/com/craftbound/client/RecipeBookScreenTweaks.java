@@ -10,10 +10,6 @@ import com.craftbound.client.RecipeBookLayout.Placement;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.TransferPlacer;
 import com.craftbound.client.mixin.ContainerScreenAccessor;
-//? if create {
-import com.craftbound.client.create.StockKeeperPlacer;
-import com.craftbound.client.create.StockKeeperStock;
-//?}
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ImageButton;
@@ -25,9 +21,6 @@ import net.minecraft.world.inventory.Slot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-//? if create {
-import net.neoforged.fml.ModList;
-//?}
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -47,11 +40,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 @EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class RecipeBookScreenTweaks
 {
-    //? if create {
-    // Guarded so the Create classes are only ever resolved when Create is installed.
-    private static final boolean CREATE_LOADED = ModList.get().isLoaded("create");
-    //?}
-
     // What each kind of screen draws past its left edge, learned the first time it is shown. The
     // screen is laid out before any of that exists, so a first sighting lays it out again.
     private static final Map<Class<?>, SideAreas> SIDES = new HashMap<>();
@@ -238,15 +226,10 @@ public final class RecipeBookScreenTweaks
             book.setPlacer(new GridPlacer(menu));
             return;
         }
-        book.setPlacer(new TransferPlacer(screen.getMenu()));
-        //? if create {
-        if (CREATE_LOADED && StockKeeperStock.isStockKeeper(screen.getMenu()))
-        {
-            book.setPlacer(new StockKeeperPlacer(new TransferPlacer(screen.getMenu()), screen.getMenu()));
-            book.setCraftableSource(() -> StockKeeperStock.craftable(screen.getMenu()),
-                    () -> StockKeeperStock.version(screen.getMenu()));
-        }
-        //?}
+        RecipePlacer transfer = new TransferPlacer(screen.getMenu());
+        Optional<MenuBinding> binding = Integrations.bind(screen.getMenu(), transfer);
+        book.setPlacer(binding.map(MenuBinding::placer).orElse(transfer));
+        binding.ifPresent(bound -> book.setCraftableSource(bound.craftable(), bound.version()));
     }
 
     private static Optional<Attached> attached(Screen screen)

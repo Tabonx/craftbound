@@ -8,20 +8,14 @@ import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
 
 import net.minecraft.world.entity.player.StackedContents;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 
 // What the stock behind a stock keeper can be crafted into, for the book's craftable filter. The
 // keeper orders crafts from its stock, not from the player's inventory. The client holds the last
 // stock it was sent and replaces it whole on every update, so its identity is its version.
-public final class StockKeeperStock
+final class StockKeeperStock
 {
-    public static boolean isStockKeeper(AbstractContainerMenu menu)
-    {
-        return menu instanceof StockKeeperRequestMenu;
-    }
-
-    public static Set<Item> craftable(AbstractContainerMenu menu)
+    static Set<Item> craftable(StockKeeperRequestMenu menu)
     {
         InventorySummary stock = stock(menu);
         if (stock == null)
@@ -33,14 +27,14 @@ public final class StockKeeperStock
         return CraftableItems.craftableFrom(contents);
     }
 
-    public static int version(AbstractContainerMenu menu)
+    static int version(StockKeeperRequestMenu menu)
     {
         return System.identityHashCode(stock(menu));
     }
 
-    private static InventorySummary stock(AbstractContainerMenu menu)
+    private static InventorySummary stock(StockKeeperRequestMenu menu)
     {
-        return ((StockKeeperRequestMenu) menu).contentHolder.getLastClientsideStockSnapshotAsSummary();
+        return menu.contentHolder.getLastClientsideStockSnapshotAsSummary();
     }
 
     private StockKeeperStock() {}

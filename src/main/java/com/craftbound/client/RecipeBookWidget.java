@@ -19,7 +19,6 @@ import com.craftbound.client.jei.BookRecipeRender;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.jei.JeiCompat;
 import com.craftbound.client.jei.RecipeGroup;
-import com.craftbound.client.ponder.PonderGate;
 import com.craftbound.client.progression.Progression;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -992,7 +991,7 @@ public final class RecipeBookWidget extends LooseWidget
             Canvas.pop(graphics);
 
             slotTooltip = slot == null ? List.of()
-                    : PonderGate.whileBuildingBookTooltip(() -> slotTooltip(slot.slot()));
+                    : BookTooltips.whileBuilding(() -> slotTooltip(slot.slot()));
         });
     }
 
@@ -1049,7 +1048,7 @@ public final class RecipeBookWidget extends LooseWidget
         {
             TooltipFlag flag = minecraft.options.advancedItemTooltips ? TooltipFlag.ADVANCED : TooltipFlag.NORMAL;
             graphics.renderComponentTooltip(minecraft.font,
-                    PonderGate.whileBuildingBookTooltip(() -> hovered.tooltip(flag)), mouseX, mouseY);
+                    BookTooltips.whileBuilding(() -> hovered.tooltip(flag)), mouseX, mouseY);
             return;
         }
         if (!slotTooltip.isEmpty())

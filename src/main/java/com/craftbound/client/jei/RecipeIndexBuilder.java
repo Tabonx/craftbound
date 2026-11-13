@@ -12,6 +12,7 @@ import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
+import com.craftbound.client.Integrations;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
@@ -80,7 +81,7 @@ final class RecipeIndexBuilder
                     representatives.putIfAbsent(key, normalized(manager, output)));
 
             List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
-            inputs.addAll(RecipeRequirements.extraSlots(recipe));
+            inputs.addAll(Integrations.hiddenRequirements(recipe));
             out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(),
                     groupOf(categoryUid, recipe)));
         });
