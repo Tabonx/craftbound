@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import com.mojang.logging.LogUtils;
 
@@ -19,6 +20,7 @@ import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
 
+import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.IFocusGroup;
@@ -45,6 +47,9 @@ public final class RecipeIndexBuilder
     private static final RuntimeScoped<RecipeIndexSnapshot> CURRENT =
             new RuntimeScoped<>(runtime -> new RecipeIndexBuilder(runtime).build());
 
+    // Recipe to the categories JEI could not lay it out in.
+    private static final Map<Object, Set<String>> UNLAYABLE = new WeakHashMap<>();
+
     private final IRecipeManager recipes;
     private final IIngredientManager manager;
     private final IPlatformFluidHelper<?> fluids;
@@ -54,6 +59,7 @@ public final class RecipeIndexBuilder
     private final Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
     private final Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
     private final Set<String> unjudged = new HashSet<>();
+    private final Set<String> invisibleOutputs = new HashSet<>();
 
     private RecipeIndexBuilder(IJeiRuntime runtime)
     {
@@ -80,7 +86,8 @@ public final class RecipeIndexBuilder
             catalysts.put(categoryUid, companions.machinesOf(catalystItems(category)));
             byCategory.put(categoryUid, nodesOf(category, categoryUid));
         });
-        return new RecipeIndexSnapshot(RecipeIndex.of(byCategory, catalysts, unjudged), Map.copyOf(representatives));
+        return new RecipeIndexSnapshot(RecipeIndex.of(byCategory, catalysts, unjudged), Map.copyOf(representatives),
+                Set.copyOf(invisibleOutputs));
     }
 
     private <T> Map<Object, RecipeNode> nodesOf(IRecipeCategory<T> category, String categoryUid)
@@ -90,7 +97,7 @@ public final class RecipeIndexBuilder
                 .filter(category::isHandled)
                 .forEach(recipe -> read(category, recipe, categoryUid).ifPresentOrElse(
                         collector -> nodes.put(recipe, node(collector, recipe, categoryUid)),
-                        () -> unjudged(category, recipe)));
+                        () -> unjudged(category, recipe, categoryUid)));
         return nodes;
     }
 
@@ -98,6 +105,7 @@ public final class RecipeIndexBuilder
     {
         Map<String, ITypedIngredient<?>> outputs = collector.outputs();
         represent(outputs);
+        invisibleOutputs.addAll(collector.invisibleOutputKeys());
         List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
         inputs.addAll(Integrations.hiddenRequirements(recipe));
         return new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(), groupOf(categoryUid, recipe));
@@ -129,21 +137,22 @@ public final class RecipeIndexBuilder
     // A recipe the index cannot read is left out of it, and the book treats a recipe it never
     // indexed as unlocked. JEI's own layout often still reads it, being what JEI's screens show, so
     // what it makes is taken from there and never hidden: otherwise an item whose only recipe this
-    // is would stay out of the book for good.
-    private <T> void unjudged(IRecipeCategory<T> category, T recipe)
+    // is would stay out of the book for good. JEI logs a layout that fails as an error, so one that
+    // failed is not tried again on the next build.
+    private <T> void unjudged(IRecipeCategory<T> category, T recipe, String categoryUid)
     {
+        if (UNLAYABLE.getOrDefault(recipe, Set.of()).contains(categoryUid))
+            return;
+        Optional<IRecipeLayoutDrawable<T>> layout = recipes.createRecipeLayoutDrawable(category, recipe, noFocus);
+        if (layout.isEmpty())
+        {
+            UNLAYABLE.computeIfAbsent(recipe, unused -> new HashSet<>()).add(categoryUid);
+            return;
+        }
         Map<String, ITypedIngredient<?>> outputs = new HashMap<>();
-        try
-        {
-            recipes.createRecipeLayoutDrawable(category, recipe, noFocus).ifPresent(layout -> layout
-                    .getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT)
-                    .forEach(slot -> slot.getAllIngredientsList().forEach(output ->
-                            outputs.putIfAbsent(BookIngredient.unlockKey(manager, output), output))));
-        }
-        catch (RuntimeException | LinkageError e)
-        {
-            LOGGER.debug("Craftbound: JEI could not lay out a recipe the index could not read either", e);
-        }
+        layout.get().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT)
+                .forEach(slot -> slot.getAllIngredientsList().forEach(output ->
+                        outputs.putIfAbsent(BookIngredient.unlockKey(manager, output), output)));
         unjudged.addAll(outputs.keySet());
         represent(outputs);
     }

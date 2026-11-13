@@ -35,6 +35,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     private final IPlatformFluidHelper<?> fluids;
     private final List<IngredientSlot> inputs = new ArrayList<>();
     private final List<IngredientSlot> outputs = new ArrayList<>();
+    private final List<IngredientSlot> invisibleOutputs = new ArrayList<>();
 
     SlotIngredientCollector(IIngredientManager manager, IPlatformFluidHelper<?> fluids)
     {
@@ -123,13 +124,26 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     }
     //?}
 
-    // Invisible ingredients are dropped rather than treated as another required slot: a category
-    // that declares one the player can never hold would lock the recipe forever, and showing a
-    // recipe early is the far cheaper mistake.
+    // Invisible inputs are dropped rather than treated as another required slot: a category that
+    // declares one the player can never hold would lock the recipe forever, and showing a recipe
+    // early is the far cheaper mistake. Invisible outputs are kept apart from the real ones: JEI
+    // finds the recipe by them, so the book lists them, but they unlock nothing.
     @Override
     public IIngredientAcceptor<?> addInvisibleIngredients(RecipeIngredientRole role)
     {
-        return new IngredientSlot(manager, fluids);
+        IngredientSlot slot = new IngredientSlot(manager, fluids);
+        if (role == RecipeIngredientRole.OUTPUT)
+            invisibleOutputs.add(slot);
+        return slot;
+    }
+
+    Set<String> invisibleOutputKeys()
+    {
+        Set<String> keys = new HashSet<>();
+        for (IngredientSlot slot : invisibleOutputs)
+            for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
+                keys.add(BookIngredient.unlockKey(manager, ingredient));
+        return keys;
     }
 
     @Override
