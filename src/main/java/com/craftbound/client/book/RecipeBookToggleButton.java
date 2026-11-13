@@ -1,7 +1,7 @@
 package com.craftbound.client.book;
 
 import com.craftbound.Craftbound;
-import com.craftbound.client.ClientSession;
+import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.compat.Canvas;
 import com.craftbound.client.compat.Input;
 import com.craftbound.client.compat.Net;

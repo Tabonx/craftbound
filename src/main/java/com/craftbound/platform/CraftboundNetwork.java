@@ -1,6 +1,5 @@
 package com.craftbound.platform;
 
-import com.craftbound.ClientHooks;
 import com.craftbound.Craftbound;
 import com.craftbound.obtained.ObtainedItemsPayload;
 import com.craftbound.placement.PlaceRecipeHandler;

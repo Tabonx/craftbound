@@ -1,4 +1,4 @@
-package com.craftbound.client;
+package com.craftbound.client.session;
 
 import com.craftbound.Craftbound;
 

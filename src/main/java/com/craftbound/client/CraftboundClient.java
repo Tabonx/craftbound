@@ -1,8 +1,9 @@
 package com.craftbound.client;
 
-import com.craftbound.ClientHooks;
 import com.craftbound.Craftbound;
 import com.craftbound.client.integration.Integrations;
+import com.craftbound.client.session.ClientSideHooks;
+import com.craftbound.platform.ClientHooks;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;

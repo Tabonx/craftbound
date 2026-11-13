@@ -1,4 +1,4 @@
-package com.craftbound.client;
+package com.craftbound.client.session;
 
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;

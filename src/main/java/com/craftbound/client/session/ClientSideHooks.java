@@ -1,12 +1,12 @@
-package com.craftbound.client;
+package com.craftbound.client.session;
 
 import java.util.Set;
 
-import com.craftbound.ClientHooks;
+import com.craftbound.platform.ClientHooks;
 
 import net.minecraft.resources.ResourceLocation;
 
-final class ClientSideHooks implements ClientHooks
+public final class ClientSideHooks implements ClientHooks
 {
     @Override
     public void obtainedItems(Set<ResourceLocation> items)

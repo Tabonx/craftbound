@@ -11,7 +11,7 @@ ${mod_icon}
 description='''${mod_description}'''
 
 [[mixins]]
-config="${mod_id}.mixins.json"
+config="${mod_id}.client.mixins.json"
 
 # Mixins for both sides. The config lists none on the versions that need none.
 [[mixins]]

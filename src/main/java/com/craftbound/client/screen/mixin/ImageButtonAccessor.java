@@ -1,4 +1,4 @@
-package com.craftbound.client.mixin;
+package com.craftbound.client.screen.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.craftbound.client.ClientSession;
+import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.RecipeGate;
 import com.craftbound.client.jei.RecipeIndexBuilder;

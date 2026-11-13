@@ -1,4 +1,4 @@
-package com.craftbound.client;
+package com.craftbound.client.session;
 
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;

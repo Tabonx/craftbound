@@ -102,7 +102,7 @@ It takes three pieces, ordered by how well each survives a JEI update:
   The show-recipe and show-uses keys work off whatever the cursor is over, inventory slots
   included, and JEI's key mappings are read-only in the api. The screen is matched by class name,
   so JEI stays off the compile classpath.
-- The mixins in `client/mixin/jei` are the only part with no api behind it. JEI draws its two corner
+- The mixins in `client/jei/mixin` are the only part with no api behind it. JEI draws its two corner
   buttons whenever the screen is valid, outside the check for whether its lists have room, so no
   amount of denying it space will hide them. `JeiOverlayMixin` cancels the single call that draws
   everything JEI puts on a screen, and `JeiInputMixin` turns away the clicks that would otherwise
@@ -124,7 +124,7 @@ loaders, and staying on it is what makes a port to another version a matter of t
 vanilla recipe plumbing rather than of JEI.
 
 One internal is still unavoidable. JEI's shapeless marker has no api to suppress it, so
-`client/mixin/ShapelessIconMixin` names `mezz.jei.library.gui.recipes.ShapelessIcon` as a string
+`client/jei/mixin/ShapelessIconMixin` names `mezz.jei.library.gui.recipes.ShapelessIcon` as a string
 and hides it only while `BookRecipeRender` says the book is the one drawing, leaving JEI's own
 screens as JEI drew them.
 
@@ -251,7 +251,7 @@ the potions all over again.
 Vanilla keeps unlocking recipes and toasting them even with its book forced hidden, which left two
 notifications side by side, one pointing at a book the player does not have, disagreeing with each
 other, since vanilla unlocks on its own rules rather than Craftbound's progression.
-`client/mixin/RecipeToastMixin` suppresses it, leaving one answer to "what did I just unlock?".
+`client/screen/mixin/RecipeToastMixin` suppresses it, leaving one answer to "what did I just unlock?".
 
 Obtaining an item that unlocks something pops vanilla's recipe toast in the top-right, using the same
 `toast/recipe` sprite and same "New Recipes Unlocked! / Check your recipe book" strings, so it reads
@@ -357,7 +357,7 @@ outside itself and throw the carried item out.
 
 ## Status
 Implemented and in use:
-- Vanilla recipe book **suppressed** globally via `client/mixin/RecipeBookComponentMixin`
+- Vanilla recipe book **suppressed** globally via `client/screen/mixin/RecipeBookComponentMixin`
   (forces `RecipeBookComponent.isVisible()` false). The Craftbound book replaces it everywhere
   the vanilla one appeared, including crafting tables and the furnace family.
 - Recipes render through JEI's own category drawables inside the docked panel, via

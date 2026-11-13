@@ -1,4 +1,4 @@
-package com.craftbound;
+package com.craftbound.platform;
 
 import java.util.Set;
 

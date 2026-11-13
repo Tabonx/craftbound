@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.craftbound.client.ClientSession;
+import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookIngredients;
 import com.craftbound.client.jei.JeiSession;

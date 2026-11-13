@@ -1,6 +1,6 @@
 package com.craftbound.upgrade;
 
-import com.craftbound.ClientHooks;
+import com.craftbound.platform.ClientHooks;
 import com.craftbound.platform.CraftboundAttachments;
 import com.craftbound.platform.PlayerState;
 import com.craftbound.platform.ServerLevels;

@@ -3,7 +3,7 @@ package com.craftbound.client.screen;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.craftbound.client.ClientSession;
+import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.book.BookSession;
 import com.craftbound.client.book.RecipeBookLayout.Placement;
 import com.craftbound.client.book.RecipeBookLayout;
@@ -15,7 +15,7 @@ import com.craftbound.client.compat.Input;
 import com.craftbound.client.integration.Integrations;
 import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.ScreenAreas;
-import com.craftbound.client.mixin.ContainerScreenAccessor;
+import com.craftbound.client.screen.mixin.ContainerScreenAccessor;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

@@ -4,12 +4,12 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.Optional;
 
-import com.craftbound.client.ClientSession;
+import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.book.BookSession;
 import com.craftbound.client.book.RecipeBookLayout;
 import com.craftbound.client.jei.TransferHandlers;
-import com.craftbound.client.mixin.ContainerScreenAccessor;
-import com.craftbound.client.mixin.ImageButtonAccessor;
+import com.craftbound.client.screen.mixin.ContainerScreenAccessor;
+import com.craftbound.client.screen.mixin.ImageButtonAccessor;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
