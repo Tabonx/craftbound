@@ -1,5 +1,7 @@
 package com.craftbound.client;
 
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.Optional;
 
 import com.craftbound.client.jei.TransferHandlers;
@@ -27,6 +29,7 @@ public final class BookScreens
     private static final ScreenSides SIDES = new ScreenSides();
     private static final ClickCapture CAPTURE = new ClickCapture();
     private static BookHost host = null;
+    private static Reference<AbstractContainerScreen<?>> layingOut = new WeakReference<>(null);
 
     private BookScreens()
     {
@@ -37,24 +40,28 @@ public final class BookScreens
         return screen.getMenu() instanceof RecipeBookMenu;
     }
 
-    public static boolean docksBeside(AbstractContainerScreen<?> screen)
+    private static boolean docksBeside(AbstractContainerScreen<?> screen)
     {
         return !hosted(screen) && TransferHandlers.acceptsRecipes(screen.getMenu());
     }
 
-    // Asked by a recipe-book screen placing itself, which is always the one being opened.
-    public static int hostedLeftPos(int width, int imageWidth)
+    // Every container screen starts laying itself out here, before a recipe-book screen asks its book
+    // where to stand. A screen beside the book is told the width that centers it beside the book,
+    // taken from the window: a screen rebuilt without a resize keeps the width it was given.
+    public static void layingOut(AbstractContainerScreen<?> screen, int imageWidth)
     {
-        int gap = Screens.current() instanceof AbstractContainerScreen<?> screen ? SIDES.gap(screen) : RecipeBookLayout.GAP;
-        return RecipeBookLayout.leftPos(width, imageWidth, gap, BookSession.get().isOpen());
+        layingOut = new WeakReference<>(screen);
+        if (docksBeside(screen))
+            screen.width = RecipeBookLayout.screenWidthFor(Minecraft.getInstance().getWindow().getGuiScaledWidth(),
+                    imageWidth, SIDES.gap(screen), BookSession.get().isOpen());
     }
 
-    // The width a screen beside the book is told it has, so that centering itself moves it aside.
-    // Taken from the window: a screen rebuilt without a resize keeps the width it was given.
-    public static int besideScreenWidth(AbstractContainerScreen<?> screen, int imageWidth)
+    // Asked by the recipe-book screen laying itself out.
+    public static int hostedLeftPos(int width, int imageWidth)
     {
-        return RecipeBookLayout.screenWidthFor(Minecraft.getInstance().getWindow().getGuiScaledWidth(), imageWidth,
-                SIDES.gap(screen), BookSession.get().isOpen());
+        AbstractContainerScreen<?> screen = layingOut.get();
+        int gap = screen == null ? RecipeBookLayout.GAP : SIDES.gap(screen);
+        return RecipeBookLayout.leftPos(width, imageWidth, gap, BookSession.get().isOpen());
     }
 
     public static void init(Screen screen, BookHost.Widgets widgets)
