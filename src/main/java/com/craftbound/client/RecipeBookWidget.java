@@ -121,6 +121,7 @@ public final class RecipeBookWidget extends LooseWidget
         if (!visible)
             return;
         state.ticks++;
+        closeStaleRecipe();
         browse.tick();
         place.tick();
         if (state.recipes.isOpen())
@@ -130,15 +131,20 @@ public final class RecipeBookWidget extends LooseWidget
     // Brings what the book shows up to date with the world, and the controls with what it shows.
     private void sync()
     {
-        // A recipe built in a JEI run that has since ended is not shown on.
-        if (state.recipes.isOpen() && state.recipesGeneration != JeiSession.generation())
-            closeRecipe();
+        closeStaleRecipe();
         browse.refresh();
         place.show(state.recipes.isOpen() ? state.recipes.current() : null);
         BookPanel panel = panel();
         boolean paged = panel.pages() > 1;
         backButton.visible = paged && panel.page() > 0;
         forwardButton.visible = paged && panel.page() < panel.pages() - 1;
+    }
+
+    // A recipe built in a JEI run that has since ended is not shown or ticked on.
+    private void closeStaleRecipe()
+    {
+        if (state.recipes.isOpen() && state.recipesGeneration != JeiSession.generation())
+            closeRecipe();
     }
 
     // OUTPUT shows how the ingredient is made; INPUT shows where it is used.
