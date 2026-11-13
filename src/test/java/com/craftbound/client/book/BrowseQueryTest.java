@@ -53,12 +53,6 @@ class BrowseQueryTest
         }
 
         @Override
-        public String unlockKey(Item item)
-        {
-            return item.name();
-        }
-
-        @Override
         public String variantGroup(Item item)
         {
             return item.group();
@@ -77,11 +71,12 @@ class BrowseQueryTest
         }
 
         @Override
-        public Set<String> outputsUsing(Set<String> unlockKeys)
+        public Predicate<Item> madeFrom(List<Item> inputs)
         {
-            return unlockKeys.stream()
-                    .flatMap(key -> MADE_FROM.getOrDefault(key, Set.of()).stream())
+            Set<String> made = inputs.stream()
+                    .flatMap(input -> MADE_FROM.getOrDefault(input.name(), Set.of()).stream())
                     .collect(Collectors.toSet());
+            return item -> made.contains(item.name());
         }
     }
 

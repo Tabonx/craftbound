@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.craftbound.client.jei.BookIngredient;
+import com.craftbound.progression.UnlockKey;
 
 import net.minecraft.client.Minecraft;
 
@@ -16,7 +17,7 @@ public final class ProgressionToasts
     {
         progression.refresh();
 
-        List<String> unlocked = progression.drainNewlyUnlocked();
+        List<UnlockKey> unlocked = progression.drainNewlyUnlocked();
         if (unlocked.isEmpty())
             return;
 

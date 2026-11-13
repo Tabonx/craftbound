@@ -11,7 +11,7 @@ class UnlockHighlightsTest
     @Test
     void anEntrySwellsAndSettlesOverFifteenTicks()
     {
-        UnlockHighlights highlights = new UnlockHighlights();
+        UnlockHighlights<String> highlights = new UnlockHighlights<String>();
         highlights.start("oak");
         assertEquals(1f, highlights.scale("oak"), 1e-6);
         highlights.advance(UnlockHighlights.TICKS / 2);
@@ -24,7 +24,7 @@ class UnlockHighlightsTest
     @Test
     void readingTwiceInAFrameDoesNotSpeedItUp()
     {
-        UnlockHighlights highlights = new UnlockHighlights();
+        UnlockHighlights<String> highlights = new UnlockHighlights<String>();
         highlights.start("oak");
         highlights.advance(5f);
         float first = highlights.scale("oak");
@@ -35,6 +35,6 @@ class UnlockHighlightsTest
     @Test
     void untouchedEntriesNeverSwell()
     {
-        assertEquals(1f, new UnlockHighlights().scale("stone"));
+        assertEquals(1f, new UnlockHighlights<String>().scale("stone"));
     }
 }

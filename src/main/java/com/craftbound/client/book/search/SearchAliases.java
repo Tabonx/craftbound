@@ -21,19 +21,19 @@ public final class SearchAliases
             .item("hopper", "tom holland")
             .build();
 
-    private final Map<String, List<String>> byKey;
+    private final Map<UnlockKey, List<String>> byKey;
 
-    private SearchAliases(Map<String, List<String>> byKey)
+    private SearchAliases(Map<UnlockKey, List<String>> byKey)
     {
         this.byKey = byKey;
     }
 
-    public static boolean matches(String unlockKey, String needle)
+    public static boolean matches(UnlockKey unlockKey, String needle)
     {
         return DEFAULTS.hasMatch(unlockKey, needle);
     }
 
-    public boolean hasMatch(String unlockKey, String needle)
+    public boolean hasMatch(UnlockKey unlockKey, String needle)
     {
         String lowered = needle.toLowerCase(Locale.ROOT);
         return byKey.getOrDefault(unlockKey, List.of()).stream()
@@ -47,7 +47,7 @@ public final class SearchAliases
 
     public static final class Builder
     {
-        private final Map<String, List<String>> byKey = new HashMap<>();
+        private final Map<UnlockKey, List<String>> byKey = new HashMap<>();
 
         public Builder item(String id, String... aliases)
         {
@@ -59,7 +59,7 @@ public final class SearchAliases
             return add(UnlockKey.ofFluid(ResourceLocation.parse(id), ""), aliases);
         }
 
-        private Builder add(String key, String... aliases)
+        private Builder add(UnlockKey key, String... aliases)
         {
             List<String> target = byKey.computeIfAbsent(key, unused -> new ArrayList<>());
             for (String alias : aliases)

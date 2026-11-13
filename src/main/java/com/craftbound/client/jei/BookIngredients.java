@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.craftbound.client.bookmarks.BookmarkKeys;
+import com.craftbound.progression.UnlockKey;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DynamicOps;
 
@@ -68,7 +69,7 @@ public final class BookIngredients
     }
 
     // The unlock key of a held stack, the same one a recipe slot asking for it would carry.
-    public static Optional<String> unlockKeyOf(ItemStack stack)
+    public static Optional<UnlockKey> unlockKeyOf(ItemStack stack)
     {
         if (stack.isEmpty())
             return Optional.empty();

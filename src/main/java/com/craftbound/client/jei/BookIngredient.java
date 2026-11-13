@@ -30,12 +30,12 @@ public final class BookIngredient
 {
     private final ITypedIngredient<?> typed;
     private final String sessionUid;
-    private final String unlockKey;
+    private final UnlockKey unlockKey;
     private final String displayName;
     private final Renderer renderer;
     private final Function<TooltipFlag, List<Component>> tooltip;
 
-    private BookIngredient(ITypedIngredient<?> typed, String sessionUid, String unlockKey, String displayName,
+    private BookIngredient(ITypedIngredient<?> typed, String sessionUid, UnlockKey unlockKey, String displayName,
             Renderer renderer, Function<TooltipFlag, List<Component>> tooltip)
     {
         this.typed = typed;
@@ -69,23 +69,24 @@ public final class BookIngredient
 
     // Progression identity: the registry id and JEI's subtype, see UnlockKey. Other ingredient types
     // fall back to JEI's own uid, which is as fine-grained as we can be for them.
-    public static <V> String unlockKey(IIngredientManager manager, ITypedIngredient<V> typed)
+    public static <V> UnlockKey unlockKey(IIngredientManager manager, ITypedIngredient<V> typed)
     {
         return keyOf(typed, manager.getIngredientHelper(typed.getType()));
     }
 
-    private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
+    private static <V> UnlockKey keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
-        Optional<String> itemKey = itemIdOf(typed).map(id -> UnlockKey.ofItem(id, subtypeOf(typed, helper)));
+        Optional<UnlockKey> itemKey = itemIdOf(typed).map(id -> UnlockKey.ofItem(id, subtypeOf(typed, helper)));
         if (itemKey.isPresent())
             return itemKey.get();
 
-        Optional<String> fluidKey = fluidOf(typed)
+        Optional<UnlockKey> fluidKey = fluidOf(typed)
                 .map(fluid -> UnlockKey.ofFluid(BuiltInRegistries.FLUID.getKey(fluid), subtypeOf(typed, helper)));
         if (fluidKey.isPresent())
             return fluidKey.get();
 
-        return typed.getType().getUid() + "|" + helper.getUid(typed.getIngredient(), UidContext.Ingredient);
+        return UnlockKey.ofIngredient(typed.getType().getUid(),
+                String.valueOf(helper.getUid(typed.getIngredient(), UidContext.Ingredient)));
     }
 
     // The item an ingredient stands for, when it is an item stack.
@@ -124,15 +125,15 @@ public final class BookIngredient
         return uid instanceof List<?> parts && parts.size() == 2 ? String.valueOf(parts.get(1)) : "";
     }
 
-    public String unlockKey()
+    public UnlockKey unlockKey()
     {
         return unlockKey;
     }
 
     // The key without its subtype, the level recipe inputs are read at.
-    public String registryKey()
+    public UnlockKey registryKey()
     {
-        return UnlockKey.withoutSubtype(unlockKey);
+        return unlockKey.withoutSubtype();
     }
 
     public ITypedIngredient<?> typed()

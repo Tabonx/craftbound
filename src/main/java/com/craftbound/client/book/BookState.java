@@ -7,6 +7,7 @@ import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipes;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.progression.Progression;
+import com.craftbound.progression.UnlockKey;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 
@@ -22,7 +23,7 @@ public final class BookState
                     .toList(),
             group -> BookRecipes.allIn(group, Progression.gate()));
     final GridPager pager = new GridPager();
-    final UnlockHighlights highlights = new UnlockHighlights();
+    final UnlockHighlights<UnlockKey> highlights = new UnlockHighlights<>();
     BrowseTab tab = BrowseTab.ALL;
     List<List<BookIngredient>> entries = List.of();
     int catalogRevision = -1;

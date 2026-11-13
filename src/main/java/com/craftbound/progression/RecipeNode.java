@@ -8,9 +8,9 @@ import java.util.Set;
 //
 // `group` is the recipe's vanilla recipe-book group, scoped by category, or empty. Recipes sharing
 // one are variants of each other, such as the chest boat in every wood.
-public record RecipeNode(String categoryUid, List<InputSlot> inputSlots, Set<String> outputKeys, String group)
+public record RecipeNode(String categoryUid, List<InputSlot> inputSlots, Set<UnlockKey> outputKeys, String group)
 {
-    public RecipeNode(String categoryUid, List<InputSlot> inputSlots, Set<String> outputKeys)
+    public RecipeNode(String categoryUid, List<InputSlot> inputSlots, Set<UnlockKey> outputKeys)
     {
         this(categoryUid, inputSlots, outputKeys, "");
     }

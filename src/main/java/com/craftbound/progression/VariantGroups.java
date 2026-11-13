@@ -13,9 +13,9 @@ import java.util.Set;
 // rather than with the recipes that dye one. A group making a single output has nothing to merge.
 public final class VariantGroups
 {
-    public static Map<String, String> of(RecipeIndex index)
+    public static Map<UnlockKey, String> of(RecipeIndex index)
     {
-        Map<String, Set<String>> outputsByGroup = new HashMap<>();
+        Map<String, Set<UnlockKey>> outputsByGroup = new HashMap<>();
         index.nodes()
                 .filter(node -> !node.group().isEmpty())
                 .forEach(node -> outputsByGroup.computeIfAbsent(node.group(), unused -> new HashSet<>())
@@ -24,12 +24,12 @@ public final class VariantGroups
         Comparator<String> preferred = Comparator.<String>comparingInt(group -> outputsByGroup.get(group).size())
                 .reversed()
                 .thenComparing(Comparator.naturalOrder());
-        Map<String, String> groupOf = new HashMap<>();
+        Map<UnlockKey, String> groupOf = new HashMap<>();
         outputsByGroup.forEach((group, outputs) ->
         {
             if (outputs.size() < 2)
                 return;
-            for (String output : outputs)
+            for (UnlockKey output : outputs)
                 groupOf.merge(output, group, (current, other) -> preferred.compare(current, other) <= 0 ? current : other);
         });
         return groupOf;

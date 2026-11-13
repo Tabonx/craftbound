@@ -1,5 +1,6 @@
 package com.craftbound.progression;
 
+import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
@@ -10,72 +11,83 @@ import net.minecraft.resources.ResourceLocation;
 // JEI counts neither damage nor most components as a subtype, so a recipe outputting a damaged tool
 // still unlocks the plain grid entry.
 //
-// Kept as a parsed record rather than raw string handling so the format lives in one place and can
-// be tested without a registry: reading a key back is how the unlock toast finds an icon.
-public record UnlockKey(Kind kind, ResourceLocation id, String subtype)
+// An ingredient type with no registry identity is named by JEI's type uid and its own uid instead,
+// which is as fine-grained as we can be for it and never has a subtype to drop.
+public record UnlockKey(Kind kind, String id, String subtype)
 {
     public enum Kind
     {
-        ITEM,
-        FLUID
+        ITEM("item|"),
+        FLUID("fluid|"),
+        INGREDIENT("");
+
+        private final String prefix;
+
+        Kind(String prefix)
+        {
+            this.prefix = prefix;
+        }
     }
 
-    private static final String ITEM_PREFIX = "item|";
-    private static final String FLUID_PREFIX = "fluid|";
-    private static final String SUBTYPE_SEPARATOR = "|";
+    private static final String SEPARATOR = "|";
 
-    public static String ofItem(ResourceLocation id)
+    public static UnlockKey ofItem(ResourceLocation id)
     {
         return ofItem(id, "");
     }
 
-    public static String ofItem(ResourceLocation id, String subtype)
+    public static UnlockKey ofItem(ResourceLocation id, String subtype)
     {
-        return withSubtype(ITEM_PREFIX + id, subtype);
+        return new UnlockKey(Kind.ITEM, id.toString(), subtype);
     }
 
-    public static String ofFluid(ResourceLocation id, String subtype)
+    public static UnlockKey ofFluid(ResourceLocation id, String subtype)
     {
-        return withSubtype(FLUID_PREFIX + id, subtype);
+        return new UnlockKey(Kind.FLUID, id.toString(), subtype);
     }
 
-    private static String withSubtype(String key, String subtype)
+    public static UnlockKey ofIngredient(String typeUid, String uid)
     {
-        return subtype.isEmpty() ? key : key + SUBTYPE_SEPARATOR + subtype;
+        return new UnlockKey(Kind.INGREDIENT, typeUid, uid);
     }
 
-    // Empty for keys naming something other than an item or fluid: ingredient types we have no
-    // registry-level identity for fall back to JEI's own uid, which this does not try to read.
-    public static Optional<UnlockKey> parse(String key)
+    // What the registry id alone names. Recipe inputs are read at that level, since a slot asks for
+    // an item, not for one potion of it.
+    public UnlockKey withoutSubtype()
     {
-        if (key.startsWith(ITEM_PREFIX))
-            return parse(Kind.ITEM, key.substring(ITEM_PREFIX.length()));
-        if (key.startsWith(FLUID_PREFIX))
-            return parse(Kind.FLUID, key.substring(FLUID_PREFIX.length()));
-        return Optional.empty();
+        return hasSubtype() ? new UnlockKey(kind, id, "") : this;
     }
 
-    // The key with its subtype dropped: what the registry id alone names. Recipe inputs are read at
-    // that level, since a slot asks for an item, not for one potion of it.
-    public static String withoutSubtype(String key)
+    public boolean hasSubtype()
     {
-        int prefixEnd = key.indexOf(SUBTYPE_SEPARATOR);
-        int subtypeStart = key.indexOf(SUBTYPE_SEPARATOR, prefixEnd + 1);
-        return parse(key).isEmpty() || subtypeStart < 0 ? key : key.substring(0, subtypeStart);
+        return kind != Kind.INGREDIENT && !subtype.isEmpty();
     }
 
-    // Ids never contain the separator, so the first one ends the id and starts the subtype.
-    private static Optional<UnlockKey> parse(Kind kind, String rest)
+    @Override
+    public String toString()
     {
-        int split = rest.indexOf(SUBTYPE_SEPARATOR);
+        return subtype.isEmpty() ? kind.prefix + id : kind.prefix + id + SEPARATOR + subtype;
+    }
+
+    // Reads back what toString wrote. Ids never contain the separator, so the first one after the
+    // id starts the subtype.
+    public static Optional<UnlockKey> parse(String text)
+    {
+        for (Kind kind : List.of(Kind.ITEM, Kind.FLUID))
+            if (text.startsWith(kind.prefix))
+                return registry(kind, text.substring(kind.prefix.length()));
+        int split = text.indexOf(SEPARATOR);
         return split < 0
-                ? of(kind, rest, "")
-                : of(kind, rest.substring(0, split), rest.substring(split + 1));
+                ? Optional.empty()
+                : Optional.of(ofIngredient(text.substring(0, split), text.substring(split + 1)));
     }
 
-    private static Optional<UnlockKey> of(Kind kind, String id, String subtype)
+    private static Optional<UnlockKey> registry(Kind kind, String rest)
     {
+        int split = rest.indexOf(SEPARATOR);
+        String id = split < 0 ? rest : rest.substring(0, split);
+        String subtype = split < 0 ? "" : rest.substring(split + 1);
         return Optional.ofNullable(ResourceLocation.tryParse(id))
-                .map(parsed -> new UnlockKey(kind, parsed, subtype));
+                .map(parsed -> new UnlockKey(kind, parsed.toString(), subtype));
     }
 }

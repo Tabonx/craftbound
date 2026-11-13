@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.craftbound.client.book.search.SearchAliases;
 import com.craftbound.client.bookmarks.BookmarkStore;
@@ -15,6 +16,7 @@ import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.RecipeIndexBuilder;
 import com.craftbound.client.jei.RecipeIndexSnapshot;
 import com.craftbound.client.progression.Progression;
+import com.craftbound.progression.UnlockKey;
 
 // Everything the book can list, loaded once per JEI run, since every ingredient came from that run:
 // what a search can name, what some recipe makes, which ribbon each sits on and which are bookmarked.
@@ -81,12 +83,6 @@ public final class BookCatalog implements BrowseQuery.Catalog<BookIngredient>
     }
 
     @Override
-    public String unlockKey(BookIngredient item)
-    {
-        return item.unlockKey();
-    }
-
-    @Override
     public String variantGroup(BookIngredient item)
     {
         return Progression.variantGroup(item);
@@ -107,8 +103,10 @@ public final class BookCatalog implements BrowseQuery.Catalog<BookIngredient>
     }
 
     @Override
-    public Set<String> outputsUsing(Set<String> unlockKeys)
+    public Predicate<BookIngredient> madeFrom(List<BookIngredient> inputs)
     {
-        return Progression.outputsUsing(unlockKeys);
+        Set<UnlockKey> made = Progression.outputsUsing(
+                inputs.stream().map(BookIngredient::unlockKey).collect(Collectors.toSet()));
+        return item -> made.contains(item.unlockKey());
     }
 }

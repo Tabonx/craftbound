@@ -1,13 +1,16 @@
 package com.craftbound.client.book.search;
 
+import static com.craftbound.progression.Keys.key;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import com.craftbound.progression.UnlockKey;
+
 class SearchAliasesTest
 {
-    private static final String HOPPER = "item|minecraft:hopper";
+    private static final UnlockKey HOPPER = key("item|minecraft:hopper");
 
     @Test
     void matchesAPrefixOfTheAlias()
@@ -26,7 +29,7 @@ class SearchAliasesTest
     void rejectsUnrelatedTermsAndOtherEntries()
     {
         assertFalse(SearchAliases.matches(HOPPER, "spider"));
-        assertFalse(SearchAliases.matches("item|minecraft:chest", "tom"));
+        assertFalse(SearchAliases.matches(key("item|minecraft:chest"), "tom"));
     }
 
     @Test
@@ -38,9 +41,9 @@ class SearchAliasesTest
                 .fluid("lava", "hot juice")
                 .build();
 
-        assertTrue(aliases.hasMatch("item|create:mechanical_press", "squish"));
-        assertTrue(aliases.hasMatch("item|create:mechanical_press", "flat"));
-        assertTrue(aliases.hasMatch("fluid|minecraft:lava", "juice"));
-        assertFalse(aliases.hasMatch("item|minecraft:lava", "juice"));
+        assertTrue(aliases.hasMatch(key("item|create:mechanical_press"), "squish"));
+        assertTrue(aliases.hasMatch(key("item|create:mechanical_press"), "flat"));
+        assertTrue(aliases.hasMatch(key("fluid|minecraft:lava"), "juice"));
+        assertFalse(aliases.hasMatch(key("item|minecraft:lava"), "juice"));
     }
 }

@@ -37,14 +37,14 @@ public final class ClientHeldVariants
     private final Supplier<WorldScopedStore<List<Either<ItemStack, Dynamic<?>>>>> store;
     private List<Either<ItemStack, Dynamic<?>>> keysSource = null;
     private int keysGeneration = -1;
-    private Set<String> keys = Set.of();
+    private Set<UnlockKey> keys = Set.of();
 
     public ClientHeldVariants(ClientStores stores)
     {
         this.store = stores.lazy("craftbound-held-variants.json", CODEC, ArrayList::new);
     }
 
-    public Set<String> current()
+    public Set<UnlockKey> current()
     {
         if (Minecraft.getInstance().player == null || !JeiSession.running())
             return Set.of();
@@ -66,10 +66,10 @@ public final class ClientHeldVariants
         if (player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !JeiSession.running())
             return;
 
-        Set<String> known = current();
+        Set<UnlockKey> known = current();
         for (ItemStack stack : PlayerItems.carried(player))
         {
-            Optional<String> key = variantKey(stack);
+            Optional<UnlockKey> key = variantKey(stack);
             if (key.isPresent() && known.add(key.get()))
             {
                 stacks().add(Either.left(stack.copyWithCount(1)));
@@ -79,10 +79,9 @@ public final class ClientHeldVariants
     }
 
     // Present only for stacks JEI tells apart from the rest of their item.
-    private static Optional<String> variantKey(ItemStack stack)
+    private static Optional<UnlockKey> variantKey(ItemStack stack)
     {
-        return BookIngredients.unlockKeyOf(stack)
-                .filter(key -> !key.equals(UnlockKey.withoutSubtype(key)));
+        return BookIngredients.unlockKeyOf(stack).filter(UnlockKey::hasSubtype);
     }
 
     private List<Either<ItemStack, Dynamic<?>>> stacks()

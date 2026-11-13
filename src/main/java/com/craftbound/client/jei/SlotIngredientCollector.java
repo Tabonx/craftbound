@@ -53,18 +53,18 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     private InputSlot toInputSlot(IngredientSlot slot)
     {
         Set<ResourceLocation> items = new HashSet<>();
-        Set<String> fluids = new HashSet<>();
-        Set<String> variants = new HashSet<>();
+        Set<UnlockKey> fluids = new HashSet<>();
+        Set<UnlockKey> variants = new HashSet<>();
 
         for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
         {
             BookIngredient.itemIdOf(ingredient).ifPresent(id ->
             {
-                String key = BookIngredient.unlockKey(manager, ingredient);
-                if (key.equals(UnlockKey.withoutSubtype(key)))
-                    items.add(id);
-                else
+                UnlockKey key = BookIngredient.unlockKey(manager, ingredient);
+                if (key.hasSubtype())
                     variants.add(key);
+                else
+                    items.add(id);
             });
 
             BookIngredient.fluidOf(ingredient).ifPresent(fluid ->
@@ -86,9 +86,9 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
 
     // Keyed by unlock key, keeping the ingredient itself: the unlock toast draws it with JEI's own
     // renderer so a fluid looks the same there as it does in the book.
-    Map<String, ITypedIngredient<?>> outputs()
+    Map<UnlockKey, ITypedIngredient<?>> outputs()
     {
-        Map<String, ITypedIngredient<?>> byKey = new HashMap<>();
+        Map<UnlockKey, ITypedIngredient<?>> byKey = new HashMap<>();
         for (IngredientSlot slot : outputs)
             for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
                 byKey.putIfAbsent(BookIngredient.unlockKey(manager, ingredient), ingredient);
@@ -137,9 +137,9 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
         return slot;
     }
 
-    Set<String> invisibleOutputKeys()
+    Set<UnlockKey> invisibleOutputKeys()
     {
-        Set<String> keys = new HashSet<>();
+        Set<UnlockKey> keys = new HashSet<>();
         for (IngredientSlot slot : invisibleOutputs)
             for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
                 keys.add(BookIngredient.unlockKey(manager, ingredient));

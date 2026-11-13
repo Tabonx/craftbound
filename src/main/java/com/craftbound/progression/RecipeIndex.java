@@ -29,8 +29,8 @@ import net.minecraft.resources.ResourceLocation;
 // whether those recipes are unlocked, so their outputs always are: showing a recipe early is
 // recoverable, hiding one forever is not.
 public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
-        Map<String, Set<ResourceLocation>> catalysts, Set<String> producedKeys,
-        Map<String, List<RecipeNode>> usedBy, Set<String> outputKeys, Set<String> unjudgedOutputs)
+        Map<String, Set<ResourceLocation>> catalysts, Set<UnlockKey> producedKeys,
+        Map<UnlockKey, List<RecipeNode>> usedBy, Set<UnlockKey> outputKeys, Set<UnlockKey> unjudgedOutputs)
 {
     public static final RecipeIndex EMPTY = new RecipeIndex(Map.of(), Map.of(), Set.of(), Map.of(), Set.of(), Set.of());
 
@@ -41,10 +41,10 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
     }
 
     public static RecipeIndex of(Map<String, Map<Object, RecipeNode>> byCategory,
-            Map<String, Set<ResourceLocation>> catalysts, Set<String> unjudgedOutputs)
+            Map<String, Set<ResourceLocation>> catalysts, Set<UnlockKey> unjudgedOutputs)
     {
-        Set<String> produced = new HashSet<>();
-        Set<String> outputs = new HashSet<>(unjudgedOutputs);
+        Set<UnlockKey> produced = new HashSet<>();
+        Set<UnlockKey> outputs = new HashSet<>(unjudgedOutputs);
         byCategory.values().forEach(nodes -> nodes.values().forEach(node ->
         {
             produced.addAll(bootstrappable(node));
@@ -54,12 +54,12 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
                 usedBy(byCategory), Set.copyOf(outputs), Set.copyOf(unjudgedOutputs));
     }
 
-    private static Map<String, List<RecipeNode>> usedBy(Map<String, Map<Object, RecipeNode>> byCategory)
+    private static Map<UnlockKey, List<RecipeNode>> usedBy(Map<String, Map<Object, RecipeNode>> byCategory)
     {
-        Map<String, List<RecipeNode>> usedBy = new HashMap<>();
+        Map<UnlockKey, List<RecipeNode>> usedBy = new HashMap<>();
         byCategory.values().forEach(nodes -> nodes.values().forEach(node ->
         {
-            Set<String> keys = new HashSet<>();
+            Set<UnlockKey> keys = new HashSet<>();
             for (InputSlot slot : node.inputSlots())
             {
                 slot.items().forEach(item -> keys.add(UnlockKey.ofItem(item)));
@@ -75,12 +75,12 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
     // produces potion fluid, so counting that as "produced" would gate every brewing recipe behind
     // a fluid nothing could ever bootstrap, a cycle with no way in. A fluid reachable only from
     // itself is left unjudged instead, exactly like one nothing produces at all.
-    private static Set<String> bootstrappable(RecipeNode node)
+    private static Set<UnlockKey> bootstrappable(RecipeNode node)
     {
-        Set<String> consumed = new HashSet<>();
+        Set<UnlockKey> consumed = new HashSet<>();
         node.inputSlots().forEach(slot -> consumed.addAll(slot.fluids()));
 
-        Set<String> made = new HashSet<>(node.outputKeys());
+        Set<UnlockKey> made = new HashSet<>(node.outputKeys());
         made.removeAll(consumed);
         return made;
     }
@@ -91,7 +91,7 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
     }
 
     // Whether any recipe makes this, read or not.
-    public boolean makes(String outputKey)
+    public boolean makes(UnlockKey outputKey)
     {
         return outputKeys.contains(outputKey);
     }
@@ -107,7 +107,7 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
         return byCategory.values().stream().flatMap(nodes -> nodes.values().stream());
     }
 
-    public List<RecipeNode> recipesUsing(String inputKey)
+    public List<RecipeNode> recipesUsing(UnlockKey inputKey)
     {
         return usedBy.getOrDefault(inputKey, List.of());
     }

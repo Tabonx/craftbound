@@ -1,5 +1,6 @@
 package com.craftbound.progression.create;
 
+import static com.craftbound.progression.Keys.key;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +23,7 @@ import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.UnlockKey;
 import com.craftbound.progression.UnlockRule;
 import com.craftbound.progression.Unlocks;
 
@@ -48,17 +50,17 @@ class CreateProgressionTest
     private static final ProgressionRules RULES =
             new ProgressionRules(true, UnlockRule.ALL_INPUTS, true, Set.of(CRAFTING));
 
-    private static final String ANDESITE_ALLOY = "item|create:andesite_alloy";
-    private static final String BRASS_INGOT = "item|create:brass_ingot";
-    private static final String COPPER_SHEET = "item|create:copper_sheet";
-    private static final String COGWHEEL = "item|create:cogwheel";
-    private static final String CRUSHED_IRON = "item|create:crushed_raw_iron";
-    private static final String LAVA = "fluid|minecraft:lava";
-    private static final String CHOCOLATE = "fluid|create:chocolate";
-    private static final String CHOCOLATE_BAR = "item|create:bar_of_chocolate";
-    private static final String POTION_FLUID = "fluid|create:potion";
-    private static final String POTION_AWKWARD = "fluid|create:potion|awkward";
-    private static final String POTION_STRONG = "fluid|create:potion|strength";
+    private static final UnlockKey ANDESITE_ALLOY = key("item|create:andesite_alloy");
+    private static final UnlockKey BRASS_INGOT = key("item|create:brass_ingot");
+    private static final UnlockKey COPPER_SHEET = key("item|create:copper_sheet");
+    private static final UnlockKey COGWHEEL = key("item|create:cogwheel");
+    private static final UnlockKey CRUSHED_IRON = key("item|create:crushed_raw_iron");
+    private static final UnlockKey LAVA = key("fluid|minecraft:lava");
+    private static final UnlockKey CHOCOLATE = key("fluid|create:chocolate");
+    private static final UnlockKey CHOCOLATE_BAR = key("item|create:bar_of_chocolate");
+    private static final UnlockKey POTION_FLUID = key("fluid|create:potion");
+    private static final UnlockKey POTION_AWKWARD = key("fluid|create:potion|awkward");
+    private static final UnlockKey POTION_STRONG = key("fluid|create:potion|strength");
 
     // Create's early tree, as the index would hold it: andesite alloy by hand or in a basin, brass
     // needing a heated basin, lava needing a superheated one, plus a couple of neighbouring
@@ -87,7 +89,7 @@ class CreateProgressionTest
                 .build();
     }
 
-    private static Set<String> unlocked(String... obtainedIds)
+    private static Set<UnlockKey> unlocked(String... obtainedIds)
     {
         return Unlocks.unlockedOutputs(RULES, createIndex(), obtained(obtainedIds));
     }
@@ -107,7 +109,7 @@ class CreateProgressionTest
                 .build();
     }
 
-    private static Set<String> chocolateUnlocked(String... obtainedIds)
+    private static Set<UnlockKey> chocolateUnlocked(String... obtainedIds)
     {
         return Unlocks.unlockedOutputs(RULES, chocolateIndex(), obtained(obtainedIds));
     }
@@ -115,7 +117,7 @@ class CreateProgressionTest
     @Test
     void theChocolateBarWaitsForTheChocolateItself()
     {
-        Set<String> withMachinesOnly = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
+        Set<UnlockKey> withMachinesOnly = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner");
 
         assertFalse(withMachinesOnly.contains(CHOCOLATE), "the fluid needs its ingredients");
@@ -125,7 +127,7 @@ class CreateProgressionTest
     @Test
     void sugarAndCocoaUnlockTheFluidAndTheBarTogether()
     {
-        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
+        Set<UnlockKey> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner", "minecraft:sugar", "minecraft:cocoa_beans");
 
         assertTrue(unlocked.contains(CHOCOLATE));
@@ -135,7 +137,7 @@ class CreateProgressionTest
     @Test
     void halfTheChocolateIngredientsUnlockNeither()
     {
-        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
+        Set<UnlockKey> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "create:blaze_burner", "minecraft:sugar");
 
         assertFalse(unlocked.contains(CHOCOLATE));
@@ -146,7 +148,7 @@ class CreateProgressionTest
     @Test
     void theBarInheritsTheFluidsHeatRequirement()
     {
-        Set<String> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
+        Set<UnlockKey> unlocked = chocolateUnlocked("create:mechanical_mixer", "create:mechanical_press",
                 "minecraft:sugar", "minecraft:cocoa_beans");
 
         assertFalse(unlocked.contains(CHOCOLATE));
@@ -165,7 +167,7 @@ class CreateProgressionTest
                         basin(HeatRequirement.HEATED, potion, any("minecraft:nether_wart")))
                 .build();
 
-        Set<String> unlocked = Unlocks.unlockedOutputs(RULES, brewing,
+        Set<UnlockKey> unlocked = Unlocks.unlockedOutputs(RULES, brewing,
                 obtained("create:basin", "create:blaze_burner", "minecraft:nether_wart"));
 
         assertTrue(unlocked.contains(POTION_FLUID));
@@ -197,7 +199,7 @@ class CreateProgressionTest
     {
         RecipeIndex brewing = brewingIndex();
 
-        Set<String> withWart = Unlocks.unlockedOutputs(RULES, brewing,
+        Set<UnlockKey> withWart = Unlocks.unlockedOutputs(RULES, brewing,
                 obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:nether_wart"));
 
         assertTrue(withWart.contains(POTION_AWKWARD), "the step whose ingredient is in hand");
@@ -211,12 +213,12 @@ class CreateProgressionTest
     {
         RecipeIndex brewing = brewingIndex();
 
-        Set<String> glowstoneOnly = Unlocks.unlockedOutputs(RULES, brewing,
+        Set<UnlockKey> glowstoneOnly = Unlocks.unlockedOutputs(RULES, brewing,
                 obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:glowstone_dust"));
         assertFalse(glowstoneOnly.contains(POTION_STRONG), "awkward potion is not reachable yet");
         assertFalse(glowstoneOnly.contains(POTION_AWKWARD));
 
-        Set<String> both = Unlocks.unlockedOutputs(RULES, brewing,
+        Set<UnlockKey> both = Unlocks.unlockedOutputs(RULES, brewing,
                 obtained("create:mechanical_mixer", "create:blaze_burner", "minecraft:nether_wart",
                         "minecraft:glowstone_dust"));
         assertTrue(both.contains(POTION_AWKWARD));
@@ -250,7 +252,7 @@ class CreateProgressionTest
     @Test
     void aBucketOfChocolateUnlocksTheBarOnItsOwn()
     {
-        Set<String> unlocked = chocolateUnlocked("create:mechanical_press", "create:chocolate_bucket");
+        Set<UnlockKey> unlocked = chocolateUnlocked("create:mechanical_press", "create:chocolate_bucket");
 
         assertTrue(unlocked.contains(CHOCOLATE_BAR));
         assertFalse(unlocked.contains(CHOCOLATE));
@@ -359,13 +361,13 @@ class CreateProgressionTest
     @Test
     void categoriesGateIndependentlyOfEachOther()
     {
-        Set<String> withWheels = unlocked("minecraft:raw_iron", "create:crushing_wheel",
+        Set<UnlockKey> withWheels = unlocked("minecraft:raw_iron", "create:crushing_wheel",
                 "minecraft:copper_ingot");
 
         assertTrue(withWheels.contains(CRUSHED_IRON));
         assertFalse(withWheels.contains(COPPER_SHEET));
 
-        Set<String> withPress = unlocked("minecraft:raw_iron", "create:mechanical_press",
+        Set<UnlockKey> withPress = unlocked("minecraft:raw_iron", "create:mechanical_press",
                 "minecraft:copper_ingot");
 
         assertFalse(withPress.contains(CRUSHED_IRON));
@@ -375,7 +377,7 @@ class CreateProgressionTest
     @Test
     void aFullyEquippedPlayerUnlocksTheWholeModelledTree()
     {
-        Set<String> everything = unlocked("minecraft:andesite", "minecraft:iron_nugget",
+        Set<UnlockKey> everything = unlocked("minecraft:andesite", "minecraft:iron_nugget",
                 "create:zinc_nugget", "create:andesite_alloy", "minecraft:oak_planks",
                 "minecraft:copper_ingot", "create:zinc_ingot", "minecraft:cobblestone",
                 "minecraft:raw_iron", "create:basin", "create:mechanical_mixer",
@@ -393,10 +395,10 @@ class CreateProgressionTest
                 "minecraft:copper_ingot", "create:zinc_ingot", "create:blaze_burner",
                 "minecraft:cobblestone", "create:blaze_cake");
 
-        Set<String> previous = Set.of();
+        Set<UnlockKey> previous = Set.of();
         for (int held = 0; held <= pickups.size(); held++)
         {
-            Set<String> now = unlocked(pickups.subList(0, held).toArray(String[]::new));
+            Set<UnlockKey> now = unlocked(pickups.subList(0, held).toArray(String[]::new));
             assertTrue(now.containsAll(previous), "unlocked set shrank after obtaining an item");
             previous = now;
         }
@@ -405,7 +407,7 @@ class CreateProgressionTest
     @Test
     void progressionDisabledShowsEverythingAtOnce()
     {
-        Set<String> all = Unlocks.unlockedOutputs(ProgressionRules.OPEN, createIndex(), Set.of());
+        Set<UnlockKey> all = Unlocks.unlockedOutputs(ProgressionRules.OPEN, createIndex(), Set.of());
 
         assertEquals(Set.of(ANDESITE_ALLOY, COGWHEEL, BRASS_INGOT, LAVA, CRUSHED_IRON, COPPER_SHEET), all);
     }
@@ -425,13 +427,12 @@ class CreateProgressionTest
     // A potion fluid slot: one subtype of create:potion, with no bucket to shortcut it.
     private static InputSlot potion(String subtype)
     {
-        String key = subtype.isEmpty() ? POTION_FLUID : POTION_FLUID + "|" + subtype;
-        return new InputSlot(Set.of(), Set.of(key));
+        return new InputSlot(Set.of(), Set.of(new UnlockKey(POTION_FLUID.kind(), POTION_FLUID.id(), subtype)));
     }
 
     private static InputSlot fluid(String fluidId, String bucketId)
     {
-        return new InputSlot(Set.of(ResourceLocation.parse(bucketId)), Set.of("fluid|" + fluidId));
+        return new InputSlot(Set.of(ResourceLocation.parse(bucketId)), Set.of(UnlockKey.ofFluid(ResourceLocation.parse(fluidId), "")));
     }
 
     @SafeVarargs
@@ -476,7 +477,7 @@ class CreateProgressionTest
             return this;
         }
 
-        Index recipe(String id, String category, String output, List<InputSlot> inputs)
+        Index recipe(String id, String category, UnlockKey output, List<InputSlot> inputs)
         {
             byCategory.computeIfAbsent(category, key -> new HashMap<>())
                     .put(id, new RecipeNode(category, inputs, Set.of(output)));

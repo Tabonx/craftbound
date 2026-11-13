@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.craftbound.client.session.ClientSession;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.RecipeGate;
 import com.craftbound.client.jei.RecipeIndexBuilder;
+import com.craftbound.client.session.ClientSession;
+import com.craftbound.progression.UnlockKey;
 
 import net.minecraft.resources.ResourceLocation;
 
@@ -30,7 +31,7 @@ public final class Progression
         return cache();
     }
 
-    public static List<String> drainNewlyUnlocked()
+    public static List<UnlockKey> drainNewlyUnlocked()
     {
         return cache().drainNewlyUnlocked();
     }
@@ -42,7 +43,7 @@ public final class Progression
 
     // The ingredient behind an unlock key, so the toast can draw it with the same JEI renderer the
     // book uses instead of guessing at an item form.
-    public static Optional<BookIngredient> displayFor(String unlockKey)
+    public static Optional<BookIngredient> displayFor(UnlockKey unlockKey)
     {
         return RecipeIndexBuilder.current().flatMap(snapshot -> snapshot.displayFor(unlockKey));
     }
@@ -76,7 +77,7 @@ public final class Progression
         return cache().variantGroup(ingredient.unlockKey());
     }
 
-    public static Set<String> outputsUsing(Set<String> inputKeys)
+    public static Set<UnlockKey> outputsUsing(Set<UnlockKey> inputKeys)
     {
         return cache().outputsUsing(inputKeys);
     }

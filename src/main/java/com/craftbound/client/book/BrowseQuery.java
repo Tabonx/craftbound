@@ -3,9 +3,7 @@ package com.craftbound.client.book;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.craftbound.client.book.search.SearchSyntax;
 
@@ -27,8 +25,6 @@ public record BrowseQuery(BrowseTab tab, String text, boolean craftableOnly)
 
         BrowseTab tabOf(T item);
 
-        String unlockKey(T item);
-
         // The variant group an item folds into, or null.
         String variantGroup(T item);
 
@@ -36,7 +32,8 @@ public record BrowseQuery(BrowseTab tab, String text, boolean craftableOnly)
 
         Predicate<T> jeiMatches(String text);
 
-        Set<String> outputsUsing(Set<String> unlockKeys);
+        // What the unlocked recipes taking any of these inputs make.
+        Predicate<T> madeFrom(List<T> inputs);
     }
 
     // The grid's entries: one item, or every variant of one behind a single slot. Bookmarks are
@@ -61,12 +58,9 @@ public record BrowseQuery(BrowseTab tab, String text, boolean craftableOnly)
         boolean plain = SearchSyntax.isPlainName(text);
         String needle = text.toLowerCase(Locale.ROOT);
         Predicate<T> matches = plain ? item -> catalog.named(item, needle) : catalog.jeiMatches(text);
-        Set<String> made = plain
-                ? catalog.outputsUsing(catalog.searchable().stream()
-                        .filter(matches)
-                        .map(catalog::unlockKey)
-                        .collect(Collectors.toSet()))
-                : Set.of();
+        Predicate<T> made = plain
+                ? catalog.madeFrom(catalog.searchable().stream().filter(matches).toList())
+                : item -> false;
 
         List<T> result = new ArrayList<>();
         List<T> uses = new ArrayList<>();
@@ -74,7 +68,7 @@ public record BrowseQuery(BrowseTab tab, String text, boolean craftableOnly)
         {
             if (matches.test(item))
                 result.add(item);
-            else if (made.contains(catalog.unlockKey(item)))
+            else if (made.test(item))
                 uses.add(item);
         }
         result.addAll(uses);

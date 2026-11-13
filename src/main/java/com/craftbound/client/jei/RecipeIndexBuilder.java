@@ -19,6 +19,7 @@ import com.craftbound.progression.CatalystCompanions;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.UnlockKey;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
@@ -57,9 +58,9 @@ public final class RecipeIndexBuilder
 
     private final Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
     private final Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
-    private final Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
-    private final Set<String> unjudged = new HashSet<>();
-    private final Set<String> invisibleOutputs = new HashSet<>();
+    private final Map<UnlockKey, ITypedIngredient<?>> representatives = new HashMap<>();
+    private final Set<UnlockKey> unjudged = new HashSet<>();
+    private final Set<UnlockKey> invisibleOutputs = new HashSet<>();
 
     private RecipeIndexBuilder(IJeiRuntime runtime)
     {
@@ -103,7 +104,7 @@ public final class RecipeIndexBuilder
 
     private RecipeNode node(SlotIngredientCollector collector, Object recipe, String categoryUid)
     {
-        Map<String, ITypedIngredient<?>> outputs = collector.outputs();
+        Map<UnlockKey, ITypedIngredient<?>> outputs = collector.outputs();
         represent(outputs);
         invisibleOutputs.addAll(collector.invisibleOutputKeys());
         List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
@@ -149,7 +150,7 @@ public final class RecipeIndexBuilder
             UNLAYABLE.computeIfAbsent(recipe, unused -> new HashSet<>()).add(categoryUid);
             return;
         }
-        Map<String, ITypedIngredient<?>> outputs = new HashMap<>();
+        Map<UnlockKey, ITypedIngredient<?>> outputs = new HashMap<>();
         layout.get().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT)
                 .forEach(slot -> slot.getAllIngredientsList().forEach(output ->
                         outputs.putIfAbsent(BookIngredient.unlockKey(manager, output), output)));
@@ -161,7 +162,7 @@ public final class RecipeIndexBuilder
     // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
     // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
     // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
-    private void represent(Map<String, ITypedIngredient<?>> outputs)
+    private void represent(Map<UnlockKey, ITypedIngredient<?>> outputs)
     {
         outputs.forEach((key, output) -> representatives.putIfAbsent(key, manager.normalizeTypedIngredient(output)));
     }

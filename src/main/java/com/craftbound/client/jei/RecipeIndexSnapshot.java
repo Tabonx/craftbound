@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.craftbound.progression.RecipeIndex;
+import com.craftbound.progression.UnlockKey;
 
 import mezz.jei.api.ingredients.ITypedIngredient;
 
@@ -15,8 +16,8 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 //
 // `invisibleOutputs` are what categories declare a recipe makes without drawing it. JEI finds the
 // recipe by them, so they belong in the grid, but progression never reads them.
-public record RecipeIndexSnapshot(RecipeIndex index, Map<String, ITypedIngredient<?>> representatives,
-        Set<String> invisibleOutputs)
+public record RecipeIndexSnapshot(RecipeIndex index, Map<UnlockKey, ITypedIngredient<?>> representatives,
+        Set<UnlockKey> invisibleOutputs)
 {
     public static final RecipeIndexSnapshot EMPTY = new RecipeIndexSnapshot(RecipeIndex.EMPTY, Map.of(), Set.of());
 
@@ -28,7 +29,7 @@ public record RecipeIndexSnapshot(RecipeIndex index, Map<String, ITypedIngredien
                 || invisibleOutputs.contains(ingredient.unlockKey())).toList();
     }
 
-    public Optional<BookIngredient> displayFor(String unlockKey)
+    public Optional<BookIngredient> displayFor(UnlockKey unlockKey)
     {
         ITypedIngredient<?> typed = representatives.get(unlockKey);
         return typed == null ? Optional.empty() : BookIngredients.of(typed);

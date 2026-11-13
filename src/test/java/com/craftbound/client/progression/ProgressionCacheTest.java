@@ -1,5 +1,6 @@
 package com.craftbound.client.progression;
 
+import static com.craftbound.progression.Keys.key;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,6 +17,7 @@ import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
+import com.craftbound.progression.UnlockKey;
 import com.craftbound.progression.UnlockRule;
 
 import net.minecraft.resources.ResourceLocation;
@@ -25,8 +27,8 @@ class ProgressionCacheTest
     private static final String CRAFTING = "minecraft:crafting";
     private static final ProgressionRules RULES =
             new ProgressionRules(true, UnlockRule.ALL_INPUTS, true, Set.of(CRAFTING));
-    private static final String PLANKS = "item|minecraft:oak_planks";
-    private static final String STICK = "item|minecraft:stick";
+    private static final UnlockKey PLANKS = key("item|minecraft:oak_planks");
+    private static final UnlockKey STICK = key("item|minecraft:stick");
 
     private static final RecipeIndex INDEX = RecipeIndex.of(Map.of(CRAFTING, Map.of(
             "planks", new RecipeNode(CRAFTING, List.of(InputSlot.ofItems(Set.of(id("oak_log")))), Set.of(PLANKS)),

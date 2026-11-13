@@ -8,6 +8,7 @@ import com.craftbound.client.compat.Input;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.JeiSearch;
 import com.craftbound.client.progression.Progression;
+import com.craftbound.progression.UnlockKey;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -258,7 +259,7 @@ final class BrowsePanel implements BookPanel
     // Every variant's highlight is claimed, so one swell stands for the lot.
     private void renderCell(GuiGraphics graphics, List<BookIngredient> entry, int cellX, int cellY)
     {
-        String key = entry.get(0).unlockKey();
+        UnlockKey key = entry.get(0).unlockKey();
         boolean fresh = false;
         for (BookIngredient variant : entry)
             fresh |= Progression.takeHighlight(variant);
