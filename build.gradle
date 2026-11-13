@@ -343,10 +343,12 @@ tasks.withType(ProcessResources).configureEach {
             mod_authors            : mod_authors,
             mod_description        : mod_description,
             jei_version_range      : jei_version_range,
-            // Newer versions require the supported range to be spelled out alongside the format.
-            pack_formats           : modern
-                    ? "\"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
-                    : "\"pack_format\": ${pack_format}",
+            // From 1.21.10 NeoForge reads a mod's pack.mcmeta without a format as fitting the game, and
+            // a single number there cannot be both the resource and the data pack format.
+            pack_formats           : stonecutter.eval(stonecutter.current.version, '>=1.21.10') ? ''
+                    : modern
+                    ? ",\n        \"pack_format\": ${pack_format},\n        \"min_format\": ${pack_format},\n        \"max_format\": ${pack_format}"
+                    : ",\n        \"pack_format\": ${pack_format}",
             create_mixins          : hasCreate ? "[[mixins]]\nconfig=\"${mod_id}.create.mixins.json\"" : '',
             create_dependency      : hasCreate ? [
                     '# Create is optional: without it the book simply has no Create categories to show. It must still',
