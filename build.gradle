@@ -69,12 +69,21 @@ base {
 // Gradle provisions the toolchain itself, so no local JDK has to match.
 java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
 
+// -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
+// where the two have drifted apart. Only for running the game locally, never for publishing. Every
+// version is configured on each build, so a version without neo_version_jei_runtime refuses to run
+// the game rather than refusing to configure.
+def jeiRuntime = project.hasProperty('jeiRuntime')
+def jeiRuntimeMissing = jeiRuntime && !project.hasProperty('neo_version_jei_runtime')
+tasks.matching { it.name.startsWith('run') }.configureEach {
+    doFirst {
+        if (jeiRuntimeMissing)
+            throw new GradleException("-PjeiRuntime needs neo_version_jei_runtime in versions/${minecraft_version}/gradle.properties")
+    }
+}
+
 neoForge {
-    // -PjeiRuntime drops back to the last NeoForge that JEI's own build still runs on, for versions
-    // where the two have drifted apart. Only for running the game locally, never for publishing.
-    version = project.hasProperty('jeiRuntime') && project.hasProperty('neo_version_jei_runtime')
-            ? neo_version_jei_runtime
-            : neo_version
+    version = jeiRuntime && !jeiRuntimeMissing ? neo_version_jei_runtime : neo_version
 
     // Parchment lags new Minecraft versions and may never cover some of them. A version without it
     // builds against the plain official names.
@@ -84,8 +93,6 @@ neoForge {
             mappingsVersion = parchment_mappings_version
         }
     }
-
-    accessTransformers.from rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
 
     mods {
         "${mod_id}" {
@@ -331,10 +338,18 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
+// Each jar is published against exactly the Minecraft versions it was built for, which the version
+// owns rather than the root: a jar for one version must never claim to cover the others. The
+// mods.toml range names the same versions, so the loader refuses the jar everywhere else.
+def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
+if (!publishMinecraftVersions.contains(minecraft_version))
+    throw new GradleException("publish_minecraft_versions for ${minecraft_version} does not name ${minecraft_version} itself")
+def minecraftVersionRange = publishMinecraftVersions.collect { "[${it}]" }.join(',')
+
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
+            minecraft_version_range: minecraftVersionRange,
             neo_version            : neo_version,
             neo_version_range      : neo_version_range,
             loader_version_range   : loader_version_range,
@@ -399,9 +414,6 @@ def changelogFor(String released)
     section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
 }
 
-// Each jar is published against exactly the Minecraft versions it was built for, which the version
-// owns rather than the root: a jar for one version must never claim to cover the others.
-def publishMinecraftVersions = publish_minecraft_versions.split(',').collect { it.trim() }
 def githubParentVersion = '1.21.1'
 
 publishMods {

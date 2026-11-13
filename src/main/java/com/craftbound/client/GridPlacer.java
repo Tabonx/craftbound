@@ -5,9 +5,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.craftbound.PlaceRecipePayload;
-import com.craftbound.RecipePlacement;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.placement.PlaceRecipePayload;
+import com.craftbound.placement.RecipePlacement;
 
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;

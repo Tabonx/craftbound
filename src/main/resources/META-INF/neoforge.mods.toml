@@ -13,6 +13,10 @@ description='''${mod_description}'''
 [[mixins]]
 config="${mod_id}.mixins.json"
 
+# Mixins for both sides. The config lists none on the versions that need none.
+[[mixins]]
+config="${mod_id}.common.mixins.json"
+
 # Ponder ships with Create. This config is not required, so its mixins are skipped when Create is
 # absent, and it is left out entirely on Minecraft versions Create has no release for.
 ${ponder_mixins}

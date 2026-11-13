@@ -1,6 +1,6 @@
 package com.craftbound.client;
 
-import com.craftbound.PlaceRecipePayload;
+import com.craftbound.placement.PlaceRecipePayload;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
