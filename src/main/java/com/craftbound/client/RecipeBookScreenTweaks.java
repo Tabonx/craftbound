@@ -390,7 +390,7 @@ public final class RecipeBookScreenTweaks
     {
         searchingBook(event.getScreen()).ifPresent(host ->
         {
-            if (Input.charTyped(host, (char) event.getCodePoint(), 0))
+            if (Input.charTyped(host, event.getCodePoint(), 0))
                 event.setCanceled(true);
         });
     }

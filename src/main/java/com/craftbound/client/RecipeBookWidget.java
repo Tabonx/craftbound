@@ -1282,7 +1282,7 @@ public final class RecipeBookWidget extends LooseWidget
     }
 
     @Override
-    protected boolean typed(char codePoint, int modifiers)
+    protected boolean typed(int codePoint, int modifiers)
     {
         return visible && Input.charTyped(search, codePoint, modifiers);
     }
