@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipes;
+import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.client.progression.Progression;
 
@@ -129,6 +130,9 @@ public final class RecipeBookWidget extends LooseWidget
     // Brings what the book shows up to date with the world, and the controls with what it shows.
     private void sync()
     {
+        // A recipe built in a JEI run that has since ended is not shown on.
+        if (state.recipes.isOpen() && state.recipesGeneration != JeiSession.generation())
+            closeRecipe();
         browse.refresh();
         place.show(state.recipes.isOpen() ? state.recipes.current() : null);
         BookPanel panel = panel();
@@ -145,6 +149,7 @@ public final class RecipeBookWidget extends LooseWidget
             return false;
         browse.leave();
         state.recipes.open(groups, place.menuGroup(groups));
+        state.recipesGeneration = JeiSession.generation();
         recipe.syncRail();
         relayout();
         return true;

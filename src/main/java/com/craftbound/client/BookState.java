@@ -27,5 +27,7 @@ final class BookState
     List<List<BookIngredient>> entries = List.of();
     int catalogRevision = -1;
     int unlocksVersion = -1;
+    // The JEI run the open recipe was built in.
+    int recipesGeneration = -1;
     int ticks = 0;
 }
