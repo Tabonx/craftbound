@@ -12,7 +12,8 @@ plugins {
 // changelog is currently being written for, so a dry run rehearses the release that is coming
 // rather than whatever mod_version was last set to.
 def releaseTag = System.getenv('GITHUB_REF_NAME')
-ext.modVersion = releaseTag?.matches(/v\d.*/) ? releaseTag.substring(1) : unreleasedVersion()
+def releasing = releaseTag?.matches(/v\d.*/) ?: false
+ext.modVersion = releasing ? releaseTag.substring(1) : unreleasedVersion()
 
 // The topmost section heading in the changelog, which is the version being worked on.
 def unreleasedVersion()
@@ -372,15 +373,25 @@ tasks.withType(ProcessResources).configureEach {
 }
 
 // The release notes are the CHANGELOG section headed by the version being released, so a release
-// carries its own entry rather than the whole file.
-def changelogFor(String released)
+// carries its own entry rather than the whole file. A release whose version has no entries fails
+// instead of publishing empty notes. The publish plugin reads the notes while configuring, so any
+// other build falls back to a placeholder rather than failing over a section still being written.
+def changelogFor(String released, boolean releasing)
 {
     def notes = rootProject.file('CHANGELOG.md')
-    if (!notes.exists())
-        return "${mod_name} ${released}"
+    def section = notes.exists() ? notes.text.split(/(?m)^## /).find { it.readLines()[0].trim() == released } : null
+    def body = section?.readLines()?.drop(1)?.join('\n')?.trim()
+    if (body)
+        return body
+    if (releasing)
+        throw new GradleException("CHANGELOG.md has no entries under '## ${released}'")
+    "${mod_name} ${released}"
+}
 
-    def section = notes.text.split(/(?m)^## /).find { it.readLines()[0].trim() == released }
-    section ? section.readLines().drop(1).join('\n').trim() : "${mod_name} ${released}"
+tasks.register('checkChangelog') {
+    group = 'publishing'
+    description = 'Fails unless CHANGELOG.md has a section for the version being built.'
+    doLast { changelogFor(modVersion, true) }
 }
 
 def githubParentVersion = '1.21.1'
@@ -396,7 +407,7 @@ publishMods {
     displayName = "${mod_name} ${modVersion} for NeoForge ${minecraft_version}"
     type = ReleaseType.valueOf(publish_type.toUpperCase(Locale.ROOT))
     modLoaders.add('neoforge')
-    changelog = providers.provider { changelogFor(modVersion) }
+    changelog = providers.provider { changelogFor(modVersion, releasing) }
 
     github {
         accessToken = providers.environmentVariable('GITHUB_TOKEN')
