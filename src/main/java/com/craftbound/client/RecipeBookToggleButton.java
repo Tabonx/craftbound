@@ -1,7 +1,6 @@
 package com.craftbound.client;
 
 import com.craftbound.Craftbound;
-import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.upgrade.UnbindLensPayload;
 
 import net.minecraft.client.Minecraft;
@@ -49,7 +48,7 @@ public final class RecipeBookToggleButton extends ImageButton
 
     private void drawUpgradeHint(GuiGraphics graphics)
     {
-        if (ClientBookUpgrade.hintsActive())
+        if (ClientSession.current().bookUpgrade().hintsActive())
             Canvas.sprite(graphics, UPGRADE_OVERLAY, getX(), getY(), WIDTH, HEIGHT);
     }
 
@@ -59,7 +58,7 @@ public final class RecipeBookToggleButton extends ImageButton
     public boolean unbind(double mouseX, double mouseY, int button)
     {
         if (button != 1 || !Input.shiftDown() || !visible || !isMouseOver(mouseX, mouseY)
-                || !ClientBookUpgrade.bound())
+                || !ClientSession.current().bookUpgrade().bound())
             return false;
 
         Net.toServer(new UnbindLensPayload());

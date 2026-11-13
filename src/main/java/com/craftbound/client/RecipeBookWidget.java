@@ -179,6 +179,7 @@ public final class RecipeBookWidget extends LooseWidget
     private int ticks = 0;
     private int page = 0;
     private int loadedGeneration = -1;
+    private int unlocksVersion = -1;
     private BookIngredient hovered = null;
     // The hovered recipe slot's tooltip, drawn with the rest of them once the screen is done.
     private List<Component> slotTooltip = List.of();
@@ -596,8 +597,11 @@ public final class RecipeBookWidget extends LooseWidget
     // obtained set grows rather than waiting for the book to be reopened.
     private void refreshUnlocksIfStale()
     {
-        if (Progression.refresh())
-            applyFilter();
+        Progression.refresh();
+        if (unlocksVersion == Progression.version())
+            return;
+        unlocksVersion = Progression.version();
+        applyFilter();
     }
 
     // Rebuild the craftable set when the inventory changes, then update an active filter.

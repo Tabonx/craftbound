@@ -7,10 +7,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.craftbound.Craftbound;
 import com.craftbound.PlayerItems;
-import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.BookIngredients;
+import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
 import com.craftbound.client.storage.WorldScopedStore;
@@ -22,50 +21,49 @@ import com.mojang.serialization.Dynamic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 // Which variants of an item the player has held, such as which potion. The server records item ids
 // only, since it has no JEI to say which components make a variant, so the client tracks these
 // itself, per world, from its own view of the inventory.
 //
 // A variant's key holds JEI's subtype, which is only stable within one session, so what is saved is
-// one stack of each variant, and the keys are worked out again from those once JEI is up. A stack
-// that does not decode, such as one from a mod that is gone, stays in the file as it was.
-@EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
+// one stack of each variant, and the keys are worked out again from those whenever JEI starts. A
+// stack that does not decode, such as one from a mod that is gone, stays in the file as it was.
 public final class ClientHeldVariants
 {
     static final Codec<List<Either<ItemStack, Dynamic<?>>>> CODEC =
             Codec.either(ItemStack.CODEC, Codec.PASSTHROUGH).listOf().xmap(ArrayList::new, List::copyOf);
-    private static final Supplier<WorldScopedStore<List<Either<ItemStack, Dynamic<?>>>>> STORE =
-            ClientStores.lazy("craftbound-held-variants.json", CODEC, ArrayList::new);
 
-    private static List<Either<ItemStack, Dynamic<?>>> keysSource = null;
-    private static Set<String> keys = Set.of();
+    private final Supplier<WorldScopedStore<List<Either<ItemStack, Dynamic<?>>>>> store;
+    private List<Either<ItemStack, Dynamic<?>>> keysSource = null;
+    private int keysGeneration = -1;
+    private Set<String> keys = Set.of();
 
-    public static Set<String> current()
+    public ClientHeldVariants(ClientStores stores)
+    {
+        this.store = stores.lazy("craftbound-held-variants.json", CODEC, ArrayList::new);
+    }
+
+    public Set<String> current()
     {
         if (Minecraft.getInstance().player == null || !JeiSession.running())
             return Set.of();
 
         List<Either<ItemStack, Dynamic<?>>> stacks = stacks();
-        if (stacks != keysSource)
+        if (stacks != keysSource || keysGeneration != JeiSession.generation())
         {
             keys = new HashSet<>();
             for (Either<ItemStack, Dynamic<?>> stack : stacks)
                 stack.left().flatMap(ClientHeldVariants::variantKey).ifPresent(keys::add);
             keysSource = stacks;
+            keysGeneration = JeiSession.generation();
         }
         return keys;
     }
 
-    @SubscribeEvent
-    public static void onClientTick(final ClientTickEvent.Post event)
+    public void tick(LocalPlayer player)
     {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !JeiSession.running())
+        if (player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !JeiSession.running())
             return;
 
         Set<String> known = current();
@@ -75,7 +73,7 @@ public final class ClientHeldVariants
             if (key.isPresent() && known.add(key.get()))
             {
                 stacks().add(Either.left(stack.copyWithCount(1)));
-                STORE.get().markDirty();
+                store.get().markDirty();
             }
         }
     }
@@ -87,10 +85,8 @@ public final class ClientHeldVariants
                 .filter(key -> !key.equals(UnlockKey.withoutSubtype(key)));
     }
 
-    private static List<Either<ItemStack, Dynamic<?>>> stacks()
+    private List<Either<ItemStack, Dynamic<?>>> stacks()
     {
-        return STORE.get().open(WorldKey.current(), ClientStores::registryOps);
+        return store.get().open(WorldKey.current(), ClientStores::registryOps);
     }
-
-    private ClientHeldVariants() {}
 }

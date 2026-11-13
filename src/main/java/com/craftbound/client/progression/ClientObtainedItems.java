@@ -1,12 +1,12 @@
 package com.craftbound.client.progression;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.craftbound.Craftbound;
-import com.craftbound.PlayerItems;
 import com.craftbound.ObtainedItems;
+import com.craftbound.PlayerItems;
 import com.craftbound.client.ServerSupport;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
@@ -16,11 +16,6 @@ import com.mojang.serialization.JsonOps;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 // The client's view of what the player has obtained.
 //
@@ -29,48 +24,40 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 // the result per world, since a client-side set would otherwise be lost on every rejoin. Only what
 // passes through the inventory can be seen this way, which is the whole picture for anything the
 // player actually picks up.
-@EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
 public final class ClientObtainedItems
 {
-    private static final Supplier<WorldScopedStore<Set<ResourceLocation>>> STORE =
-            ClientStores.lazy("craftbound-obtained.json", ObtainedItems.CODEC, HashSet::new);
+    private final Supplier<WorldScopedStore<Set<ResourceLocation>>> store;
+    private Set<ResourceLocation> synced = null;
 
-    private static Set<ResourceLocation> synced = Set.of();
+    public ClientObtainedItems(ClientStores stores)
+    {
+        this.store = stores.lazy("craftbound-obtained.json", ObtainedItems.CODEC, HashSet::new);
+    }
 
-    public static void accept(Set<ResourceLocation> items)
+    public void accept(Set<ResourceLocation> items)
     {
         synced = Set.copyOf(items);
     }
 
-    public static Set<ResourceLocation> current()
+    // Empty until it is known: the server has not sent its set yet, or there is no world.
+    public Optional<Set<ResourceLocation>> current()
     {
         if (Minecraft.getInstance().player == null)
-            return Set.of();
-
-        return ServerSupport.installed() ? synced : tracked();
+            return Optional.empty();
+        return ServerSupport.installed() ? Optional.ofNullable(synced) : Optional.of(tracked());
     }
 
-    @SubscribeEvent
-    public static void onClientTick(final ClientTickEvent.Post event)
+    public void tick(LocalPlayer player)
     {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || ServerSupport.installed())
+        if (player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || ServerSupport.installed())
             return;
 
         if (ObtainedItems.recordAll(tracked(), PlayerItems.ids(PlayerItems.carried(player))))
-            STORE.get().markDirty();
+            store.get().markDirty();
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(final ClientPlayerNetworkEvent.LoggingOut event)
+    private Set<ResourceLocation> tracked()
     {
-        synced = Set.of();
+        return store.get().open(WorldKey.current(), JsonOps.INSTANCE);
     }
-
-    private static Set<ResourceLocation> tracked()
-    {
-        return STORE.get().open(WorldKey.current(), JsonOps.INSTANCE);
-    }
-
-    private ClientObtainedItems() {}
 }

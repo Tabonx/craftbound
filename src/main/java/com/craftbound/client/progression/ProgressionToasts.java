@@ -3,35 +3,20 @@ package com.craftbound.client.progression;
 import java.util.List;
 import java.util.Optional;
 
-import com.craftbound.Craftbound;
-import com.craftbound.PlayerItems;
 import com.craftbound.client.jei.BookIngredient;
-import com.craftbound.client.jei.JeiSession;
 
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-// Announces newly unlocked recipes with vanilla's recipe toast. Unlocks are noticed here rather
-// than in the book because they happen while the player is out mining, not while they are reading:
-// the book's own refresh only runs when it is open.
-@EventBusSubscriber(modid = Craftbound.MODID, value = Dist.CLIENT)
+// Announces newly unlocked recipes with vanilla's recipe toast. Unlocks are noticed on the client
+// tick rather than in the book because they happen while the player is out mining, not while they
+// are reading: the book only looks while it is open.
 public final class ProgressionToasts
 {
-    @SubscribeEvent
-    public static void onClientTick(final ClientTickEvent.Post event)
+    public static void announce(ProgressionCache progression)
     {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !JeiSession.running())
-            return;
-        if (minecraft.player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0)
-            return;
+        progression.refresh();
 
-        Progression.refresh();
-
-        List<String> unlocked = Progression.drainNewlyUnlocked();
+        List<String> unlocked = progression.drainNewlyUnlocked();
         if (unlocked.isEmpty())
             return;
 
@@ -42,7 +27,7 @@ public final class ProgressionToasts
                 .flatMap(Optional::stream)
                 .toList();
 
-        RecipeUnlockToast.addOrUpdate(minecraft.getToasts(), icons);
+        RecipeUnlockToast.addOrUpdate(Minecraft.getInstance().getToasts(), icons);
     }
 
     private ProgressionToasts() {}
