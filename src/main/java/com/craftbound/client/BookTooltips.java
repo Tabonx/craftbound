@@ -7,24 +7,16 @@ import java.util.function.Supplier;
 // this is the only way to tell the book's entries apart from the inventory slots on the same screen.
 public final class BookTooltips
 {
-    private static boolean building = false;
+    private static final ScopedFlag BUILDING = new ScopedFlag();
 
     public static <T> T whileBuilding(Supplier<T> tooltip)
     {
-        building = true;
-        try
-        {
-            return tooltip.get();
-        }
-        finally
-        {
-            building = false;
-        }
+        return BUILDING.during(tooltip);
     }
 
     public static boolean building()
     {
-        return building;
+        return BUILDING.active();
     }
 
     private BookTooltips() {}
