@@ -28,8 +28,6 @@
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 - On Minecraft 1.21.4 and newer, a recipe that asks for an item with particular contents, such as
   one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
-- A recipe from a mod that names an item which no longer exists no longer stays locked forever
-  waiting for it.
 - On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
   tab instead of Miscellaneous, as they do on 1.21.1.
 
