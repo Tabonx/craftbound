@@ -486,6 +486,8 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // ClientBoundaryTest reads the compiled classes of the version being built.
+    systemProperty 'craftbound.mainClasses', sourceSets.main.output.classesDirs.asPath
 }
 
 idea {
