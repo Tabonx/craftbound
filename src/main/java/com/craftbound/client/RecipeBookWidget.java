@@ -22,6 +22,8 @@ import com.craftbound.client.jei.JeiSearch;
 import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.JeiCompat;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.client.jei.RecipeIndexBuilder;
+import com.craftbound.client.jei.RecipeIndexSnapshot;
 import com.craftbound.client.progression.Progression;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -176,7 +178,7 @@ public final class RecipeBookWidget extends LooseWidget
     private final VariantsOverlay variants = new VariantsOverlay();
     private int ticks = 0;
     private int page = 0;
-    private boolean loaded = false;
+    private int loadedGeneration = -1;
     private BookIngredient hovered = null;
     // The hovered recipe slot's tooltip, drawn with the rest of them once the screen is done.
     private List<Component> slotTooltip = List.of();
@@ -463,16 +465,20 @@ public final class RecipeBookWidget extends LooseWidget
         return built.stream().<Supplier<IRecipeLayoutDrawable<?>>>map(drawable -> () -> drawable).toList();
     }
 
+    // Loaded again whenever JEI restarts, since every ingredient and recipe came from the one before.
     private void ensureLoaded()
     {
-        if (loaded || !JeiSession.running())
+        if (loadedGeneration == JeiSession.generation())
+            return;
+        Optional<RecipeIndexSnapshot> recipes = RecipeIndexBuilder.current();
+        if (recipes.isEmpty())
             return;
         searchable = BookIngredients.all();
         allItems.clear();
-        allItems.addAll(BookIngredients.producible(searchable));
+        allItems.addAll(recipes.get().producible(searchable));
         categories = ItemCategories.fromClientRecipes();
         refreshBookmarks(); // also applies the filter, so the grid is ready
-        loaded = true;
+        loadedGeneration = JeiSession.generation();
     }
 
     // The rail's last ribbon shows these, once there are any.

@@ -12,7 +12,6 @@ import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
-import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
@@ -34,19 +33,6 @@ public final class BookIngredients
         for (IIngredientType<?> type : browsableTypes(runtime))
             collect(runtime, type, result);
         return result;
-    }
-
-    // Only ingredients the player can actually make: an item like an oak log is a valid ingredient
-    // but has no recipe producing it, so it would just be dead weight in the browse grid.
-    public static List<BookIngredient> producible(List<BookIngredient> ingredients)
-    {
-        return JeiSession.runtime().map(runtime -> ingredients.stream()
-                .filter(ingredient -> runtime.getRecipeManager().createRecipeCategoryLookup()
-                        .limitFocus(List.of(runtime.getJeiHelpers().getFocusFactory()
-                                .createFocus(RecipeIngredientRole.OUTPUT, ingredient.typed())))
-                        .get()
-                        .anyMatch(BookCategories::isBrowsable))
-                .toList()).orElse(List.of());
     }
 
     // The ingredient types a player browses as craftable results. Deliberately not "all registered

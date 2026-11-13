@@ -14,15 +14,16 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import com.craftbound.client.Integrations;
+import com.craftbound.progression.CatalystCompanions;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
-import com.craftbound.progression.CatalystCompanions;
 
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
@@ -41,7 +42,26 @@ public final class RecipeIndexBuilder
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final RuntimeScoped<RecipeIndexSnapshot> CURRENT = new RuntimeScoped<>(RecipeIndexBuilder::build);
+    private static final RuntimeScoped<RecipeIndexSnapshot> CURRENT =
+            new RuntimeScoped<>(runtime -> new RecipeIndexBuilder(runtime).build());
+
+    private final IRecipeManager recipes;
+    private final IIngredientManager manager;
+    private final IPlatformFluidHelper<?> fluids;
+    private final IFocusGroup noFocus;
+
+    private final Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
+    private final Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
+    private final Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
+    private final Set<String> unjudged = new HashSet<>();
+
+    private RecipeIndexBuilder(IJeiRuntime runtime)
+    {
+        this.recipes = runtime.getRecipeManager();
+        this.manager = runtime.getIngredientManager();
+        this.fluids = runtime.getJeiHelpers().getPlatformFluidHelper();
+        this.noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
+    }
 
     // Built the first time it is asked for after JEI starts, and kept until JEI stops.
     public static Optional<RecipeIndexSnapshot> current()
@@ -49,51 +69,38 @@ public final class RecipeIndexBuilder
         return CURRENT.get();
     }
 
-    private static RecipeIndexSnapshot build(IJeiRuntime runtime)
+    private RecipeIndexSnapshot build()
     {
-        IRecipeManager recipes = runtime.getRecipeManager();
-        IIngredientManager manager = runtime.getIngredientManager();
-        IPlatformFluidHelper<?> fluids = runtime.getJeiHelpers().getPlatformFluidHelper();
-        IFocusGroup noFocus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
-
-        Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
-        Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
-        Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
         CatalystCompanions companions = CatalystCompanions.load(Minecraft.getInstance().getResourceManager());
-
         recipes.createRecipeCategoryLookup().get()
                 .filter(BookCategories::isBrowsable)
                 .forEach(category ->
         {
             String categoryUid = category.getRecipeType().getUid().toString();
-            catalysts.put(categoryUid, companions.machinesOf(catalystItems(recipes, category)));
-            Map<Object, RecipeNode> nodes = new IdentityHashMap<>();
-            collect(recipes, manager, fluids, category, noFocus, categoryUid, nodes, representatives);
-            byCategory.put(categoryUid, nodes);
+            catalysts.put(categoryUid, companions.machinesOf(catalystItems(category)));
+            byCategory.put(categoryUid, nodesOf(category, categoryUid));
         });
-
-        return new RecipeIndexSnapshot(RecipeIndex.of(byCategory, catalysts), Map.copyOf(representatives));
+        return new RecipeIndexSnapshot(RecipeIndex.of(byCategory, catalysts, unjudged), Map.copyOf(representatives));
     }
 
-    private static <T> void collect(IRecipeManager recipes, IIngredientManager manager,
-            IPlatformFluidHelper<?> fluids, IRecipeCategory<T> category, IFocusGroup noFocus, String categoryUid,
-            Map<Object, RecipeNode> out, Map<String, ITypedIngredient<?>> representatives)
+    private <T> Map<Object, RecipeNode> nodesOf(IRecipeCategory<T> category, String categoryUid)
     {
-        recipes.createRecipeLookup(category.getRecipeType()).get().forEach(recipe ->
-        {
-            SlotIngredientCollector collector = read(manager, fluids, category, recipe, noFocus, categoryUid);
-            if (collector == null)
-                return;
+        Map<Object, RecipeNode> nodes = new IdentityHashMap<>();
+        recipes.createRecipeLookup(category.getRecipeType()).get()
+                .filter(category::isHandled)
+                .forEach(recipe -> read(category, recipe, categoryUid).ifPresentOrElse(
+                        collector -> nodes.put(recipe, node(collector, recipe, categoryUid)),
+                        () -> unjudged(category, recipe)));
+        return nodes;
+    }
 
-            Map<String, ITypedIngredient<?>> outputs = collector.outputs();
-            outputs.forEach((key, output) ->
-                    representatives.putIfAbsent(key, normalized(manager, output)));
-
-            List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
-            inputs.addAll(Integrations.hiddenRequirements(recipe));
-            out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(),
-                    groupOf(categoryUid, recipe)));
-        });
+    private RecipeNode node(SlotIngredientCollector collector, Object recipe, String categoryUid)
+    {
+        Map<String, ITypedIngredient<?>> outputs = collector.outputs();
+        represent(outputs);
+        List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
+        inputs.addAll(Integrations.hiddenRequirements(recipe));
+        return new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(), groupOf(categoryUid, recipe));
     }
 
     private static String groupOf(String categoryUid, Object recipe)
@@ -104,25 +111,8 @@ public final class RecipeIndexBuilder
         return group.isEmpty() ? "" : categoryUid + "|" + group;
     }
 
-    // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot
-    // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
-    // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
-    // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
-    private static <V> ITypedIngredient<V> normalized(IIngredientManager manager,
-            ITypedIngredient<V> ingredient)
+    private <T> Optional<SlotIngredientCollector> read(IRecipeCategory<T> category, T recipe, String categoryUid)
     {
-        return manager.normalizeTypedIngredient(ingredient);
-    }
-
-    // A recipe whose category cannot lay it out is left out of the index entirely; the book treats
-    // an unindexed recipe as unlocked, so a broken one stays visible rather than silently vanishing.
-    private static <T> SlotIngredientCollector read(IIngredientManager manager,
-            IPlatformFluidHelper<?> fluids, IRecipeCategory<T> category, T recipe, IFocusGroup noFocus,
-            String categoryUid)
-    {
-        if (!category.isHandled(recipe))
-            return null;
-
         SlotIngredientCollector collector = new SlotIngredientCollector(manager, fluids);
         try
         {
@@ -131,18 +121,47 @@ public final class RecipeIndexBuilder
         catch (RuntimeException | LinkageError e)
         {
             LOGGER.debug("Craftbound: could not read recipe in category {}", categoryUid, e);
-            return null;
+            return Optional.empty();
         }
-        return collector;
+        return Optional.of(collector);
     }
 
-    private static Set<ResourceLocation> catalystItems(IRecipeManager recipes, IRecipeCategory<?> category)
+    // A recipe the index cannot read is left out of it, and the book treats a recipe it never
+    // indexed as unlocked. JEI's own layout often still reads it, being what JEI's screens show, so
+    // what it makes is taken from there and never hidden: otherwise an item whose only recipe this
+    // is would stay out of the book for good.
+    private <T> void unjudged(IRecipeCategory<T> category, T recipe)
+    {
+        Map<String, ITypedIngredient<?>> outputs = new HashMap<>();
+        try
+        {
+            recipes.createRecipeLayoutDrawable(category, recipe, noFocus).ifPresent(layout -> layout
+                    .getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT)
+                    .forEach(slot -> slot.getAllIngredientsList().forEach(output ->
+                            outputs.putIfAbsent(BookIngredient.unlockKey(manager, output), output))));
+        }
+        catch (RuntimeException | LinkageError e)
+        {
+            LOGGER.debug("Craftbound: JEI could not lay out a recipe the index could not read either", e);
+        }
+        unjudged.addAll(outputs.keySet());
+        represent(outputs);
+    }
+
+    // The stack a recipe happens to hand back is that recipe's business: nine nuggets from an ingot
+    // says nothing about the nugget itself. Whichever recipe is read first would otherwise decide
+    // how the item is drawn wherever the book stands for an unlock, and the toast would announce a
+    // nugget wearing a 9. Normalizing makes that one item, whatever produced it.
+    private void represent(Map<String, ITypedIngredient<?>> outputs)
+    {
+        outputs.forEach((key, output) -> representatives.putIfAbsent(key, manager.normalizeTypedIngredient(output)));
+    }
+
+    private Set<ResourceLocation> catalystItems(IRecipeCategory<?> category)
     {
         Set<ResourceLocation> items = new HashSet<>();
         recipes.createRecipeCatalystLookup(category.getRecipeType()).get()
                 .forEach(catalyst -> BookIngredient.itemIdOf(catalyst).ifPresent(items::add));
         return items;
     }
-
-    private RecipeIndexBuilder() {}
 }

@@ -24,20 +24,34 @@ import net.minecraft.resources.ResourceLocation;
 //
 // `usedBy` maps each input key to the recipes that accept it, so search can find what an item is
 // used for without scanning every recipe on each keystroke.
+//
+// `unjudgedOutputs` is what recipes the index could not read are known to make. Nothing can say
+// whether those recipes are unlocked, so their outputs always are: showing a recipe early is
+// recoverable, hiding one forever is not.
 public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
         Map<String, Set<ResourceLocation>> catalysts, Set<String> producedKeys,
-        Map<String, List<RecipeNode>> usedBy)
+        Map<String, List<RecipeNode>> usedBy, Set<String> outputKeys, Set<String> unjudgedOutputs)
 {
-    public static final RecipeIndex EMPTY = new RecipeIndex(Map.of(), Map.of(), Set.of(), Map.of());
+    public static final RecipeIndex EMPTY = new RecipeIndex(Map.of(), Map.of(), Set.of(), Map.of(), Set.of(), Set.of());
 
     public static RecipeIndex of(Map<String, Map<Object, RecipeNode>> byCategory,
             Map<String, Set<ResourceLocation>> catalysts)
     {
+        return of(byCategory, catalysts, Set.of());
+    }
+
+    public static RecipeIndex of(Map<String, Map<Object, RecipeNode>> byCategory,
+            Map<String, Set<ResourceLocation>> catalysts, Set<String> unjudgedOutputs)
+    {
         Set<String> produced = new HashSet<>();
-        byCategory.values().forEach(nodes -> nodes.values()
-                .forEach(node -> produced.addAll(bootstrappable(node))));
+        Set<String> outputs = new HashSet<>(unjudgedOutputs);
+        byCategory.values().forEach(nodes -> nodes.values().forEach(node ->
+        {
+            produced.addAll(bootstrappable(node));
+            outputs.addAll(node.outputKeys());
+        }));
         return new RecipeIndex(Map.copyOf(byCategory), Map.copyOf(catalysts), Set.copyOf(produced),
-                usedBy(byCategory));
+                usedBy(byCategory), Set.copyOf(outputs), Set.copyOf(unjudgedOutputs));
     }
 
     private static Map<String, List<RecipeNode>> usedBy(Map<String, Map<Object, RecipeNode>> byCategory)
@@ -73,7 +87,13 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
 
     public boolean isEmpty()
     {
-        return byCategory.isEmpty();
+        return byCategory.isEmpty() && unjudgedOutputs.isEmpty();
+    }
+
+    // Whether any recipe makes this, read or not.
+    public boolean makes(String outputKey)
+    {
+        return outputKeys.contains(outputKey);
     }
 
     // Null when the recipe was never indexed, which callers read as "not gated".

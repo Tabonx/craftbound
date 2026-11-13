@@ -165,11 +165,14 @@ public final class Unlocks
 
     // Variants held count towards the recipes that ask for them, but are not outputs themselves:
     // holding a potion unlocks what it brews into, not the potion's own entry.
+    //
+    // What only unreadable recipes make starts out unlocked, see RecipeIndex.
     public static Set<String> unlockedOutputs(ProgressionRules rules, RecipeIndex index,
             Set<ResourceLocation> obtained, Set<String> heldVariants)
     {
-        Set<String> unlocked = new HashSet<>();
+        Set<String> unlocked = new HashSet<>(index.unjudgedOutputs());
         Set<String> available = new HashSet<>(heldVariants);
+        available.addAll(index.unjudgedOutputs());
         List<RecipeNode> pending = new ArrayList<>(index.nodes().toList());
 
         boolean grew = true;

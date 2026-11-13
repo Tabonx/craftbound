@@ -1,5 +1,6 @@
 package com.craftbound.client.jei;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -13,6 +14,13 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 public record RecipeIndexSnapshot(RecipeIndex index, Map<String, ITypedIngredient<?>> representatives)
 {
     public static final RecipeIndexSnapshot EMPTY = new RecipeIndexSnapshot(RecipeIndex.EMPTY, Map.of());
+
+    // The ingredients some recipe makes, read or not. An item like an oak log is a valid ingredient
+    // but nothing produces it, so it would just be dead weight in the browse grid.
+    public List<BookIngredient> producible(List<BookIngredient> ingredients)
+    {
+        return ingredients.stream().filter(ingredient -> index.makes(ingredient.unlockKey())).toList();
+    }
 
     public Optional<BookIngredient> displayFor(String unlockKey)
     {

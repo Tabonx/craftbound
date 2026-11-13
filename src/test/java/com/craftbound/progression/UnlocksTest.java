@@ -400,6 +400,38 @@ class UnlocksTest
                 index, Set.of("fluid|create:chocolate"), Set.of(), Set.of()));
     }
 
+    // A recipe the index could not read cannot be judged, so what it makes must not be hidden: an
+    // item whose only recipe that is would otherwise never appear.
+    @Test
+    void whatAnUnreadRecipeMakesIsUnlocked()
+    {
+        RecipeIndex index = RecipeIndex.of(Map.of(), Map.of(), Set.of("item|create:brass_sheet"));
+
+        assertTrue(index.makes("item|create:brass_sheet"));
+        assertEquals(Set.of("item|create:brass_sheet"), Unlocks.unlockedOutputs(STRICT, index, Set.of()));
+    }
+
+    @Test
+    void aFluidOnlyAnUnreadRecipeMakesStillOpensWhatUsesIt()
+    {
+        RecipeIndex index = RecipeIndex.of(
+                Map.of(MIXING, Map.of("bar", node(MIXING,
+                        List.of(fluidSlot("create:chocolate", "create:chocolate_bucket")), "item|create:bar_of_chocolate"))),
+                Map.of(),
+                Set.of("fluid|create:chocolate"));
+
+        assertTrue(Unlocks.unlockedOutputs(STRICT, index, Set.of()).contains("item|create:bar_of_chocolate"));
+    }
+
+    @Test
+    void everyOutputIsMadeButNotEveryInput()
+    {
+        RecipeIndex index = index();
+
+        assertTrue(index.makes("item|minecraft:stick"));
+        assertFalse(index.makes("item|minecraft:oak_log"));
+    }
+
     private static InputSlot fluidSlot(String fluidId, String bucketId)
     {
         return new InputSlot(Set.of(rl(bucketId)), Set.of("fluid|" + fluidId));

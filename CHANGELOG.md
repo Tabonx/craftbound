@@ -31,6 +31,10 @@
 - A recipe now counts as one you can make, for listing it first and for the place button alike,
   from the same items: your main inventory and the crafting grid. Worn armor, the offhand and the
   item on the cursor no longer move a recipe to the front that the place button then refuses.
+- An item whose only recipe comes from a mod the book cannot fully read now shows in the book
+  from the start, instead of staying hidden for good.
+- The book picks up recipes again after JEI reloads them, such as after `/reload`, instead of
+  showing the old ones until the screen is opened anew.
 - On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
   tab instead of Miscellaneous, as they do on 1.21.1.
 - A Create update that no longer fits the book now switches off only the book's Create features,
