@@ -4,18 +4,13 @@ import java.util.Set;
 
 import com.craftbound.client.ScopedFlag;
 
-// Whether the stretch of work currently running is the book drawing a recipe of its own.
-//
-// The book borrows JEI's category drawables, so anything Craftbound wants to leave out of a recipe
-// has to be suppressed while JEI draws it. JEI now runs as its own mod with its own screens, and
-// those must keep looking the way JEI drew them, so the suppression is scoped to this flag rather
-// than applied wherever the drawable happens to be used.
+// The book borrows JEI's category drawables, and JEI's own screens must keep looking the way JEI
+// drew them, so anything the book leaves out of a recipe is suppressed only while this flag is set.
 public final class BookRecipeRender
 {
     private static final ScopedFlag DRAWING = new ScopedFlag();
     private static Set<?> missing = Set.of();
 
-    // The slots to tint as missing are passed in here, since only JEI knows where it draws them.
     public static void whileDrawing(Set<?> missingSlots, Runnable recipe)
     {
         Set<?> outer = missing;

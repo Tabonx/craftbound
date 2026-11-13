@@ -96,7 +96,6 @@ final class BookHost
         return ToggleSpot.insideFree(screen.getClass().getName(), bounds(screen).height(), slots);
     }
 
-    // The screen's own image: leftPos, topPos and its size.
     static Rect bounds(AbstractContainerScreen<?> screen)
     {
         var accessor = (ContainerScreenAccessor) screen;

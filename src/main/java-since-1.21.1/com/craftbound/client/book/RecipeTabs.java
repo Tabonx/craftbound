@@ -11,8 +11,6 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// The result of every recipe the client knows, with the ribbon its book category puts it on. This
-// generation gives the client the recipes themselves.
 final class RecipeTabs
 {
     static void forEach(BiConsumer<Item, BrowseTab> out)
@@ -41,8 +39,7 @@ final class RecipeTabs
         return null;
     }
 
-    // Some mods' recipes have no meaningful fixed result and throw when asked for one; such a
-    // recipe simply doesn't categorise anything rather than taking the whole book down with it.
+    // Some mods' recipes throw when asked for a fixed result.
     private static ItemStack resultOf(Recipe<?> recipe, HolderLookup.Provider registries)
     {
         try

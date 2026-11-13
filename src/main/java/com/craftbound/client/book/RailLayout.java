@@ -1,8 +1,7 @@
 package com.craftbound.client.book;
 
-// Pure paging math for the book's left tab rail: how many tabs fit, how far it can scroll, and
-// where the scroll window has to sit to keep a given tab visible. A taller book fits more tabs.
-// Kept free of Minecraft types so it can be unit-tested.
+// Paging math for the book's left tab rail: how many tabs fit, how far it can scroll, and where
+// the scroll window has to sit to keep a given tab visible. A taller book fits more tabs.
 public record RailLayout(int maxTabs, int pagedTabs)
 {
     // Past maxTabs the rail pages, with ▲/▼ claiming the two ends.

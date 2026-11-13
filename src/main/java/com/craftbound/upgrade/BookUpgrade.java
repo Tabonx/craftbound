@@ -1,8 +1,7 @@
 package com.craftbound.upgrade;
 
-// Rules for the book upgrade, kept free of Minecraft so they can be tested on their own. The
-// upgrade is bound into the book by using a Bookbinder's Lens; while bound, the book marks the
-// items that would unlock more recipes.
+// While a Bookbinder's Lens is bound into the book, the book marks the items that would unlock
+// more recipes.
 public final class BookUpgrade
 {
     // The lens cannot exist on a server without Craftbound, so the marks must show there

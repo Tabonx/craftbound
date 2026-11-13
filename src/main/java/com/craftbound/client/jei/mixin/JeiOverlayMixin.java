@@ -9,15 +9,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
-// Stops JEI drawing anything over a screen, which takes the item list, the bookmark list and the
-// two corner buttons with it.
-//
-// The buttons are the reason this exists at all: JEI draws its lists only where they fit, which
-// JeiOverlayHider takes away, but it draws the buttons whenever the screen is valid, so no amount
-// of denying it room will hide them.
-//
-// JEI renames these entry points within a single Minecraft version, so every known name is listed
-// rather than picked per version. A name the installed JEI lacks is skipped.
+// JeiOverlayHider hides JEI's lists, but JEI draws its corner buttons whenever the screen is valid,
+// so drawing is stopped here. JEI renames these entry points within a single Minecraft version, so
+// every known name is listed rather than picked per version. A name the installed JEI lacks is
+// skipped.
 @Mixin(targets = "mezz.jei.gui.events.GuiEventHandler", remap = false)
 public class JeiOverlayMixin
 {

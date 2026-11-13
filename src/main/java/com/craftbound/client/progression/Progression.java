@@ -12,8 +12,6 @@ import com.craftbound.progression.UnlockKey;
 
 import net.minecraft.resources.ResourceLocation;
 
-// The session's progression, for the book and the mixins that ask about it without holding a
-// session of their own.
 public final class Progression
 {
     public static void refresh()
@@ -41,16 +39,13 @@ public final class Progression
         return cache().takeHighlight(ingredient.unlockKey());
     }
 
-    // The ingredient behind an unlock key, so the toast can draw it with the same JEI renderer the
-    // book uses instead of guessing at an item form.
     public static Optional<BookIngredient> displayFor(UnlockKey unlockKey)
     {
         return RecipeIndexBuilder.current().flatMap(snapshot -> snapshot.displayFor(unlockKey));
     }
 
-    // Whether obtaining this item would reveal something the book is still hiding, which is what the
-    // grid marks. Fluids and other ingredient types can never be obtained, so they are never marked.
-    // The marks themselves are an upgrade, so they stay hidden until the book carries the lens.
+    // Fluids can never be obtained, so they are never marked. The marks stay hidden until the book
+    // carries the lens upgrade.
     public static boolean unlocksMore(BookIngredient ingredient)
     {
         return ClientSession.current().bookUpgrade().hintsUnlocked()

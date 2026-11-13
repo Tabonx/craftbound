@@ -9,8 +9,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 
-// Entry point for both sides. The MODID must match the [[mods]] id in META-INF/neoforge.mods.toml.
-// The client's own entry point is CraftboundClient.
 @Mod(Craftbound.MODID)
 public class Craftbound
 {

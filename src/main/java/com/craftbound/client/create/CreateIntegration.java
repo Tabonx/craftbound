@@ -15,8 +15,6 @@ import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-// Everything the book knows about Create beyond what Create tells JEI: the heat a basin recipe needs,
-// and the stock keeper's order and stock.
 public final class CreateIntegration implements BookIntegration
 {
     private final IntegrationGuard guard;

@@ -9,8 +9,8 @@ import mezz.jei.api.runtime.IIngredientFilter;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-// JEI's search text is shared state: mods with a "sync with JEI" search, like Create's stock keeper,
-// read and write it. The book uses it as its own, so those mods stay in sync with the book.
+// The book uses JEI's search text as its own, so mods that sync with JEI's search, like Create's
+// stock keeper, stay in sync with the book.
 public final class JeiSearch
 {
     // The book filters again on every tab switch and unlock, often with the same text.
@@ -28,8 +28,7 @@ public final class JeiSearch
         JeiSession.runtime().ifPresent(runtime -> runtime.getIngredientFilter().setFilterText(text));
     }
 
-    // The session uids of the book's ingredients that JEI's own search keeps for this text, so the
-    // book understands the same syntax: @mod, #tag, $tooltip, -exclusions, a|b and the rest.
+    // Delegates to JEI's own search so the book understands the same syntax.
     public static Set<String> matches(String text)
     {
         Optional<IJeiRuntime> runtime = JeiSession.runtime();

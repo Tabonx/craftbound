@@ -16,14 +16,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 
-// Which item results the player can make right now in the open menu, from what
-// RecipePlacement.available counts as theirs. Follows the menu's recipe book: a crafting screen
-// checks crafting recipes against its grid, a furnace/smoker/blast screen its smelting family.
-// Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
-// which are not made through any of these menus.
-//
-// Deliberately ignores progression: the grid it filters has already dropped everything still
-// locked, so this is purely about having the ingredients on hand.
+// Ignores progression: the grid it filters has already dropped everything still locked.
 public final class CraftableItems
 {
     private CraftableItems()
@@ -45,8 +38,7 @@ public final class CraftableItems
         return result;
     }
 
-    // Crafting recipes made from a pool other than the player's inventory, such as the stock a
-    // storage screen can order 3x3 crafts from.
+    // For a pool other than the player's inventory, such as the stock a storage screen orders from.
     public static Set<Item> craftableFrom(StackedContents contents)
     {
         Minecraft minecraft = Minecraft.getInstance();
@@ -59,8 +51,7 @@ public final class CraftableItems
         return result;
     }
 
-    // getAllRecipesFor pins the recipe type to its input type; since the type is chosen at runtime
-    // from the menu, erase to a raw RecipeType and read each holder as a plain Recipe.
+    // The recipe type is chosen at runtime, so it is erased to a raw type for getAllRecipesFor.
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void collect(RecipeManager recipes, RecipeType<?> type, StackedContents contents,
             int width, int height, RegistryAccess registries, Set<Item> result)
@@ -69,10 +60,8 @@ public final class CraftableItems
         for (RecipeHolder<?> holder : holders)
         {
             Recipe<?> recipe = holder.value();
-            // Special recipes (the variable firework, leather dyeing, etc.) declare no ingredients,
-            // so canCraft is trivially true even from an empty inventory. Vanilla's book skips them
-            // the same way; where a normal recipe for the same result exists (e.g. the shapeless
-            // gunpowder + paper firework), that one is kept and checked properly.
+            // Special recipes declare no ingredients, so canCraft is true from an empty inventory.
+            // Vanilla's book skips them too.
             if (recipe.isSpecial())
                 continue;
             if (recipe.canCraftInDimensions(width, height) && contents.canCraft(recipe, null))

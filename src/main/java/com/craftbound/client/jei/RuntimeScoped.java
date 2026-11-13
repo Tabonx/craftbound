@@ -5,7 +5,6 @@ import java.util.function.Function;
 
 import mezz.jei.api.runtime.IJeiRuntime;
 
-// A value built from the running JEI, built again once JEI has restarted.
 final class RuntimeScoped<T>
 {
     private final Function<IJeiRuntime, T> build;

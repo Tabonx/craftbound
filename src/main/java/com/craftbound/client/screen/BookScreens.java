@@ -59,7 +59,6 @@ public final class BookScreens
                     imageWidth, SIDES.gap(screen), BookSession.get().isOpen());
     }
 
-    // Asked by the recipe-book screen laying itself out.
     public static int hostedLeftPos(int width, int imageWidth)
     {
         AbstractContainerScreen<?> screen = layingOut.get();

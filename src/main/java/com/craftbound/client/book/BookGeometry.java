@@ -64,7 +64,6 @@ public record BookGeometry(int x, int y, int width, int height)
         return new Rect(x + FILTER_X, y + BUTTON_Y, BUTTON_W, BUTTON_H);
     }
 
-    // The right-hand button slot, the place button's.
     public Rect place()
     {
         return new Rect(x + width - inset(BUTTON_MARGIN) - BUTTON_W, y + BUTTON_Y, BUTTON_W, BUTTON_H);
@@ -77,7 +76,6 @@ public record BookGeometry(int x, int y, int width, int height)
         return placeShown ? new Rect(place.x() - BUTTON_GAP - BUTTON_W, place.y(), BUTTON_W, BUTTON_H) : place;
     }
 
-    // The "‹ items" control leading back to the grid.
     public Rect back()
     {
         return new Rect(x + inset(BACK_X), y + BACK_Y, BACK_W, ARROW_H);
@@ -92,7 +90,6 @@ public record BookGeometry(int x, int y, int width, int height)
         return new Rect(left, y + SEARCH_Y - 3, right - left, SEARCH_H + 6);
     }
 
-    // The pager sits on the bottom edge, which moves down as the book grows.
     public int pagerY()
     {
         return y + height - (HEIGHT - ARROW_Y);

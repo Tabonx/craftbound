@@ -5,9 +5,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 
-// Newer versions hand widgets an event record where this generation passes loose coordinates and
-// key codes. The book works in the loose form throughout, so its own input handling reads the same
-// on every version.
+// The book takes input as loose coordinates and key codes on every version.
 public final class Input
 {
     public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button)

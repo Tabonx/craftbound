@@ -86,7 +86,6 @@ final class StockKeeperPlacer implements RecipePlacer
         return transfer.menuGroup(groups);
     }
 
-    // Empty once the integration is off, which leaves every recipe to Create's own transfer handler.
     private Optional<CraftableBigItemStack> ordered(IRecipeLayoutDrawable<?> layout)
     {
         return guard.call(() -> findOrdered(layout), Optional::empty);

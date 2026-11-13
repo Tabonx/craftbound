@@ -97,7 +97,6 @@ class ProgressionCacheTest
         assertTrue(cache.isUnlocked(STICK));
     }
 
-    // Two worlds whose obtained sets are just as large are still two different worlds.
     @Test
     void anotherSetOfTheSameSizeIsNoticed()
     {
@@ -113,7 +112,6 @@ class ProgressionCacheTest
         assertTrue(cache.isUnlocked(PLANKS));
     }
 
-    // Leaving a world takes its obtained set away, and the next one is measured from scratch.
     @Test
     void leavingAWorldTakesANewBaseline()
     {
@@ -131,7 +129,6 @@ class ProgressionCacheTest
         assertEquals(List.of(), cache.drainNewlyUnlocked());
     }
 
-    // JEI reloading hands over a new index, which is not news either.
     @Test
     void aNewIndexTakesANewBaseline()
     {

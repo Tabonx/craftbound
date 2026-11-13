@@ -33,10 +33,8 @@ import com.google.gson.JsonParser;
 
 import net.minecraft.resources.ResourceLocation;
 
-// Progression walked over a model of Create's actual early game, since Create is what this mod is
-// aimed at. The recipes are fixtures rather than the real datapack, since real recipes need a running
-// game, but they are shaped exactly as RecipeIndexBuilder produces them, heat requirements
-// included, and they go through the real HeatRequirement mapping.
+// The recipes are fixtures rather than the real datapack, which needs a running game, but they are
+// shaped as RecipeIndexBuilder produces them and go through the real HeatRequirement mapping.
 class CreateProgressionTest
 {
     private static final String CRAFTING = "minecraft:crafting";
@@ -188,12 +186,8 @@ class CreateProgressionTest
                 .contains(POTION_FLUID));
     }
 
-    // Brewing: each potion is a separate fluid subtype, so unlocking one recipe must not put every
-    // other potion in the grid. That mismatch showed up as fluids you could see but whose recipes
-    // were all still locked.
-    // Potions are subtypes of one fluid. Keyed only by that fluid, unlocking the first brewing step
-    // put every potion in the grid while their own recipes stayed locked: visible fluids with
-    // nothing behind them.
+    // Potions are subtypes of one fluid, so keying by the fluid alone would show every potion while
+    // their own recipes stayed locked.
     @Test
     void unlockingOneBrewingStepDoesNotRevealEveryPotion()
     {
@@ -340,8 +334,6 @@ class CreateProgressionTest
                 "create:blaze_burner").contains(BRASS_INGOT));
     }
 
-    // The case that prompted this: lava showed up as soon as its ingredients were in hand, with no
-    // hint that a superheated basin is required.
     @Test
     void aSuperheatedRecipeNeedsBlazeCakeAsWellAsTheBurner()
     {
@@ -422,14 +414,13 @@ class CreateProgressionTest
         return InputSlot.ofItems(obtained(ids));
     }
 
-    // A fluid slot as the collector builds one: the fluid's identity, plus its bucket folded in
-    // with the items so having one in hand also satisfies the slot.
     // A potion fluid slot: one subtype of create:potion, with no bucket to shortcut it.
     private static InputSlot potion(String subtype)
     {
         return new InputSlot(Set.of(), Set.of(new UnlockKey(POTION_FLUID.kind(), POTION_FLUID.id(), subtype)));
     }
 
+    // The bucket is folded in with the items, so having one in hand also satisfies the slot.
     private static InputSlot fluid(String fluidId, String bucketId)
     {
         return new InputSlot(Set.of(ResourceLocation.parse(bucketId)), Set.of(UnlockKey.ofFluid(ResourceLocation.parse(fluidId), "")));

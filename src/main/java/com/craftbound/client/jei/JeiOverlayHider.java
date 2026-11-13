@@ -11,18 +11,12 @@ import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Rect2i;
 
-// Keeps JEI's own overlays off the screen. Craftbound uses JEI as the thing that knows every mod's
-// recipes, not as a second interface: its ingredient list shows every item in the pack at once,
-// which is the opposite of a book that reveals things as they are found.
-//
-// JEI shows an overlay only where it has room, and a global gui handler is how a mod tells JEI
-// which parts of the screen are spoken for. Claiming the whole screen leaves no room, so both the
-// ingredient list and the bookmark list stay hidden without touching the player's JEI settings.
+// JEI shows an overlay only where it has room. Claiming the whole screen as a gui area hides the
+// ingredient and bookmark lists without touching the player's JEI settings.
 final class JeiOverlayHider implements IGlobalGuiHandler
 {
     private static final ScopedFlag LIFTED = new ScopedFlag();
 
-    // What the other mods claim, without this claim drowning them out.
     static <T> T lifted(Supplier<T> read)
     {
         return LIFTED.during(read);

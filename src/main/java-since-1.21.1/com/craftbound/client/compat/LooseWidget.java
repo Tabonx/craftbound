@@ -3,8 +3,6 @@ package com.craftbound.client.compat;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.network.chat.Component;
 
-// A widget that takes input as loose coordinates and key codes, the form the book works in on every
-// version. This generation hands them over that way already.
 public abstract class LooseWidget extends AbstractWidget
 {
     protected LooseWidget(int x, int y, int width, int height, Component message)

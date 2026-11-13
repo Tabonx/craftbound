@@ -11,7 +11,6 @@ import com.craftbound.client.book.search.SearchSyntax;
 // made right now. Two equal queries show the same thing, so the grid keeps its page between them.
 public record BrowseQuery(BrowseTab tab, String text, boolean craftableOnly)
 {
-    // What the grid is filled from.
     public interface Catalog<T>
     {
         List<T> producible();

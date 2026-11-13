@@ -18,22 +18,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
-// Which item results the player can make right now in the open menu, from what
-// RecipePlacement.available counts as theirs. Follows the menu's recipe book: a crafting screen
-// checks crafting recipes against its grid, a furnace/smoker/blast screen its smelting family.
-// Includes Create's crafting-table recipes (ordinary CraftingRecipes) and excludes machine recipes,
-// which are not made through any of these menus.
-//
-// Deliberately ignores progression: the grid it filters has already dropped everything still
-// locked, so this is purely about having the ingredients on hand.
+// Ignores progression: the grid it filters has already dropped everything still locked.
 public final class CraftableItems
 {
     private CraftableItems()
     {
     }
 
-    // The client holds recipe displays rather than recipes, and each display answers for itself
-    // whether the given inventory can craft it.
     public static Set<Item> craftableIn(RecipeBookMenu menu)
     {
         Minecraft minecraft = Minecraft.getInstance();

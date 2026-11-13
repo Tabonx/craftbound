@@ -11,10 +11,8 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-// Per-player data the book reads: what the player has obtained (see ObtainedItems) and whether
-// their book carries the Bookbinder's Lens upgrade. Both are persisted to disk here and sent to the
-// owning client by PlayerState, since the book filters and draws client-side. PlayerDataFormat
-// holds the saved shape.
+// Saved here and sent to the owning client by PlayerState, since the book filters and draws
+// client-side.
 public final class CraftboundAttachments
 {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =

@@ -4,8 +4,7 @@ import java.util.List;
 
 // What a screen draws past its own left edge, read from the areas mods report to recipe viewers so
 // those keep clear of them: AE2's toolbar, Curios' slot panel, Mekanism's side tabs. Relative to the
-// screen, so it holds wherever the screen moves. Kept free of Minecraft types so it can be
-// unit-tested.
+// screen, so it holds wherever the screen moves.
 public record SideAreas(int reach, int floor)
 {
     public static final SideAreas NONE = new SideAreas(0, Integer.MAX_VALUE);

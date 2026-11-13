@@ -19,8 +19,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
 
 // The browsing state: a search field, the craftable filter, the ribbons choosing what fills the grid,
-// the grid itself, and the panel listing an entry's variants. Uses a vanilla EditBox for search so it
-// inherits its look and keys.
+// the grid itself, and the panel listing an entry's variants.
 final class BrowsePanel implements BookPanel
 {
     private static final ResourceLocation FILTER_ENABLED =
@@ -109,7 +108,6 @@ final class BrowsePanel implements BookPanel
             refilter();
     }
 
-    // The bookmarks ribbon closes the rail once there are any.
     private void syncTabs()
     {
         if (catalog.bookmarked().isEmpty() && state.tab == BrowseTab.BOOKMARKS)

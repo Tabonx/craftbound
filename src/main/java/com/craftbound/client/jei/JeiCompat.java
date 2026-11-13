@@ -15,8 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 *///?}
 
-// The JEI calls whose shape changed between the versions the book supports, written once so the
-// rest of the book calls JEI the same way everywhere.
+// JEI calls whose shape changed between the supported versions.
 public final class JeiCompat
 {
     public static <T> Optional<ITypedIngredient<T>> typed(IIngredientManager manager, IIngredientType<T> type,
@@ -64,7 +63,7 @@ public final class JeiCompat
     }
     *///?}
 
-    // The highlight JEI draws over a slot under the cursor, without its tooltip.
+    // The cursor highlight, without its tooltip.
     public static void drawHighlight(IRecipeSlotDrawable slot, GuiGraphics graphics)
     {
         //? if >=1.21.11 {

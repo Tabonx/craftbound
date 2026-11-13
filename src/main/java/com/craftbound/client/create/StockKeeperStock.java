@@ -11,9 +11,8 @@ import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.item.Item;
 
-// What the stock behind a stock keeper can be crafted into, for the book's craftable filter. The
-// keeper orders crafts from its stock, not from the player's inventory. The client holds the last
-// stock it was sent and replaces it whole on every update, so a new one is a new version.
+// The keeper orders crafts from its stock, not the player's inventory. The client replaces the stock
+// whole on every update, so a new one is a new version.
 final class StockKeeperStock
 {
     private final IntegrationGuard guard;

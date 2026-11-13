@@ -10,8 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.RecipeBookMenu;
 
-// The screens vanilla gives a recipe book: the book fills their grid, and filters by what that grid
-// can make from the player's inventory.
 final class VanillaIntegration implements BookIntegration
 {
     @Override

@@ -49,7 +49,6 @@ class UnlockKeyTest
         assertEquals(UnlockKey.ofFluid(POTION, "long|strength"), parsed);
     }
 
-    // The one that let a single unlocked brewing recipe reveal every potion in the game.
     @Test
     void twoPotionsAreDifferentKeys()
     {
@@ -57,7 +56,6 @@ class UnlockKeyTest
         assertNotEquals(UnlockKey.ofFluid(POTION, "strength"), UnlockKey.ofFluid(POTION, ""));
     }
 
-    // The one that let filling a water bottle reveal every potion in the game.
     @Test
     void twoPotionItemsAreDifferentKeys()
     {

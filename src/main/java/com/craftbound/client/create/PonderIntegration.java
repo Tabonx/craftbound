@@ -3,9 +3,7 @@ package com.craftbound.client.create;
 import com.craftbound.client.integration.BookIntegration;
 import com.craftbound.client.integration.IntegrationGuard;
 
-// Ponder ships with Create but is a mod of its own, versioned on its own, so it has its own guard:
-// a Ponder that no longer fits leaves the rest of the Create integration running, and the other way
-// round.
+// Ponder is versioned apart from Create, so it has its own guard.
 public final class PonderIntegration implements BookIntegration
 {
     public PonderIntegration(IntegrationGuard guard)

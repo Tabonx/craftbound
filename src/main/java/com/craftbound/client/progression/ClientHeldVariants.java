@@ -22,13 +22,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
 
-// Which variants of an item the player has held, such as which potion. The server records item ids
-// only, since it has no JEI to say which components make a variant, so the client tracks these
-// itself, per world, from its own view of the inventory.
-//
-// A variant's key holds JEI's subtype, which is only stable within one session, so what is saved is
-// one stack of each variant, and the keys are worked out again from those whenever JEI starts. A
-// stack that does not decode, such as one from a mod that is gone, stays in the file as it was.
+// Tracked on the client because the server has no JEI to say which components make a variant.
+// JEI's subtype is only stable within one session, so one stack of each variant is saved and the
+// keys are worked out again whenever JEI starts. A stack that does not decode, such as one from a
+// removed mod, stays in the file as it was.
 public final class ClientHeldVariants
 {
     static final Codec<List<Either<ItemStack, Dynamic<?>>>> CODEC =

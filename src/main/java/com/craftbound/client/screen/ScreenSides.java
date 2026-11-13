@@ -9,8 +9,8 @@ import com.craftbound.client.book.RecipeBookLayout;
 
 // What each kind of screen draws past its left edge, learned the first time it is shown. The screen
 // is laid out before any of that exists, so a sighting that changes the answer lays it out again,
-// once per screen, in case what a mod reports moves with the screen itself. Kept free of Minecraft
-// types so it can be unit-tested. Screens are held weakly, so a closed one is let go.
+// once per screen, in case what a mod reports moves with the screen itself. Screens are held
+// weakly, so a closed one is let go.
 final class ScreenSides
 {
     private static final Reference<Object> NONE = new WeakReference<>(null);

@@ -8,9 +8,7 @@ import com.craftbound.client.placement.RecipePlacer;
 
 import net.minecraft.world.item.Item;
 
-// The book's hookup to an open screen: where a placed recipe goes, and which items are craftable
-// from what the screen holds. The version changes whenever that answer might have. A screen with no
-// grid of its own, like a storage terminal, has no craftable answer and leaves it null.
+// A screen with no grid of its own, like a storage terminal, leaves craftable null.
 public record MenuBinding(RecipePlacer placer, Supplier<Set<Item>> craftable, IntSupplier version)
 {
     public static MenuBinding placing(RecipePlacer placer)

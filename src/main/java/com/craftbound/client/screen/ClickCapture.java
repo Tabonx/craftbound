@@ -16,7 +16,6 @@ final class ClickCapture
         return taken;
     }
 
-    // Whether the release ends a press the book took.
     boolean release()
     {
         boolean wasTaken = taken;

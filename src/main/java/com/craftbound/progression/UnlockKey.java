@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 
 // How progression names the things a recipe produces: the registry id, plus JEI's subtype where one
 // id stands for many things. Every potion is `minecraft:potion` and every Create potion fluid is
-// `create:potion`, so the id alone let filling one water bottle reveal every potion in the game.
+// `create:potion`, so the id alone would let filling one water bottle reveal every potion in the game.
 // JEI counts neither damage nor most components as a subtype, so a recipe outputting a damaged tool
 // still unlocks the plain grid entry.
 //

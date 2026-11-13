@@ -6,7 +6,6 @@ import java.util.function.BooleanSupplier;
 import com.craftbound.client.book.RecipeBookToggleButton;
 import com.craftbound.client.book.Rect;
 
-// Where the book's toggle stands on a screen. Kept free of Minecraft types so it can be unit-tested.
 enum ToggleSpot
 {
     // Where the screen's own recipe-book button was.

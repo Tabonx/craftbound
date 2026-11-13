@@ -6,7 +6,6 @@ import com.craftbound.progression.UnlockKey;
 
 import net.minecraft.resources.ResourceLocation;
 
-// What the book may show of the recipes JEI knows. Progression answers it; JEI only asks.
 public interface RecipeGate
 {
     RecipeGate OPEN = new RecipeGate()
@@ -40,7 +39,6 @@ public interface RecipeGate
 
     boolean isRecipeUnlocked(String categoryUid, Object recipe);
 
-    // Whether a slot offering alternatives shows only the ones the player has.
     boolean narrowsSlots();
 
     boolean hasInput(UnlockKey unlockKey, Optional<ResourceLocation> itemId);

@@ -17,12 +17,9 @@ import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
-// The result of every recipe the client knows, with the ribbon its book category puts it on. The
-// client is no longer given the recipes themselves, only the displays its own recipe book was told
-// about, and each of those names the book category the recipe's own category was turned into.
+// The client only has the displays its recipe book was told about, each naming a book category.
 final class RecipeTabs
 {
-    // Each book category back to the recipe category it was made from.
     private static final Map<RecipeBookCategory, BrowseTab> TABS = Map.ofEntries(
             Map.entry(RecipeBookCategories.CRAFTING_BUILDING_BLOCKS, BrowseTab.of(CraftingBookCategory.BUILDING)),
             Map.entry(RecipeBookCategories.CRAFTING_REDSTONE, BrowseTab.of(CraftingBookCategory.REDSTONE)),

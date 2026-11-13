@@ -77,7 +77,6 @@ class UnlocksTest
         assertTrue(satisfied(STRICT, List.of(), Set.of()));
     }
 
-    // Water is in no recipe's output, so gating on it would be a gate that never opens.
     @Test
     void aFluidNothingProducesIsNotAGate()
     {
@@ -86,8 +85,6 @@ class UnlocksTest
         assertTrue(Unlocks.inputsSatisfied(STRICT, waterSlot, Set.of(), Set.of(), Set.of()));
     }
 
-    // A Potion of Luck's fluid: no recipe makes it and no bucket carries it, so nothing filled from
-    // it can ever be made.
     @Test
     void aFluidNothingMakesOrCarriesIsAGateThatNeverOpens()
     {
@@ -110,7 +107,6 @@ class UnlocksTest
                 Set.of(key("item|minecraft:potion|strength")), Set.of()));
     }
 
-    // Holding a potion opens what brews from it, but gives the potion no entry of its own.
     @Test
     void aHeldVariantCountsAsAnInputButNotAsAnOutput()
     {
@@ -206,9 +202,8 @@ class UnlocksTest
         assertTrue(Unlocks.unlockedOutputs(STRICT, index, hasMixer).contains(key("item|create:brass_sheet")));
     }
 
-    // The same recipe object is listed by several categories: Create re-lists ordinary shaped
-    // recipes under its own mechanical-crafter category. Being locked there must not hide it from
-    // the crafting table, which is what a single recipe-keyed map did.
+    // Create re-lists ordinary shaped recipes under its own mechanical-crafter category, so the
+    // same recipe object belongs to two categories.
     @Test
     void aRecipeListedByTwoCategoriesUnlocksThroughTheOpenOne()
     {
@@ -244,7 +239,6 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, hasLog, Unlocks.unlockedOutputs(STRICT, index, hasLog)));
     }
 
-    // A machine is worth marking too: obtaining it is what opens its category.
     @Test
     void aCatalystIsMarkedWhenItIsTheMissingPiece()
     {
@@ -274,7 +268,6 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, hasOak, Unlocks.unlockedOutputs(STRICT, index, hasOak)));
     }
 
-    // Under ALL_INPUTS a single item is only worth marking once it is the last one missing.
     @Test
     void allInputs_marksOnlyTheFinalMissingInput()
     {
@@ -288,7 +281,6 @@ class UnlocksTest
                 Unlocks.unlockingItems(STRICT, index, obtained("minecraft:stick"), Set.of()));
     }
 
-    // An output already reachable another way is nothing new, so nothing points at it.
     @Test
     void anAlreadyUnlockedOutputIsNotWorthMarking()
     {
@@ -345,8 +337,6 @@ class UnlocksTest
         assertTrue(Unlocks.discovered(Set.of(), Set.of(bell), bell));
     }
 
-    // Every boat opens its own chest boat, but once one chest boat is in the book the others are
-    // variants of it, not news.
     @Test
     void anItemOpeningOnlyAVariantOfAnOpenRecipeIsNotMarked()
     {
@@ -401,8 +391,6 @@ class UnlocksTest
                 index, Set.of(key("fluid|create:chocolate")), Set.of(), Set.of()));
     }
 
-    // A recipe the index could not read cannot be judged, so what it makes must not be hidden: an
-    // item whose only recipe that is would otherwise never appear.
     @Test
     void whatAnUnreadRecipeMakesIsUnlocked()
     {

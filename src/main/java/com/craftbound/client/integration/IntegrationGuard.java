@@ -7,10 +7,9 @@ import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
-// Other mods are optional and their version ranges have no upper bound, so their classes can move
-// under us. An integration wraps each call into the other mod's own classes in its guard, and only
-// those: the first one that fails switches the integration off, and every later call gets the answer
-// the book would give without that mod. A failing call is never repeated.
+// Other mods' version ranges have no upper bound, so their classes can move. The first guarded call
+// that fails switches the integration off, and every later call gets the answer the book would give
+// without that mod.
 public final class IntegrationGuard
 {
     private static final Logger LOGGER = LogUtils.getLogger();

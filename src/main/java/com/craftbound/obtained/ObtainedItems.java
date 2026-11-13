@@ -12,8 +12,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 
-// Pure logic and serialization for the per-player set of item ids the player has ever had.
-// Kept free of Minecraft singletons so it can be unit-tested without launching the game.
+// The item ids a player has ever had.
 public final class ObtainedItems
 {
     public static final Codec<Set<ResourceLocation>> CODEC =
@@ -23,7 +22,7 @@ public final class ObtainedItems
             ByteBufCodecs.<RegistryFriendlyByteBuf, ResourceLocation, Set<ResourceLocation>>collection(
                     size -> new HashSet<>(), ResourceLocation.STREAM_CODEC);
 
-    // Returns whether anything was actually added, so callers can skip a redundant sync.
+    // Whether anything was added, so callers can skip a redundant sync.
     public static boolean recordAll(Set<ResourceLocation> obtained, Collection<ResourceLocation> ids)
     {
         return obtained.addAll(ids);

@@ -8,9 +8,8 @@ import net.neoforged.neoforge.attachment.AttachmentHolder;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-// NeoForge hands an attachment's serializer only a compound, so the bare values that Craftbound
-// saved before 1.21.8 never reach it and fail to load. This reads them from the player's saved
-// attachments directly, once NeoForge has loaded what it could.
+// NeoForge hands an attachment's serializer only a compound, so bare values saved before 1.21.8 fail
+// to load. They are read from the saved attachments directly after NeoForge has loaded the rest.
 public final class LegacyPlayerData
 {
     public static void restore(ServerPlayer player, ValueInput input)

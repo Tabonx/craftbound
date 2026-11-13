@@ -132,7 +132,6 @@ public final class RecipeBookWidget extends LooseWidget
             state.recipes.current().tick();
     }
 
-    // Brings what the book shows up to date with the world, and the controls with what it shows.
     private void sync()
     {
         closeStaleRecipe();
@@ -325,7 +324,7 @@ public final class RecipeBookWidget extends LooseWidget
             return false;
         if (Input.keyPressed(browse.search(), keyCode, scanCode, modifiers))
             return true;
-        return browse.search().canConsumeInput(); // swallow other keys while the search box is focused
+        return browse.search().canConsumeInput();
     }
 
     // The book's clickable area is the page plus the rail beside it. Newer versions hand a click

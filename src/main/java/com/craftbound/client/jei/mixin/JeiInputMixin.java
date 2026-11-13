@@ -8,12 +8,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.client.gui.screens.Screen;
 
-// A button that is no longer drawn still sits where it was as far as JEI's input is concerned, so
-// a click in either bottom corner would toggle something the player cannot see. JEI's mouse
-// handling is turned away to keep those corners inert.
-//
-// Keyboard input is left alone: the show-recipe and show-uses keys are handled by
-// JeiScreenBlocker, on a vanilla event rather than on JEI's internals.
+// JEI's hidden corner buttons still take clicks, so its mouse handling is turned away. Keyboard
+// input is left to JeiScreenBlocker, on a vanilla event.
 @Mixin(targets = "mezz.jei.gui.input.ClientInputHandler", remap = false)
 public class JeiInputMixin
 {

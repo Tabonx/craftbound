@@ -11,14 +11,11 @@ import mezz.jei.api.runtime.IJeiRuntime;
 
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
-// The transfer handlers mods give JEI, which move a recipe into their screens.
 public final class TransferHandlers
 {
     // Asked on every screen init, and answering means walking every recipe category.
     private static final RuntimeScoped<Map<Object, Boolean>> ACCEPTS = new RuntimeScoped<>(runtime -> new HashMap<>());
 
-    // Whether a mod lets JEI move recipes into this menu: a storage terminal, a modded crafting
-    // table, Create's stock keeper. A screen like that is somewhere a player looks recipes up.
     public static boolean acceptsRecipes(AbstractContainerMenu menu)
     {
         Optional<IJeiRuntime> runtime = JeiSession.runtime();
@@ -37,7 +34,7 @@ public final class TransferHandlers
                 .flatMap(runtime -> runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category));
     }
 
-    // JEI finds a transfer handler by both. The player's own menu has no type and says so by throwing.
+    // The player's own menu has no type and says so by throwing.
     private static Object menuKey(AbstractContainerMenu menu)
     {
         try

@@ -25,10 +25,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluid;
 
-// Runs a category's setRecipe without building anything drawable, keeping the slots apart so
-// "any one of these planks" stays one slot rather than dissolving into a flat ingredient list.
-// JEI's own IngredientSupplierBuilder merges every slot of a role, which would turn alternatives
-// into separate requirements and lock recipes that are perfectly makeable.
+// Keeps the slots apart so "any one of these planks" stays one slot. JEI's own
+// IngredientSupplierBuilder merges every slot of a role, which would turn alternatives into separate
+// requirements and lock recipes that are makeable.
 final class SlotIngredientCollector implements IRecipeLayoutBuilder
 {
     private final IIngredientManager manager;
@@ -48,8 +47,7 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
         return inputs.stream().map(this::toInputSlot).toList();
     }
 
-    // Fluids are recorded by identity so progression can ask whether they are reachable yet, and
-    // their bucket is folded in with the items so having one in hand also satisfies the slot.
+    // A fluid's bucket is folded in with the items, so having one in hand also satisfies the slot.
     private InputSlot toInputSlot(IngredientSlot slot)
     {
         Set<ResourceLocation> items = new HashSet<>();
@@ -84,8 +82,6 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
                 : Optional.of(BuiltInRegistries.ITEM.getKey(bucket));
     }
 
-    // Keyed by unlock key, keeping the ingredient itself: the unlock toast draws it with JEI's own
-    // renderer so a fluid looks the same there as it does in the book.
     Map<UnlockKey, ITypedIngredient<?>> outputs()
     {
         Map<UnlockKey, ITypedIngredient<?>> byKey = new HashMap<>();
@@ -124,10 +120,8 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
     }
     //?}
 
-    // Invisible inputs are dropped rather than treated as another required slot: a category that
-    // declares one the player can never hold would lock the recipe forever, and showing a recipe
-    // early is the far cheaper mistake. Invisible outputs are kept apart from the real ones: JEI
-    // finds the recipe by them, so the book lists them, but they unlock nothing.
+    // Invisible inputs are dropped: one the player can never hold would lock the recipe forever.
+    // Invisible outputs are kept apart: JEI finds the recipe by them, but they unlock nothing.
     @Override
     public IIngredientAcceptor<?> addInvisibleIngredients(RecipeIngredientRole role)
     {

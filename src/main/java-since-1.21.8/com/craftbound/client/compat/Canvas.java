@@ -8,9 +8,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-// The handful of drawing calls whose shape, not just their name, changed between Minecraft
-// versions. Everything else the book draws is a straight rename and is mapped by the build. Keeping
-// these here means the book's own drawing code reads the same on every version.
+// Drawing calls whose shape, not just their name, changed between Minecraft versions.
 public final class Canvas
 {
     public static void sprite(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height)
@@ -35,14 +33,12 @@ public final class Canvas
         //?}
     }
 
-    // The font is no longer asked for, and stays in the signature so the book's drawing code reads
-    // the same on every version.
+    // The font is unused here and stays so callers read the same on every version.
     public static void tooltip(GuiGraphics graphics, Font font, Component text, int mouseX, int mouseY)
     {
         graphics.setTooltipForNextFrame(text, mouseX, mouseY);
     }
 
-    // Transforms. This generation carries a plain 2D matrix stack, which is all the book needs.
     public static void push(GuiGraphics graphics)
     {
         graphics.pose().pushMatrix();
@@ -63,7 +59,7 @@ public final class Canvas
         graphics.pose().scale(scale, scale);
     }
 
-    // Scales what follows about a point, until pop().
+    // Lasts until pop().
     public static void scaleAbout(GuiGraphics graphics, float centerX, float centerY, float scale)
     {
         push(graphics);
@@ -81,8 +77,7 @@ public final class Canvas
     }
 
     // Dims the world behind a screen the book hides, without the screen's own panel, which a
-    // container draws as part of its background. The layers match the ones the screen would have
-    // drawn.
+    // container draws as part of its background.
     public static void backdrop(Screen screen, GuiGraphics graphics, int mouseX, int mouseY, float partialTick)
     {
         graphics.nextStratum();

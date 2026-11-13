@@ -19,11 +19,9 @@ import net.minecraft.world.item.ItemStack;
 // own players for obtained items and the client does the same on a server without Craftbound.
 public final class PlayerItems
 {
-    // How often the inventory is swept, on either side, and so how often the obtained set can change.
     public static final int SCAN_INTERVAL_TICKS = 20;
 
-    // Everything on the player: the whole inventory, worn armor and the offhand included, and the
-    // stack on the cursor. Holding an item anywhere here obtains it.
+    // Holding an item anywhere here, worn armor, offhand and cursor included, obtains it.
     public static List<ItemStack> carried(Player player)
     {
         List<ItemStack> stacks = new ArrayList<>();

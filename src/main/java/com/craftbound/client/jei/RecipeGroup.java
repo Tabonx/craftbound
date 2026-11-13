@@ -10,10 +10,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
-// One recipe category (crafting, smelting, a Create machine, …) and all of its recipes that make
-// the focused item. Rendered as a tab on the book's left rail; its icon is captured as a draw
-// closure so items, fluids and JEI's own category drawables can all supply it uniformly. Keeps a
-// reference to the category so the whole category's recipes can be listed on demand.
+// One recipe category and its recipes involving the focused ingredient, shown as a rail tab.
 public final class RecipeGroup implements BookRail.Tab
 {
     private final IRecipeCategory<?> category;

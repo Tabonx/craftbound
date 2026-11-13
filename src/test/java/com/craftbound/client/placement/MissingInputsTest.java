@@ -19,7 +19,6 @@ class MissingInputsTest
         assertEquals(Set.of(), MissingInputs.of(torch, Map.of("coal", 1, "stick", 1)));
     }
 
-    // Two planks for two slots: having one leaves exactly one slot short.
     @Test
     void countsHowManyOfAnItemThereAre()
     {

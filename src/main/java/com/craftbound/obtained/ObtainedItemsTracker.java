@@ -16,11 +16,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
-// Server-side: records into the player's OBTAINED_ITEMS attachment every item they have held,
-// however they got it. Mining, loot and trades count just as much as crafting, so an item the
-// player already owns is never flagged as undiscovered in the recipe book.
-// Note: "obtained" is keyed by item rather than by exact recipe id, which matches how the recipe
-// book groups recipes.
+// Records every item a player has held, however they got it: mining, loot and trades count as
+// much as crafting, so an item the player already owns is never flagged as undiscovered.
 @EventBusSubscriber(modid = Craftbound.MODID)
 public class ObtainedItemsTracker
 {

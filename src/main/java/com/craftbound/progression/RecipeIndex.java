@@ -90,7 +90,6 @@ public record RecipeIndex(Map<String, Map<Object, RecipeNode>> byCategory,
         return byCategory.isEmpty() && unjudgedOutputs.isEmpty();
     }
 
-    // Whether any recipe makes this, read or not.
     public boolean makes(UnlockKey outputKey)
     {
         return outputKeys.contains(outputKey);

@@ -10,9 +10,6 @@ import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 
-// Pure progression logic: what the player has ever obtained decides what the book shows. Kept free
-// of Minecraft singletons and of JEI so it can be unit-tested without launching the game.
-//
 // Unlock state is derived, never stored: the obtained set only ever grows, so anything unlocked
 // stays unlocked without a second thing to persist and keep in step.
 public final class Unlocks

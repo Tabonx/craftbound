@@ -11,9 +11,8 @@ import net.minecraft.client.input.MouseButtonInfo;
 
 import org.lwjgl.glfw.GLFW;
 
-// This generation hands widgets an event record where older ones passed loose coordinates and key
-// codes. The book works in the loose form throughout and packs an event only when handing input on
-// to a vanilla widget, so its own input handling reads the same on every version.
+// The book takes input as loose coordinates and key codes and packs an event record only when
+// handing input on to a vanilla widget.
 public final class Input
 {
     public static boolean click(GuiEventListener target, double mouseX, double mouseY, int button)

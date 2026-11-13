@@ -8,10 +8,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-// The handful of drawing calls whose shape, not just their name, changed between Minecraft
-// versions. Everything else the book draws is a straight rename and is mapped by the build. Keeping
-// these here means the book's own drawing code reads the same on every version.
-//
+// Drawing calls whose shape, not just their name, changed between Minecraft versions.
 // This generation names the render type on every blit, and swapped the position and size arguments
 // of a texture region around. The rest still draws through the pose stack.
 public final class Canvas
@@ -39,8 +36,6 @@ public final class Canvas
         graphics.renderTooltip(font, text, mouseX, mouseY);
     }
 
-    // Transforms. This generation carries a full pose stack, and the book only ever moves and
-    // scales in two dimensions.
     public static void push(GuiGraphics graphics)
     {
         graphics.pose().pushPose();
@@ -61,7 +56,7 @@ public final class Canvas
         graphics.pose().scale(scale, scale, 1f);
     }
 
-    // Scales what follows about a point, until pop().
+    // Lasts until pop().
     public static void scaleAbout(GuiGraphics graphics, float centerX, float centerY, float scale)
     {
         push(graphics);

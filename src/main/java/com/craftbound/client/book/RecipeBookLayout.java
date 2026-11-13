@@ -1,8 +1,7 @@
 package com.craftbound.client.book;
 
-// Pure layout math for the book beside a container screen. The recipe panel widens leftward from
-// the book's right edge, so the screen moves only when the book opens or closes. Kept free of
-// Minecraft types so it can be unit-tested.
+// Layout math for the book beside a container screen. The recipe panel widens leftward from the
+// book's right edge, so the screen moves only when the book opens or closes.
 public final class RecipeBookLayout
 {
     public static final int BOOK_WIDTH = 147;
@@ -11,12 +10,10 @@ public final class RecipeBookLayout
     public static final int ROW = 25;
     // The width the book widens to while showing a recipe, growing leftward from its right edge.
     public static final int RECIPE_WIDTH = 200;
-    // Between the book and the screen.
     public static final int GAP = 8;
     // The closed book's toggle beside a screen with no place for it: its width and the gap to the
     // screen.
     public static final int TOGGLE_SPACE = 22;
-    // How far the rail's ribbons reach left of the book.
     public static final int RAIL_WIDTH = -BookRail.TAB_X;
     // The least room kept at either screen edge.
     public static final int EDGE = 4;
@@ -43,7 +40,6 @@ public final class RecipeBookLayout
         return open && !fits(screenWidth, imageWidth, gap);
     }
 
-    // The screen's left edge (leftPos).
     public static int leftPos(int screenWidth, int imageWidth, int gap, boolean open)
     {
         return open && fits(screenWidth, imageWidth, gap)

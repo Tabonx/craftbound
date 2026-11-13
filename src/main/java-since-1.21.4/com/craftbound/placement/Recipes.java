@@ -19,9 +19,8 @@ import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
 
-// Recipes after the recipe rewrite: the server keeps them under registry keys and the client only
-// sees their displays. The menu places a recipe without asking the player's recipe book, which only
-// vanilla's own placement packet checks.
+// The menu places a recipe without asking the player's recipe book; only vanilla's own placement
+// packet checks it.
 public final class Recipes
 {
     public static ResourceLocation id(RecipeHolder<?> recipe)
@@ -40,9 +39,8 @@ public final class Recipes
                 && recipe.display().stream().allMatch(display -> fits(menu, display));
     }
 
-    // A recipe no longer answers whether it fits a grid, so its shape is read off the display it
-    // hands the recipe book, as vanilla's own book does. The menu does not check this when placing:
-    // a 3x3 recipe sent to the 2x2 grid is laid out cut off, taking its ingredients along.
+    // Read off the display, as vanilla's book does. The menu does not check this when placing: a
+    // 3x3 recipe sent to the 2x2 grid is laid out cut off, taking its ingredients along.
     public static boolean fits(RecipeBookMenu menu, RecipeDisplay display)
     {
         if (!(menu instanceof AbstractCraftingMenu crafting))

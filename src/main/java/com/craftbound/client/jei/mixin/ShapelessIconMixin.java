@@ -10,12 +10,8 @@ import com.craftbound.client.jei.BookRecipeRender;
 
 import net.minecraft.client.gui.GuiGraphics;
 
-// JEI stamps a shapeless marker on the corner of shapeless crafting recipes. Vanilla's recipe book
-// never said so, and the book only shows one recipe at a time, so the icon is noise rather than
-// news. Only inside the book, though: JEI's own screens keep it.
-//
-// The class is named as a string because Craftbound compiles against JEI's api artifacts alone,
-// which is what keeps every other use of JEI on the stable surface.
+// Hides JEI's shapeless marker inside the book only, since vanilla's book never showed one. The
+// class is named as a string because Craftbound compiles against JEI's api artifacts alone.
 @Mixin(targets = "mezz.jei.library.gui.recipes.ShapelessIcon", remap = false)
 public class ShapelessIconMixin
 {
@@ -26,7 +22,7 @@ public class ShapelessIconMixin
             ci.cancel();
     }
 
-    // Without this the tooltip would still appear over the space the icon no longer occupies.
+    // Otherwise the tooltip would still appear where the icon was.
     @Inject(method = "isMouseOver", at = @At("HEAD"), cancellable = true)
     private void craftbound$neverHovered(int mouseX, int mouseY, CallbackInfoReturnable<Boolean> cir)
     {

@@ -17,13 +17,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 
-// The client's view of what the player has obtained.
-//
-// With Craftbound on the server that is simply the synced attachment. Without it nothing syncs, so
-// the client sweeps its own copy of the inventory on the same cadence the server would and keeps
-// the result per world, since a client-side set would otherwise be lost on every rejoin. Only what
-// passes through the inventory can be seen this way, which is the whole picture for anything the
-// player actually picks up.
+// With Craftbound on the server this is the synced attachment. Without it nothing syncs, so the
+// client sweeps its own inventory on the server's cadence and stores the result per world.
 public final class ClientObtainedItems
 {
     private final Supplier<WorldScopedStore<Set<ResourceLocation>>> store;
@@ -39,7 +34,7 @@ public final class ClientObtainedItems
         synced = Set.copyOf(items);
     }
 
-    // Empty until it is known: the server has not sent its set yet, or there is no world.
+    // Empty until the server has sent its set, or while there is no world.
     public Optional<Set<ResourceLocation>> current()
     {
         if (Minecraft.getInstance().player == null)

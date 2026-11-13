@@ -27,7 +27,6 @@ public interface ClientHooks
     {
     }
 
-    // Whether the server last said the player's book carries the lens.
     default boolean bookUpgraded()
     {
         return false;

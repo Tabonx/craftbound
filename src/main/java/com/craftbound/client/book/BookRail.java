@@ -30,8 +30,6 @@ public final class BookRail
             ResourceLocation.withDefaultNamespace("recipe_book/tab"),
             ResourceLocation.withDefaultNamespace("recipe_book/tab_selected"));
 
-    // One entry on the rail: draws its own icon (a category's, or a bookmarked ingredient's) and
-    // names itself for the tooltip.
     public interface Tab
     {
         void drawIcon(GuiGraphics graphics, int x, int y);
@@ -62,7 +60,6 @@ public final class BookRail
         this.offset = layout.clampOffset(offset, tabs.size());
     }
 
-    // Scroll so the given tab is visible, after the host changed the selection.
     public void showTab(int index)
     {
         selected = index;
@@ -145,7 +142,6 @@ public final class BookRail
         graphics.drawString(font, glyph, x + TAB_X + (-TAB_X - font.width(glyph)) / 2, arrowY + 2, color, true);
     }
 
-    // Tabs sit below the ▲ pager when the rail is paged, otherwise flush with the top.
     private int tabTop()
     {
         return TAB_TOP + (layout.paged(tabs.size()) ? ARROW_H : 0);

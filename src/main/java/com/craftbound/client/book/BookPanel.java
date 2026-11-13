@@ -10,7 +10,6 @@ interface BookPanel
 
     BookRail rail();
 
-    // A tab on the rail was clicked.
     void selectTab(int index, int button);
 
     int page();

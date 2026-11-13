@@ -6,8 +6,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-// A widget that takes input as loose coordinates and key codes, the form the book works in on every
-// version. This generation hands it over as event records, unpacked here.
+// Unpacks this generation's input event records into loose coordinates and key codes.
 public abstract class LooseWidget extends AbstractWidget
 {
     protected LooseWidget(int x, int y, int width, int height, Component message)

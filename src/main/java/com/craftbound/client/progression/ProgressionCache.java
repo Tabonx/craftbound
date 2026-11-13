@@ -19,10 +19,6 @@ import com.craftbound.progression.VariantGroups;
 
 import net.minecraft.resources.ResourceLocation;
 
-// What the player has unlocked, worked out from what they have obtained and the recipe index, and
-// kept until either changes. Nothing here reaches for the game: every input comes from a supplier,
-// so the whole lifecycle can be tested.
-//
 // Any number of readers poll it. Each keeps the last version() it acted on and compares, so none of
 // them can take a change away from another.
 public final class ProgressionCache implements RecipeGate
@@ -49,13 +45,11 @@ public final class ProgressionCache implements RecipeGate
     private Set<UnlockKey> available = Set.of();
     private Set<ResourceLocation> unlockingItems = Set.of();
 
-    // Unlocks not yet announced, and whether a baseline has been taken to measure them against.
     private final Set<UnlockKey> newlyUnlocked = new LinkedHashSet<>();
     private boolean baselined = false;
 
-    // Unlocks the player has not yet laid eyes on in the book. Kept apart from newlyUnlocked, which
-    // the toast drains as soon as it fires; this one survives until the grid actually shows the
-    // entry, the way vanilla holds a highlight until the recipe appears on a page.
+    // Kept apart from newlyUnlocked, which the toast drains as soon as it fires; this one survives
+    // until the grid shows the entry, the way vanilla holds a highlight until the recipe appears.
     private final Set<UnlockKey> highlighted = new LinkedHashSet<>();
 
     public ProgressionCache(Supplier<Optional<Set<ResourceLocation>>> obtained, Supplier<Set<UnlockKey>> heldVariants,
@@ -67,14 +61,12 @@ public final class ProgressionCache implements RecipeGate
         this.indexSource = index;
     }
 
-    // Both the recipe index and the obtained set are in. Until then the book shows what it can, but
-    // nothing counts as newly unlocked.
+    // Until both the recipe index and the obtained set are in, nothing counts as newly unlocked.
     public boolean ready()
     {
         return ready;
     }
 
-    // Moves on every change to what is unlocked, and only then.
     public int version()
     {
         return version;
@@ -149,7 +141,6 @@ public final class ProgressionCache implements RecipeGate
         baselined = true;
     }
 
-    // Drained rather than read: the toast takes each unlock once.
     public List<UnlockKey> drainNewlyUnlocked()
     {
         List<UnlockKey> keys = List.copyOf(newlyUnlocked);
@@ -157,22 +148,19 @@ public final class ProgressionCache implements RecipeGate
         return keys;
     }
 
-    // Claims an entry's highlight: true once, for the first render that shows it, which then plays
-    // the animation on its own clock.
+    // True once, for the first render that shows the entry.
     public boolean takeHighlight(UnlockKey unlockKey)
     {
         return highlighted.remove(unlockKey);
     }
 
-    // Whether obtaining this item would reveal something the book is still hiding.
     public boolean unlocksMore(ResourceLocation itemId)
     {
         return unlockingItems.contains(itemId);
     }
 
-    // Whether an item may be named outside the book: Ponder's scenes ask this. Fails open while
-    // the index is still empty: a screen opened before JEI has built it must show everything rather
-    // than pretend the game is empty.
+    // Fails open while the index is still empty: a screen opened before JEI has built it must show
+    // everything rather than pretend the game is empty.
     public boolean isDiscovered(ResourceLocation itemId)
     {
         if (!rules.enabled() || index.isEmpty())
@@ -180,9 +168,8 @@ public final class ProgressionCache implements RecipeGate
         return Unlocks.discovered(unlockedRegistryKeys, obtainedNow(), itemId);
     }
 
-    // Whether Ponder may show this item's scenes, which is a narrower question than isDiscovered:
-    // the book shows recipes for things the player has not made yet, but a tour of a machine waits
-    // until they have held one.
+    // Narrower than isDiscovered: the book shows recipes for things the player has not made yet, but
+    // a tour of a machine waits until they have held one.
     public boolean canPonder(ResourceLocation itemId)
     {
         return !rules.enabled() || obtainedNow().contains(itemId);
@@ -220,8 +207,7 @@ public final class ProgressionCache implements RecipeGate
         return rules.enabled();
     }
 
-    // Whether the player has this alternative of a recipe input: an item they have held, or a
-    // variant held or made. Anything that is not an item, a fluid, is never hidden.
+    // Anything that is not an item, such as a fluid, is never hidden.
     @Override
     public boolean hasInput(UnlockKey unlockKey, Optional<ResourceLocation> itemId)
     {
@@ -232,7 +218,7 @@ public final class ProgressionCache implements RecipeGate
                 : obtainedNow().contains(itemId.get());
     }
 
-    // The group of variants an entry belongs to, or null when it stands alone.
+    // Null when the entry stands alone.
     public String variantGroup(UnlockKey unlockKey)
     {
         return variantGroups.get(unlockKey);

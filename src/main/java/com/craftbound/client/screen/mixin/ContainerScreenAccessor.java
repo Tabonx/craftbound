@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
 
-// Exposes the container GUI's position and size so Craftbound can place its book beside it.
 @Mixin(AbstractContainerScreen.class)
 public interface ContainerScreenAccessor
 {

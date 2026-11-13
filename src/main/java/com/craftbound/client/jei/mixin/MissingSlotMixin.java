@@ -13,7 +13,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 // Tints a slot the player cannot fill between its background and its ingredient, the order
 // vanilla draws a ghost recipe in. JEI asks for the displayed ingredient right before drawing it.
-//
 // JEI moved the body into draw(GuiGraphics, boolean) and renamed the getter it calls, so both
 // overloads and both getters are targeted, and whichever the installed JEI has is tinted.
 @Mixin(targets = "mezz.jei.library.gui.ingredients.RecipeSlot", remap = false)
