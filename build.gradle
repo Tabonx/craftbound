@@ -97,8 +97,8 @@ neoForge {
         }
     }
 
-    // Puts Minecraft on the test classpath. The tests themselves are plain logic and never touch a
-    // running game, they just name types like ResourceLocation.
+    // Runs the tests through FML's JUnit launcher, which loads NeoForge and this mod into the test
+    // JVM the way the game would, but opens no window and no world.
     unitTest {
         enable()
         testedMod = mods."${mod_id}"
