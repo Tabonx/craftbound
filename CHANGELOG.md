@@ -30,6 +30,8 @@
   one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
 - On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
   tab instead of Miscellaneous, as they do on 1.21.1.
+- A Create update that no longer fits the book now switches off only the book's Create features,
+  such as the stock keeper and basin heat, instead of crashing the game.
 
 ## 0.1.8
 

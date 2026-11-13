@@ -1,11 +1,11 @@
-package com.craftbound.client.ponder.mixin;
+package com.craftbound.client.create.mixin;
 
 import java.util.Set;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-import com.craftbound.client.ponder.PonderVisibility;
+import com.craftbound.client.create.PonderVisibility;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 
 import net.createmod.ponder.foundation.ui.PonderTagScreen;

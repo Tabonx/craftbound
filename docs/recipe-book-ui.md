@@ -160,21 +160,45 @@ Create's basin recipes need a heat source under the basin, but `BasinCategory` p
 makeable the moment its ingredients were in hand. `progression/create/HeatRequirement` turns a heat
 condition into **extra input slots** (heated → Blaze Burner; superheated → Blaze Burner *and* Blaze
 Cake, as two slots, since a burner alone only reaches "heated"), which is exactly what a heat source
-is: another thing you must have obtained. `Unlocks` stays free of any Create knowledge, and
-`client/jei/RecipeRequirements` is the only place outside `client/ponder` that touches Create's
-classes, behind a `ModList.isLoaded` guard.
+is: another thing you must have obtained. `Unlocks` stays free of any Create knowledge: the index
+builder asks `client/Integrations` for each recipe's hidden requirements, and Create's answer comes
+from `client/create/CreateIntegration`.
+
+### Companion catalysts
+Create lists the block a machine works on as a catalyst beside the machine: a basin under the mixer
+and press, a depot and a belt under the deployer. Catalysts are alternatives, so a basin alone would
+open mixing, packing and brewing before the player had either machine. `CatalystCompanions` drops
+these companions from every category's catalysts, unless nothing else is left. The list is
+`assets/craftbound/catalyst_companions.json`, which resource packs stack like a tag (`replace`
+starts it over). It is a client asset rather than an item tag because a server without Craftbound
+sends no tags of ours.
 
 ## Create is optional
 Create is declared `optional` in `neoforge.mods.toml`, and the mod runs without it: the book is
-built on JEI's plugin system, not on Create. Two things carry the dependency, and both are isolated
-so they simply do not run when Create is absent.
+built on JEI's plugin system, not on Create. Everything that names a Create or Ponder class lives in
+`client/create`, and the rest of the book reaches it only through `BookIntegration`, the extension
+point for what a mod adds beyond what it tells JEI: requirements a recipe hides from its slots, and
+how to place recipes into and count stock from a screen the mod owns.
 
-- `client/ponder/` holds the Ponder integration, with its mixins in `client/ponder/mixin/` under a
-  separate `craftbound.ponder.mixins.json` marked `"required": false` with `defaultRequire` 0, so
-  Mixin skips them when the Ponder classes are missing and an injector that no longer matches a
-  changed Create is a warning rather than a crash. `CraftboundPonderPlugin.register()` sits behind a
-  `ModList.isLoaded("ponder")` check in `Craftbound`, because resolving the class loads Ponder's own.
-- `client/jei/RecipeRequirements` guards the heat requirement described above.
+- `client/Integrations` is the only place that asks whether a mod is loaded, and the one shared file
+  that names `CreateIntegration` and `PonderIntegration`, so their classes are never resolved
+  without them.
+- Each integration has its own `IntegrationGuard` and wraps every call into the other mod's classes
+  in it, and nothing else: the book's own code, and Create's JEI transfer handler reached through
+  JEI, stay outside. The first `LinkageError` or `RuntimeException` from inside such a call switches
+  that integration off with one log line, and the book carries on as it would without the mod. A
+  failed call is never repeated, so a placement that broke halfway is not sent twice.
+- `CreateIntegration` adds the basin heat requirement and binds the stock keeper: Create's own
+  transfer handler places a recipe once, and the stock behind the keeper decides what the craftable
+  filter shows.
+- `PonderIntegration` registers the Ponder plugin and guards Ponder's filtering. Ponder is a mod of
+  its own with its own versions, so a Ponder that no longer fits leaves heat and the stock keeper
+  running, and the other way round.
+- The mixins into Create and Ponder sit in `client/create/mixin` under `craftbound.create.mixins.json`,
+  marked `"required": false` with `defaultRequire` 0, so Mixin skips them when Create is missing and
+  an injector that no longer matches a changed Create is a warning rather than a crash.
+- On Minecraft versions Create has no release for, the build drops `client/create` and its mixin
+  config, and `Integrations` loses its one `//? if create` block.
 
 Create is `compileOnly` for compiling and `localRuntime` for the dev client to load, so it never
 reaches the published jar. `./gradlew runClient -PnoCreate` drops Create, Ponder, Flywheel and
@@ -319,7 +343,7 @@ Implemented and in use:
 - Browse grid with search, item category ribbons, bookmarks, the craftable-only filter and the
   place button, all described above.
 - Progression, unlock toasts and the Create heat requirement, all described above.
-- Ponder scenes hide items the player has not discovered (`client/ponder`).
+- Ponder scenes hide items the player has not discovered (`client/create`).
 
 ## Reference
 Interactive layout mock (throwaway, not in-repo) built during design, demonstrated on **brass**

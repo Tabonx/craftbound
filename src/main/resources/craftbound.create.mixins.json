@@ -1,13 +1,14 @@
 {
   "required": false,
   "minVersion": "0.8.5",
-  "package": "com.craftbound.client.ponder.mixin",
+  "package": "com.craftbound.client.create.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "PonderUIMixin",
-    "PonderTagScreenMixin",
     "PonderTagIndexScreenMixin",
-    "PonderTooltipHandlerMixin"
+    "PonderTagScreenMixin",
+    "PonderTooltipHandlerMixin",
+    "PonderUIMixin",
+    "StockKeeperSearchMixin"
   ],
   "injectors": {
     "defaultRequire": 0

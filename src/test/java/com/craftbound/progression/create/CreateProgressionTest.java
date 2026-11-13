@@ -4,6 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.craftbound.progression.CatalystCompanions;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.ProgressionRules;
 import com.craftbound.progression.RecipeIndex;
@@ -20,6 +26,8 @@ import com.craftbound.progression.UnlockRule;
 import com.craftbound.progression.Unlocks;
 
 import org.junit.jupiter.api.Test;
+
+import com.google.gson.JsonParser;
 
 import net.minecraft.resources.ResourceLocation;
 
@@ -34,6 +42,8 @@ class CreateProgressionTest
     private static final String CRUSHING = "create:crushing";
     private static final String PRESSING = "create:pressing";
     private static final String BREWING = "create:automatic_brewing";
+
+    private static final CatalystCompanions COMPANIONS = shippedCompanions();
 
     private static final ProgressionRules RULES =
             new ProgressionRules(true, UnlockRule.ALL_INPUTS, true, Set.of(CRAFTING));
@@ -303,7 +313,7 @@ class CreateProgressionTest
     @Test
     void aCategoryWithOnlyCompanionsKeepsThem()
     {
-        assertEquals(obtained("create:basin"), CompanionCatalysts.machinesOf(obtained("create:basin")));
+        assertEquals(obtained("create:basin"), COMPANIONS.machinesOf(obtained("create:basin")));
     }
 
     @Test
@@ -440,6 +450,21 @@ class CreateProgressionTest
         return List.copyOf(all);
     }
 
+    // The list players get, so the fixtures are gated the way the game gates them.
+    private static CatalystCompanions shippedCompanions()
+    {
+        try (Reader reader = new InputStreamReader(
+                CreateProgressionTest.class.getResourceAsStream("/assets/craftbound/catalyst_companions.json"),
+                StandardCharsets.UTF_8))
+        {
+            return CatalystCompanions.of(List.of(JsonParser.parseReader(reader)));
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private static final class Index
     {
         private final Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
@@ -447,7 +472,7 @@ class CreateProgressionTest
 
         Index catalysts(String category, String... items)
         {
-            catalysts.put(category, CompanionCatalysts.machinesOf(obtained(items)));
+            catalysts.put(category, COMPANIONS.machinesOf(obtained(items)));
             return this;
         }
 

@@ -7,6 +7,7 @@ import java.util.function.Function;
 import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.IIngredientRenderer;
 import mezz.jei.api.ingredients.IIngredientType;
+import mezz.jei.api.ingredients.IIngredientTypeWithSubtypes;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import com.craftbound.progression.UnlockKey;
@@ -20,7 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.neoforged.neoforge.fluids.FluidStack;
+import net.minecraft.world.level.material.Fluid;
 
 // A single browsable entry, decoupled from its JEI ingredient type. Rendering and tooltips are
 // captured as type-bound closures at construction so the widget can treat items, fluids and any
@@ -81,11 +82,27 @@ public final class BookIngredient
         if (itemKey.isPresent())
             return itemKey.get();
 
-        if (typed.getIngredient() instanceof FluidStack fluid)
-            return UnlockKey.ofFluid(BuiltInRegistries.FLUID.getKey(fluid.getFluid()),
-                    subtypeOf(typed, helper));
+        Optional<String> fluidKey = fluidOf(typed)
+                .map(fluid -> UnlockKey.ofFluid(BuiltInRegistries.FLUID.getKey(fluid), subtypeOf(typed, helper)));
+        if (fluidKey.isPresent())
+            return fluidKey.get();
 
         return typed.getType().getUid() + "|" + helper.getUid(typed.getIngredient(), UidContext.Ingredient);
+    }
+
+    // The fluid an ingredient stands for, read through JEI's ingredient type rather than through the
+    // loader's own fluid stack.
+    static Optional<Fluid> fluidOf(ITypedIngredient<?> typed)
+    {
+        if (!(typed.getType() instanceof IIngredientTypeWithSubtypes<?, ?> type)
+                || !Fluid.class.isAssignableFrom(type.getIngredientBaseClass()))
+            return Optional.empty();
+        return baseOf(type, typed).map(Fluid.class::cast);
+    }
+
+    private static <B, V> Optional<B> baseOf(IIngredientTypeWithSubtypes<B, V> type, ITypedIngredient<?> typed)
+    {
+        return typed.getIngredient(type).map(type::getBase);
     }
 
     // What tells two potions apart. It has to come from getUid: that is the only path reaching JEI's

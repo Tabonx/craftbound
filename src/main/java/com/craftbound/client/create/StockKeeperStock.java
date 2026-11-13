@@ -3,45 +3,53 @@ package com.craftbound.client.create;
 import java.util.Set;
 
 import com.craftbound.client.CraftableItems;
+import com.craftbound.client.IntegrationGuard;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
 
 import net.minecraft.world.entity.player.StackedContents;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 
 // What the stock behind a stock keeper can be crafted into, for the book's craftable filter. The
 // keeper orders crafts from its stock, not from the player's inventory. The client holds the last
 // stock it was sent and replaces it whole on every update, so its identity is its version.
-public final class StockKeeperStock
+final class StockKeeperStock
 {
-    public static boolean isStockKeeper(AbstractContainerMenu menu)
+    private final IntegrationGuard guard;
+    private final StockKeeperRequestMenu menu;
+
+    StockKeeperStock(IntegrationGuard guard, StockKeeperRequestMenu menu)
     {
-        return menu instanceof StockKeeperRequestMenu;
+        this.guard = guard;
+        this.menu = menu;
     }
 
-    public static Set<Item> craftable(AbstractContainerMenu menu)
+    Set<Item> craftable()
     {
-        InventorySummary stock = stock(menu);
+        StackedContents contents = guard.call(this::contents, () -> null);
+        return contents == null ? Set.of() : CraftableItems.craftableFrom(contents);
+    }
+
+    int version()
+    {
+        return guard.call(() -> System.identityHashCode(stock()), () -> 0);
+    }
+
+    private StackedContents contents()
+    {
+        InventorySummary stock = stock();
         if (stock == null)
-            return Set.of();
+            return null;
 
         StackedContents contents = new StackedContents();
         for (BigItemStack entry : stock.getStacks())
             contents.accountStack(entry.stack.copyWithCount(entry.count), entry.count);
-        return CraftableItems.craftableFrom(contents);
+        return contents;
     }
 
-    public static int version(AbstractContainerMenu menu)
+    private InventorySummary stock()
     {
-        return System.identityHashCode(stock(menu));
+        return menu.contentHolder.getLastClientsideStockSnapshotAsSummary();
     }
-
-    private static InventorySummary stock(AbstractContainerMenu menu)
-    {
-        return ((StockKeeperRequestMenu) menu).contentHolder.getLastClientsideStockSnapshotAsSummary();
-    }
-
-    private StockKeeperStock() {}
 }

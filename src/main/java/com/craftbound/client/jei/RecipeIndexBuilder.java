@@ -12,10 +12,11 @@ import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
 
+import com.craftbound.client.Integrations;
 import com.craftbound.progression.InputSlot;
 import com.craftbound.progression.RecipeIndex;
 import com.craftbound.progression.RecipeNode;
-import com.craftbound.progression.create.CompanionCatalysts;
+import com.craftbound.progression.CatalystCompanions;
 
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
@@ -25,6 +26,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -50,13 +52,14 @@ final class RecipeIndexBuilder
         Map<String, Map<Object, RecipeNode>> byCategory = new HashMap<>();
         Map<String, Set<ResourceLocation>> catalysts = new HashMap<>();
         Map<String, ITypedIngredient<?>> representatives = new HashMap<>();
+        CatalystCompanions companions = CatalystCompanions.load(Minecraft.getInstance().getResourceManager());
 
         recipes.createRecipeCategoryLookup().get()
                 .filter(BookCategories::isBrowsable)
                 .forEach(category ->
         {
             String categoryUid = category.getRecipeType().getUid().toString();
-            catalysts.put(categoryUid, catalystItems(recipes, category));
+            catalysts.put(categoryUid, companions.machinesOf(catalystItems(recipes, category)));
             Map<Object, RecipeNode> nodes = new IdentityHashMap<>();
             collect(recipes, manager, fluids, category, noFocus, categoryUid, nodes, representatives);
             byCategory.put(categoryUid, nodes);
@@ -80,7 +83,7 @@ final class RecipeIndexBuilder
                     representatives.putIfAbsent(key, normalized(manager, output)));
 
             List<InputSlot> inputs = new ArrayList<>(collector.inputSlots());
-            inputs.addAll(RecipeRequirements.extraSlots(recipe));
+            inputs.addAll(Integrations.hiddenRequirements(recipe));
             out.put(recipe, new RecipeNode(categoryUid, List.copyOf(inputs), outputs.keySet(),
                     groupOf(categoryUid, recipe)));
         });
@@ -135,7 +138,7 @@ final class RecipeIndexBuilder
                         .map(ItemStack::getItem)
                         .map(BuiltInRegistries.ITEM::getKey)
                         .ifPresent(items::add));
-        return CompanionCatalysts.machinesOf(items);
+        return items;
     }
 
     private RecipeIndexBuilder() {}

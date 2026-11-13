@@ -25,7 +25,6 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.ITypedIngredient;
-import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocus;
 import mezz.jei.api.recipe.IFocusFactory;
 import mezz.jei.api.recipe.IFocusGroup;
@@ -122,7 +121,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
             filter.setFilterText(text);
         IIngredientManager manager = runtime.getIngredientManager();
         Set<String> uids = new HashSet<>();
-        for (IIngredientType<?> type : BROWSABLE_TYPES)
+        for (IIngredientType<?> type : browsableTypes())
             collectUids(manager, filter, type, uids);
 
         searchedText = text;
@@ -192,8 +191,11 @@ public final class CraftboundJeiPlugin implements IModPlugin
 
     // The ingredient types a player browses as craftable results. Deliberately not "all registered
     // types": mods register exotic types (tag-like pseudo-ingredients, etc.) that are noise here.
-    private static final List<IIngredientType<?>> BROWSABLE_TYPES =
-            List.of(VanillaTypes.ITEM_STACK, NeoForgeTypes.FLUID_STACK);
+    private static List<IIngredientType<?>> browsableTypes()
+    {
+        return List.of(VanillaTypes.ITEM_STACK,
+                runtime.getJeiHelpers().getPlatformFluidHelper().getFluidIngredientType());
+    }
 
     public static List<BookIngredient> getAllIngredients()
     {
@@ -202,7 +204,7 @@ public final class CraftboundJeiPlugin implements IModPlugin
 
         IIngredientManager manager = runtime.getIngredientManager();
         List<BookIngredient> result = new ArrayList<>();
-        for (IIngredientType<?> type : BROWSABLE_TYPES)
+        for (IIngredientType<?> type : browsableTypes())
             collect(manager, type, result);
         return result;
     }

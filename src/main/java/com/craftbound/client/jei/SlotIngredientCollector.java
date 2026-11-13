@@ -23,7 +23,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.fluids.FluidStack;
+import net.minecraft.world.level.material.Fluid;
 
 // Runs a category's setRecipe without building anything drawable, keeping the slots apart so
 // "any one of these planks" stays one slot rather than dissolving into a flat ingredient list.
@@ -66,18 +66,18 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
                     variants.add(key);
             });
 
-            if (ingredient.getIngredient() instanceof FluidStack fluid)
+            BookIngredient.fluidOf(ingredient).ifPresent(fluid ->
             {
                 fluids.add(BookIngredient.unlockKey(manager, ingredient));
                 bucketId(fluid).ifPresent(items::add);
-            }
+            });
         }
         return new InputSlot(Set.copyOf(items), Set.copyOf(fluids), Set.copyOf(variants));
     }
 
-    private static Optional<ResourceLocation> bucketId(FluidStack fluid)
+    private static Optional<ResourceLocation> bucketId(Fluid fluid)
     {
-        Item bucket = fluid.getFluid().getBucket();
+        Item bucket = fluid.getBucket();
         return bucket == null || bucket == Items.AIR
                 ? Optional.empty()
                 : Optional.of(BuiltInRegistries.ITEM.getKey(bucket));
