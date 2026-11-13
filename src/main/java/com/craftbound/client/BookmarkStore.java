@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.craftbound.client.jei.BookIngredient;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.BookIngredients;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
 import com.craftbound.client.storage.WorldScopedStore;
@@ -75,7 +75,7 @@ public final class BookmarkStore
 
     private static Optional<BookmarkKeys<BookIngredient>> keys()
     {
-        return CraftboundJeiPlugin.bookmarkKeys(ClientStores.registryOps());
+        return BookIngredients.bookmarkKeys(ClientStores.registryOps());
     }
 
     private BookmarkStore() {}

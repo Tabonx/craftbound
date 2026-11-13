@@ -57,11 +57,11 @@ final class SlotIngredientCollector implements IRecipeLayoutBuilder
 
         for (ITypedIngredient<?> ingredient : slot.getAllIngredients())
         {
-            ingredient.getItemStack().ifPresent(stack ->
+            BookIngredient.itemIdOf(ingredient).ifPresent(id ->
             {
                 String key = BookIngredient.unlockKey(manager, ingredient);
                 if (key.equals(UnlockKey.withoutSubtype(key)))
-                    items.add(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+                    items.add(id);
                 else
                     variants.add(key);
             });

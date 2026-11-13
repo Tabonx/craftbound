@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.craftbound.client.RecipeBookScreenTweaks;
 import com.craftbound.client.Screens;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiSearch;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen;
 
 // Create's stock keeper takes JEI's search text only while JEI's own search field has focus, and
@@ -23,7 +23,7 @@ public class StockKeeperSearchMixin
     private void craftbound$syncFromBook(CallbackInfoReturnable<Boolean> cir)
     {
         if (RecipeBookScreenTweaks.isSearching(Screens.current())
-                && !previousJEISearchText.equals(CraftboundJeiPlugin.searchText()))
+                && !previousJEISearchText.equals(JeiSearch.query()))
             cir.setReturnValue(true);
     }
 }

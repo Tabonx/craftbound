@@ -9,7 +9,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.craftbound.client.jei.BookIngredient;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiSession;
+import com.craftbound.client.jei.RecipeGate;
+import com.craftbound.client.jei.RecipeIndexBuilder;
 import com.craftbound.client.jei.RecipeIndexSnapshot;
 import com.craftbound.client.upgrade.ClientBookUpgrade;
 import com.craftbound.progression.ProgressionConfig;
@@ -45,6 +47,7 @@ public final class Progression
     private static int heldVariantsSize = -1;
     private static Set<ResourceLocation> unlockingItems = Set.of();
     private static int obtainedSize = -1;
+    private static int indexGeneration = -1;
 
     // Unlocks not yet announced, and whether a baseline has been taken to measure them against.
     private static final Set<String> newlyUnlocked = new LinkedHashSet<>();
@@ -62,7 +65,12 @@ public final class Progression
         Set<ResourceLocation> obtained = obtained();
         Set<String> heldVariants = ClientHeldVariants.current();
         ProgressionRules current = ProgressionConfig.rules();
-        boolean indexStale = index.isEmpty() && CraftboundJeiPlugin.hasRuntime();
+        if (indexGeneration != JeiSession.generation())
+        {
+            invalidate();
+            indexGeneration = JeiSession.generation();
+        }
+        boolean indexStale = index.isEmpty() && JeiSession.running();
 
         if (!indexStale && obtained.size() == obtainedSize && heldVariants.size() == heldVariantsSize
                 && current.equals(rules))
@@ -70,7 +78,7 @@ public final class Progression
 
         if (indexStale)
         {
-            snapshot = CraftboundJeiPlugin.buildRecipeIndex();
+            snapshot = RecipeIndexBuilder.current().orElse(RecipeIndexSnapshot.EMPTY);
             index = snapshot.index();
             variantGroups = VariantGroups.of(index);
         }
@@ -220,8 +228,40 @@ public final class Progression
         return Unlocks.categoryUnlocked(rules, categoryUid, index.catalystsFor(categoryUid), obtained());
     }
 
+    public static RecipeGate gate()
+    {
+        return GATE;
+    }
+
+    private static final RecipeGate GATE = new RecipeGate()
+    {
+        @Override
+        public boolean isCategoryUnlocked(String categoryUid)
+        {
+            return Progression.isCategoryUnlocked(categoryUid);
+        }
+
+        @Override
+        public boolean isRecipeUnlocked(String categoryUid, Object recipe)
+        {
+            return Progression.isRecipeUnlocked(categoryUid, recipe);
+        }
+
+        @Override
+        public boolean narrowsSlots()
+        {
+            return isGating();
+        }
+
+        @Override
+        public boolean hasInput(String unlockKey, Optional<ResourceLocation> itemId)
+        {
+            return Progression.hasInput(unlockKey, itemId);
+        }
+    };
+
     // Recipes reload and world changes invalidate the index; it is rebuilt on the next refresh.
-    public static void invalidate()
+    private static void invalidate()
     {
         snapshot = RecipeIndexSnapshot.EMPTY;
         index = RecipeIndex.EMPTY;

@@ -76,9 +76,7 @@ public final class BookIngredient
 
     private static <V> String keyOf(ITypedIngredient<V> typed, IIngredientHelper<V> helper)
     {
-        Optional<String> itemKey = typed.getItemStack()
-                .map(stack -> UnlockKey.ofItem(BuiltInRegistries.ITEM.getKey(stack.getItem()),
-                        subtypeOf(typed, helper)));
+        Optional<String> itemKey = itemIdOf(typed).map(id -> UnlockKey.ofItem(id, subtypeOf(typed, helper)));
         if (itemKey.isPresent())
             return itemKey.get();
 
@@ -88,6 +86,12 @@ public final class BookIngredient
             return fluidKey.get();
 
         return typed.getType().getUid() + "|" + helper.getUid(typed.getIngredient(), UidContext.Ingredient);
+    }
+
+    // The item an ingredient stands for, when it is an item stack.
+    public static Optional<ResourceLocation> itemIdOf(ITypedIngredient<?> typed)
+    {
+        return typed.getItemStack().map(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
     // The fluid an ingredient stands for, read through JEI's ingredient type rather than through the

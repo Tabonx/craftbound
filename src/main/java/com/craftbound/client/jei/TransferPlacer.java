@@ -97,7 +97,7 @@ public final class TransferPlacer implements RecipePlacer
     private <R> IRecipeTransferError transfer(IRecipeLayoutDrawable<R> layout, boolean placeAll, boolean doTransfer)
     {
         LocalPlayer player = Minecraft.getInstance().player;
-        var handler = CraftboundJeiPlugin.transferHandler(menu, layout.getRecipeCategory());
+        var handler = TransferHandlers.handlerFor(menu, layout.getRecipeCategory());
         if (player == null || handler.isEmpty())
             return NO_HANDLER;
         // Null is JEI's "it worked", so the answer cannot go through an Optional.

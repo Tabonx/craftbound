@@ -17,6 +17,6 @@ public record RecipeIndexSnapshot(RecipeIndex index, Map<String, ITypedIngredien
     public Optional<BookIngredient> displayFor(String unlockKey)
     {
         ITypedIngredient<?> typed = representatives.get(unlockKey);
-        return typed == null ? Optional.empty() : CraftboundJeiPlugin.toBookIngredient(typed);
+        return typed == null ? Optional.empty() : BookIngredients.of(typed);
     }
 }

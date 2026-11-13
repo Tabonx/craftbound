@@ -9,7 +9,8 @@ import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
 import com.craftbound.PlayerItems;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiSession;
+import com.craftbound.client.jei.BookIngredients;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
 import com.craftbound.client.storage.WorldScopedStore;
@@ -46,7 +47,7 @@ public final class ClientHeldVariants
 
     public static Set<String> current()
     {
-        if (Minecraft.getInstance().player == null || !CraftboundJeiPlugin.hasRuntime())
+        if (Minecraft.getInstance().player == null || !JeiSession.running())
             return Set.of();
 
         List<Either<ItemStack, Dynamic<?>>> stacks = stacks();
@@ -64,7 +65,7 @@ public final class ClientHeldVariants
     public static void onClientTick(final ClientTickEvent.Post event)
     {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !CraftboundJeiPlugin.hasRuntime())
+        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !JeiSession.running())
             return;
 
         Set<String> known = current();
@@ -82,7 +83,7 @@ public final class ClientHeldVariants
     // Present only for stacks JEI tells apart from the rest of their item.
     private static Optional<String> variantKey(ItemStack stack)
     {
-        return CraftboundJeiPlugin.unlockKeyOf(stack)
+        return BookIngredients.unlockKeyOf(stack)
                 .filter(key -> !key.equals(UnlockKey.withoutSubtype(key)));
     }
 

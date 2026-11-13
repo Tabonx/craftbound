@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import com.craftbound.Craftbound;
 import com.craftbound.client.RecipeBookLayout.Placement;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiSession;
+import com.craftbound.client.jei.ScreenAreas;
+import com.craftbound.client.jei.TransferHandlers;
 import com.craftbound.client.jei.TransferPlacer;
 import com.craftbound.client.mixin.ContainerScreenAccessor;
 
@@ -118,7 +120,7 @@ public final class RecipeBookScreenTweaks
 
     public static boolean docksBeside(AbstractContainerScreen<?> screen)
     {
-        return !hosted(screen) && CraftboundJeiPlugin.acceptsRecipes(screen.getMenu());
+        return !hosted(screen) && TransferHandlers.acceptsRecipes(screen.getMenu());
     }
 
     // Asked by a recipe-book screen placing itself, which is always the one being opened.
@@ -275,11 +277,11 @@ public final class RecipeBookScreenTweaks
     // where they are.
     private static void learnSides(Attached host)
     {
-        if (host.measured || !CraftboundJeiPlugin.hasRuntime())
+        if (host.measured || !JeiSession.running())
             return;
         host.measured = true;
         AbstractContainerScreen<?> screen = host.screen;
-        List<SideAreas.Area> areas = CraftboundJeiPlugin.exclusionAreas(screen).stream()
+        List<SideAreas.Area> areas = ScreenAreas.exclusionAreas(screen).stream()
                 .map(area -> new SideAreas.Area(area.getX(), area.getY(), area.getWidth(), area.getHeight()))
                 .toList();
         SideAreas found = SideAreas.of(areas, left(screen), top(screen), imageHeight(screen));

@@ -6,7 +6,7 @@ import java.util.Optional;
 import com.craftbound.Craftbound;
 import com.craftbound.PlayerItems;
 import com.craftbound.client.jei.BookIngredient;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.JeiSession;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -24,7 +24,7 @@ public final class ProgressionToasts
     public static void onClientTick(final ClientTickEvent.Post event)
     {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !CraftboundJeiPlugin.hasRuntime())
+        if (minecraft.player == null || !JeiSession.running())
             return;
         if (minecraft.player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0)
             return;

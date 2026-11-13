@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.mojang.logging.LogUtils;
@@ -27,9 +28,7 @@ import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // Reduces every recipe JEI knows about to the plain data progression needs, in one pass. Doing it
@@ -38,11 +37,19 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 //
 // Recipes are keyed by identity because that is what the rest of the book holds: recipe objects
 // come straight out of JEI's lookups, and only some of them are records with usable equality.
-final class RecipeIndexBuilder
+public final class RecipeIndexBuilder
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static RecipeIndexSnapshot build(IJeiRuntime runtime)
+    private static final RuntimeScoped<RecipeIndexSnapshot> CURRENT = new RuntimeScoped<>(RecipeIndexBuilder::build);
+
+    // Built the first time it is asked for after JEI starts, and kept until JEI stops.
+    public static Optional<RecipeIndexSnapshot> current()
+    {
+        return CURRENT.get();
+    }
+
+    private static RecipeIndexSnapshot build(IJeiRuntime runtime)
     {
         IRecipeManager recipes = runtime.getRecipeManager();
         IIngredientManager manager = runtime.getIngredientManager();
@@ -133,11 +140,7 @@ final class RecipeIndexBuilder
     {
         Set<ResourceLocation> items = new HashSet<>();
         recipes.createRecipeCatalystLookup(category.getRecipeType()).get()
-                .map(ITypedIngredient::getItemStack)
-                .forEach(stack -> stack
-                        .map(ItemStack::getItem)
-                        .map(BuiltInRegistries.ITEM::getKey)
-                        .ifPresent(items::add));
+                .forEach(catalyst -> BookIngredient.itemIdOf(catalyst).ifPresent(items::add));
         return items;
     }
 
