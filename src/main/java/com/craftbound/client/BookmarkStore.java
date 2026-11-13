@@ -1,98 +1,81 @@
 package com.craftbound.client;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
+import com.craftbound.client.jei.BookIngredient;
+import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.storage.ClientStores;
+import com.craftbound.client.storage.WorldKey;
+import com.craftbound.client.storage.WorldScopedStore;
 import com.mojang.serialization.JsonOps;
 
-import org.slf4j.Logger;
-
-import net.neoforged.fml.loading.FMLPaths;
-
-// The bookmark file, kept apart from Bookmarks so the data stays testable. Bookmarks are a client
-// convenience, so nothing here talks to the server.
+// The bookmarks of the world the player is in. Bookmarks are a client convenience, so nothing here
+// talks to the server.
 public final class BookmarkStore
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String FILE_NAME = "craftbound-bookmarks.json";
+    private static final Supplier<WorldScopedStore<Bookmarks>> STORE =
+            ClientStores.lazy("craftbound-bookmarks.json", Bookmarks.CODEC, Bookmarks::new);
 
-    private static Bookmarks bookmarks = null;
+    // contains runs every frame the bookmark button shows, and naming an entry decodes it.
+    private static Bookmarks uidsSource = null;
+    private static Set<String> uids = Set.of();
 
-    public static List<String> current()
+    public static List<BookIngredient> resolve(List<BookIngredient> browsable)
     {
-        return load().of(WorldKey.current());
+        Optional<BookmarkKeys<BookIngredient>> keys = keys();
+        if (keys.isEmpty())
+            return List.of();
+
+        Map<String, BookIngredient> bySessionUid = new HashMap<>();
+        browsable.forEach(ingredient -> bySessionUid.putIfAbsent(ingredient.sessionUid(), ingredient));
+        Bookmarks bookmarks = bookmarks();
+        if (bookmarks.upgradeLegacy(bySessionUid, keys.get()))
+            changed();
+        return bookmarks.resolve(bySessionUid, keys.get());
     }
 
-    public static boolean contains(String uid)
+    public static boolean contains(BookIngredient ingredient)
     {
-        return load().contains(WorldKey.current(), uid);
-    }
-
-    public static boolean toggle(String uid)
-    {
-        boolean added = load().toggle(WorldKey.current(), uid);
-        save();
-        return added;
-    }
-
-    public static void remove(String uid)
-    {
-        load().remove(WorldKey.current(), uid);
-        save();
-    }
-
-    private static Path file()
-    {
-        return FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
-    }
-
-    private static Bookmarks load()
-    {
-        if (bookmarks != null)
-            return bookmarks;
-
-        bookmarks = new Bookmarks();
-        Path path = file();
-        if (Files.exists(path))
+        Bookmarks bookmarks = bookmarks();
+        if (bookmarks != uidsSource)
         {
-            try
-            {
-                JsonElement json = JsonParser.parseString(Files.readString(path));
-                Bookmarks.CODEC.parse(JsonOps.INSTANCE, json)
-                        .resultOrPartial(error -> LOGGER.warn("Ignoring malformed bookmarks: {}", error))
-                        .ifPresent(map -> bookmarks = Bookmarks.fromMap(map));
-            }
-            catch (IOException | RuntimeException e)
-            {
-                LOGGER.warn("Could not read {}, starting with no bookmarks", path, e);
-            }
+            Optional<BookmarkKeys<BookIngredient>> keys = keys();
+            if (keys.isEmpty())
+                return false;
+            uids = bookmarks.sessionUids(keys.get());
+            uidsSource = bookmarks;
         }
-        return bookmarks;
+        return uids.contains(ingredient.sessionUid());
     }
 
-    private static void save()
+    public static void toggle(BookIngredient ingredient)
     {
-        Bookmarks.CODEC.encodeStart(JsonOps.INSTANCE, load().asMap())
-                .resultOrPartial(error -> LOGGER.error("Could not encode bookmarks: {}", error))
-                .ifPresent(json ->
-                {
-                    try
-                    {
-                        Files.writeString(file(), GSON.toJson(json));
-                    }
-                    catch (IOException e)
-                    {
-                        LOGGER.error("Could not write bookmarks to {}", file(), e);
-                    }
-                });
+        keys().ifPresent(keys ->
+        {
+            bookmarks().toggle(ingredient, keys);
+            changed();
+        });
+    }
+
+    private static void changed()
+    {
+        STORE.get().markDirty();
+        uidsSource = null;
+    }
+
+    private static Bookmarks bookmarks()
+    {
+        return STORE.get().open(WorldKey.current(), JsonOps.INSTANCE);
+    }
+
+    private static Optional<BookmarkKeys<BookIngredient>> keys()
+    {
+        return CraftboundJeiPlugin.bookmarkKeys(ClientStores.registryOps());
     }
 
     private BookmarkStore() {}

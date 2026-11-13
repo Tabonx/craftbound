@@ -28,17 +28,17 @@ import net.neoforged.neoforge.fluids.FluidStack;
 public final class BookIngredient
 {
     private final ITypedIngredient<?> typed;
-    private final String uid;
+    private final String sessionUid;
     private final String unlockKey;
     private final String displayName;
     private final Renderer renderer;
     private final Function<TooltipFlag, List<Component>> tooltip;
 
-    private BookIngredient(ITypedIngredient<?> typed, String uid, String unlockKey, String displayName,
+    private BookIngredient(ITypedIngredient<?> typed, String sessionUid, String unlockKey, String displayName,
             Renderer renderer, Function<TooltipFlag, List<Component>> tooltip)
     {
         this.typed = typed;
-        this.uid = uid;
+        this.sessionUid = sessionUid;
         this.unlockKey = unlockKey;
         this.displayName = displayName;
         this.renderer = renderer;
@@ -52,14 +52,16 @@ public final class BookIngredient
         V ingredient = typed.getIngredient();
         return new BookIngredient(
                 typed,
-                uidOf(typed.getType(), helper, ingredient),
+                sessionUidOf(typed.getType(), helper, ingredient),
                 keyOf(typed, helper),
                 helper.getDisplayName(ingredient),
                 (graphics, x, y) -> renderer.render(graphics, ingredient, x, y),
                 flag -> renderer.getTooltip(ingredient, flag));
     }
 
-    static <V> String uidOf(IIngredientType<V> type, IIngredientHelper<V> helper, V ingredient)
+    // JEI's uid for the ingredient, namespaced by its type. Only good for one session: for a fluid
+    // or a variant JEI's uid holds objects whose text is an identity hash.
+    static <V> String sessionUidOf(IIngredientType<V> type, IIngredientHelper<V> helper, V ingredient)
     {
         return type.getUid() + "|" + helper.getUid(ingredient, UidContext.Ingredient);
     }
@@ -117,11 +119,9 @@ public final class BookIngredient
         return typed;
     }
 
-    // Stable identity across sessions (JEI's own ingredient uid, namespaced by ingredient type),
-    // so bookmarks can name an entry in a file and find it again.
-    public String uid()
+    public String sessionUid()
     {
-        return uid;
+        return sessionUid;
     }
 
     public String displayName()

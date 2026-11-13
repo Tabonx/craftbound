@@ -1,64 +1,85 @@
 package com.craftbound.client;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import com.mojang.serialization.Codec;
 
-// Bookmarked ingredient uids, kept per world so what you are working toward in one save does not
-// follow you into another. Insertion-ordered: a new bookmark lands at the end, so adding and
-// removing never reshuffles the rail. Pure data, unit-testable without launching the game.
+// One world's bookmarks, in the order they were added: a new one lands at the end, so adding and
+// removing never reshuffles the rail. An entry that names nothing this session, such as an item
+// from a removed mod, stays in place, so reinstalling the mod brings it back.
 public final class Bookmarks
 {
-    public static final Codec<Map<String, List<String>>> CODEC =
-            Codec.unboundedMap(Codec.STRING, Codec.STRING.listOf());
+    public static final Codec<Bookmarks> CODEC =
+            BookmarkEntry.CODEC.listOf().xmap(Bookmarks::new, Bookmarks::entries);
 
-    private final Map<String, List<String>> byWorld = new LinkedHashMap<>();
+    private final List<BookmarkEntry> entries;
 
-    public List<String> of(String world)
+    public Bookmarks()
     {
-        return List.copyOf(byWorld.getOrDefault(world, List.of()));
+        this(List.of());
     }
 
-    public boolean contains(String world, String uid)
+    private Bookmarks(List<BookmarkEntry> entries)
     {
-        return byWorld.getOrDefault(world, List.of()).contains(uid);
+        this.entries = new ArrayList<>(entries);
     }
 
-    // Returns whether the uid is bookmarked after the toggle.
-    public boolean toggle(String world, String uid)
+    public List<BookmarkEntry> entries()
     {
-        List<String> uids = byWorld.computeIfAbsent(world, key -> new ArrayList<>());
-        if (uids.remove(uid))
-        {
-            if (uids.isEmpty())
-                byWorld.remove(world);
+        return List.copyOf(entries);
+    }
+
+    public <I> Set<String> sessionUids(BookmarkKeys<I> keys)
+    {
+        Set<String> uids = new LinkedHashSet<>();
+        entries.forEach(entry -> entry.sessionUid(keys).ifPresent(uids::add));
+        return uids;
+    }
+
+    // Returns whether the ingredient is bookmarked after the toggle.
+    public <I> boolean toggle(I ingredient, BookmarkKeys<I> keys)
+    {
+        String uid = keys.sessionUid(ingredient);
+        if (entries.removeIf(entry -> entry.sessionUid(keys).filter(uid::equals).isPresent()))
             return false;
-        }
-        uids.add(uid);
+        entries.add(keys.entryOf(ingredient).orElseGet(() -> BookmarkEntry.legacy(uid)));
         return true;
     }
 
-    public void remove(String world, String uid)
+    public <I> List<I> resolve(Map<String, I> bySessionUid, BookmarkKeys<I> keys)
     {
-        List<String> uids = byWorld.get(world);
-        if (uids != null && uids.remove(uid) && uids.isEmpty())
-            byWorld.remove(world);
+        return entries.stream()
+                .map(entry -> entry.sessionUid(keys))
+                .flatMap(Optional::stream)
+                .map(bySessionUid::get)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
-    public Map<String, List<String>> asMap()
+    // Replaces each legacy entry found among the given ingredients with its stable entry, in place.
+    // Returns whether any was replaced.
+    public <I> boolean upgradeLegacy(Map<String, I> bySessionUid, BookmarkKeys<I> keys)
     {
-        Map<String, List<String>> copy = new LinkedHashMap<>();
-        byWorld.forEach((world, uids) -> copy.put(world, List.copyOf(uids)));
-        return copy;
-    }
-
-    public static Bookmarks fromMap(Map<String, List<String>> map)
-    {
-        Bookmarks bookmarks = new Bookmarks();
-        map.forEach((world, uids) -> bookmarks.byWorld.put(world, new ArrayList<>(uids)));
-        return bookmarks;
+        boolean upgraded = false;
+        for (ListIterator<BookmarkEntry> it = entries.listIterator(); it.hasNext(); )
+        {
+            Optional<BookmarkEntry> stable = it.next().legacyUid()
+                    .map(bySessionUid::get)
+                    .flatMap(keys::entryOf);
+            if (stable.isPresent())
+            {
+                it.set(stable.get());
+                upgraded = true;
+            }
+        }
+        return upgraded;
     }
 }

@@ -20,8 +20,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 @EventBusSubscriber(modid = Craftbound.MODID)
 public class ObtainedItemsTracker
 {
-    private static final int SCAN_INTERVAL_TICKS = 20;
-
     @SubscribeEvent
     public static void onItemCrafted(final PlayerEvent.ItemCraftedEvent event)
     {
@@ -40,7 +38,7 @@ public class ObtainedItemsTracker
     @SubscribeEvent
     public static void onPlayerTick(final PlayerTickEvent.Post event)
     {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % SCAN_INTERVAL_TICKS != 0)
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % HeldItems.SCAN_INTERVAL_TICKS != 0)
             return;
 
         record(player, HeldItems.of(player));

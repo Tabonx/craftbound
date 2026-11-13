@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
@@ -479,19 +478,10 @@ public final class RecipeBookWidget extends AbstractWidget
         loaded = true;
     }
 
-    // Resolve the saved uids against the browsable ingredients, keeping the order they were
-    // bookmarked in. A bookmark whose mod is gone simply does not resolve; it stays in the file, so
-    // reinstalling the mod brings it back. The rail's last ribbon shows these, once there are any.
+    // The rail's last ribbon shows these, once there are any.
     private void refreshBookmarks()
     {
-        Map<String, BookIngredient> byUid = new HashMap<>();
-        for (BookIngredient ingredient : allItems)
-            byUid.putIfAbsent(ingredient.uid(), ingredient);
-
-        bookmarked = BookmarkStore.current().stream()
-                .map(byUid::get)
-                .filter(Objects::nonNull)
-                .toList();
+        bookmarked = BookmarkStore.resolve(allItems);
 
         if (bookmarked.isEmpty() && activeTab == BrowseTab.BOOKMARKS)
             activeTab = BrowseTab.ALL;
@@ -507,7 +497,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
     private void toggleBookmark()
     {
-        BookmarkStore.toggle(bookmarkTarget.uid());
+        BookmarkStore.toggle(bookmarkTarget);
         refreshBookmarks();
     }
 
@@ -591,7 +581,7 @@ public final class RecipeBookWidget extends AbstractWidget
     private static Predicate<BookIngredient> jeiMatches(String text)
     {
         Set<String> found = CraftboundJeiPlugin.searchMatches(text);
-        return item -> found.contains(item.uid());
+        return item -> found.contains(item.sessionUid());
     }
 
     private boolean inActiveTab(BookIngredient item)
@@ -871,7 +861,7 @@ public final class RecipeBookWidget extends AbstractWidget
 
         int buttonX = bookmarkX();
         bookmarkHovered = inRect(mouseX, mouseY, buttonX, y + FILTER_Y, BOOKMARK_W, BOOKMARK_H);
-        boolean on = BookmarkStore.contains(bookmarkTarget.uid());
+        boolean on = BookmarkStore.contains(bookmarkTarget);
         ResourceLocation sprite = on
                 ? (bookmarkHovered ? BOOKMARK_ON_HL : BOOKMARK_ON)
                 : (bookmarkHovered ? BOOKMARK_OFF_HL : BOOKMARK_OFF);
@@ -1102,7 +1092,7 @@ public final class RecipeBookWidget extends AbstractWidget
         if (bookmarkHovered)
         {
             Canvas.tooltip(graphics, minecraft.font,
-                    BookmarkStore.contains(bookmarkTarget.uid()) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
+                    BookmarkStore.contains(bookmarkTarget) ? TOOLTIP_BOOKMARKED : TOOLTIP_BOOKMARK,
                     mouseX, mouseY);
             return;
         }
