@@ -33,6 +33,7 @@ final class BrowsePanel implements BookPanel
     private static final int VARIANT_TICKS = 30;
     private static final int ITEM_INSET = 4;
 
+    private final BookSession session;
     private final BookState state;
     private final BookCatalog catalog;
     private final ObjIntConsumer<BookIngredient> open;
@@ -44,8 +45,9 @@ final class BrowsePanel implements BookPanel
     private PendingTooltip tooltip = PendingTooltip.NONE;
 
     // `open` is told which item was clicked, and with which button.
-    BrowsePanel(BookState state, BookCatalog catalog, ObjIntConsumer<BookIngredient> open)
+    BrowsePanel(BookSession session, BookState state, BookCatalog catalog, ObjIntConsumer<BookIngredient> open)
     {
+        this.session = session;
         this.state = state;
         this.catalog = catalog;
         this.open = open;
@@ -125,12 +127,12 @@ final class BrowsePanel implements BookPanel
 
     private boolean filtering()
     {
-        return state.craftable.bound() && RecipeBookState.isFiltering();
+        return state.craftable.bound() && session.isFiltering();
     }
 
     private void toggleFilter()
     {
-        RecipeBookState.toggleFiltering();
+        session.toggleFiltering();
         if (filtering())
             state.craftable.reload();
         refilter();
@@ -195,7 +197,7 @@ final class BrowsePanel implements BookPanel
         if (state.craftable.bound())
         {
             boolean over = filter.contains(mouseX, mouseY);
-            boolean on = RecipeBookState.isFiltering();
+            boolean on = session.isFiltering();
             ResourceLocation sprite = on
                     ? (over ? FILTER_ENABLED_HL : FILTER_ENABLED)
                     : (over ? FILTER_DISABLED_HL : FILTER_DISABLED);

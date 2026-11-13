@@ -44,6 +44,11 @@ The book is a single vanilla-width column with two swappable states:
 2. **Recipe**: clicking an output **replaces the grid in the same column** with how that item
    is made. A **back button** (`‹ items`) returns to the browse grid.
 
+The book keeps what it shows, the tab, the page and an open recipe, for as long as its screen stays
+open, through every time that screen is laid out again: toggling the book, resizing the window,
+making room for a mod's side panel. A screen opened anew starts from the grid's first page, like
+vanilla's. Whether the book is open, and whether it lists only what can be made, lasts the whole game.
+
 There is **one predictable behavior**: click → show the recipe. Nothing is ever filled into the
 open screen unless the player asks for it with the place button (see below).
 

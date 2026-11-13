@@ -127,7 +127,7 @@ public final class RecipeBookScreenTweaks
     public static int hostedLeftPos(int width, int imageWidth)
     {
         int gap = Screens.current() instanceof AbstractContainerScreen<?> screen ? gap(screen) : RecipeBookLayout.GAP;
-        return RecipeBookLayout.leftPos(width, imageWidth, gap, RecipeBookState.isOpen());
+        return RecipeBookLayout.leftPos(width, imageWidth, gap, BookSession.get().isOpen());
     }
 
     // The width a screen beside the book is told it has, so that centering itself moves it aside.
@@ -135,7 +135,7 @@ public final class RecipeBookScreenTweaks
     public static int besideScreenWidth(AbstractContainerScreen<?> screen, int imageWidth)
     {
         return RecipeBookLayout.screenWidthFor(Minecraft.getInstance().getWindow().getGuiScaledWidth(), imageWidth,
-                gap(screen), RecipeBookState.isOpen());
+                gap(screen), BookSession.get().isOpen());
     }
 
     // Everything between the book and the screen's left edge. The toggle is never in it: an open book
@@ -189,20 +189,21 @@ public final class RecipeBookScreenTweaks
     private static void attach(ScreenEvent.Init.Post event, AbstractContainerScreen<?> screen, ImageButton vanillaButton)
     {
         var window = Minecraft.getInstance().getWindow();
-        boolean open = RecipeBookState.isOpen();
+        BookSession session = BookSession.get();
+        boolean open = session.isOpen();
         int gap = gap(screen);
         Placement placement = RecipeBookLayout.place(window.getGuiScaledWidth(), window.getGuiScaledHeight(),
                 left(screen), top(screen), imageWidth(screen), imageHeight(screen), gap, sides(screen).floor());
         boolean overlay = open && placement.overlay();
 
-        RecipeBookWidget book = new RecipeBookWidget(new BookState(), new BookCatalog());
+        RecipeBookWidget book = new RecipeBookWidget(session, session.stateFor(screen), ClientSession.current().bookCatalog());
         book.visible = open;
         bind(book, screen);
         book.anchor(placement.bookRight(), placement.bookTop(), placement.bookHeight());
 
         RecipeBookToggleButton toggle = new RecipeBookToggleButton(0, 0, b ->
         {
-            RecipeBookState.toggle();
+            BookSession.get().toggleOpen();
             Screens.rebuild(screen);
         });
         if (vanillaButton != null && !overlay)
@@ -288,7 +289,7 @@ public final class RecipeBookScreenTweaks
         SideAreas used = sides(screen);
         SIDES.put(screen.getClass(), found);
         // Once per screen, in case what a mod reports moves with the screen itself.
-        if (!found.equals(used) && RecipeBookState.isOpen() && relaidOut != screen)
+        if (!found.equals(used) && BookSession.get().isOpen() && relaidOut != screen)
             relayoutPending = screen;
     }
 

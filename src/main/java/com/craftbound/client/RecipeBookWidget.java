@@ -52,11 +52,11 @@ public final class RecipeBookWidget extends LooseWidget
     // The toggle, when the screen has no place for it.
     private AbstractWidget carried = null;
 
-    public RecipeBookWidget(BookState state, BookCatalog catalog)
+    RecipeBookWidget(BookSession session, BookState state, BookCatalog catalog)
     {
         super(0, 0, BookGeometry.WIDTH, BookGeometry.HEIGHT, Component.translatable("craftbound.recipebook.title"));
         this.state = state;
-        browse = new BrowsePanel(state, catalog, this::open);
+        browse = new BrowsePanel(session, state, catalog, this::open);
         recipe = new RecipePanel(state.recipes, catalog, place, this::showRecipes, this::closeRecipe);
         backButton = new ImageButton(0, 0, BookGeometry.ARROW_W, BookGeometry.ARROW_H, BACKWARD_SPRITES,
                 b -> panel().step(-1));
