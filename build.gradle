@@ -3,9 +3,7 @@ import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
 
 plugins {
     id 'java-library'
-    id 'eclipse'
     id 'idea'
-    id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.144'
     id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
 }
@@ -31,7 +29,6 @@ version = modVersion
 group = mod_group_id
 
 repositories {
-    mavenLocal()
     maven { url = 'https://maven.blamejared.com' }         // JEI
     maven { url = 'https://maven.createmod.net' }         // Create, Ponder, Flywheel
     maven { url = 'https://maven.ithundxr.dev/snapshots' } // Registrate
@@ -115,8 +112,6 @@ neoForge {
 
         client {
             client()
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             taskBefore muteClient
 
             // Larger default dev window.
@@ -125,31 +120,10 @@ neoForge {
 
         server {
             server()
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             programArgument '--nogui'
         }
 
-        gameTestServer {
-            type = 'gameTestServer'
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
-        }
 
-        data {
-            data()
-            programArguments.addAll '--mod', mod_id, '--all',
-                    '--output', rootProject.file('src/generated/resources/').absolutePath,
-                    '--existing', rootProject.file('src/main/resources/').absolutePath
-        }
-    }
-}
-
-// src/ is Stonecutter's shared source directory, linked into whichever version is active, so it is
-// left at the default and only the generated resources are added.
-sourceSets {
-    main {
-        resources {
-            srcDir rootProject.file('src/generated/resources')
-        }
     }
 }
 
@@ -394,19 +368,6 @@ tasks.withType(ProcessResources).configureEach {
 
     filesMatching(['pack.mcmeta']) {
         expand replaceProperties
-    }
-}
-
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
     }
 }
 
