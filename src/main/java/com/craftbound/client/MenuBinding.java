@@ -10,10 +10,4 @@ import net.minecraft.world.item.Item;
 // from what the screen holds. The version changes whenever that answer might have.
 public record MenuBinding(RecipePlacer placer, Supplier<Set<Item>> craftable, IntSupplier version)
 {
-    MenuBinding guardedBy(IntegrationGuard guard, RecipePlacer fallback)
-    {
-        return new MenuBinding(new GuardedPlacer(guard, placer, fallback),
-                () -> guard.call(craftable, Set::of),
-                () -> guard.call(version::getAsInt, () -> 0));
-    }
 }

@@ -3,6 +3,7 @@ package com.craftbound.client.create;
 import java.util.Set;
 
 import com.craftbound.client.CraftableItems;
+import com.craftbound.client.IntegrationGuard;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
@@ -15,27 +16,40 @@ import net.minecraft.world.item.Item;
 // stock it was sent and replaces it whole on every update, so its identity is its version.
 final class StockKeeperStock
 {
-    static Set<Item> craftable(StockKeeperRequestMenu menu)
+    private final IntegrationGuard guard;
+    private final StockKeeperRequestMenu menu;
+
+    StockKeeperStock(IntegrationGuard guard, StockKeeperRequestMenu menu)
     {
-        InventorySummary stock = stock(menu);
+        this.guard = guard;
+        this.menu = menu;
+    }
+
+    Set<Item> craftable()
+    {
+        StackedContents contents = guard.call(this::contents, () -> null);
+        return contents == null ? Set.of() : CraftableItems.craftableFrom(contents);
+    }
+
+    int version()
+    {
+        return guard.call(() -> System.identityHashCode(stock()), () -> 0);
+    }
+
+    private StackedContents contents()
+    {
+        InventorySummary stock = stock();
         if (stock == null)
-            return Set.of();
+            return null;
 
         StackedContents contents = new StackedContents();
         for (BigItemStack entry : stock.getStacks())
             contents.accountStack(entry.stack.copyWithCount(entry.count), entry.count);
-        return CraftableItems.craftableFrom(contents);
+        return contents;
     }
 
-    static int version(StockKeeperRequestMenu menu)
-    {
-        return System.identityHashCode(stock(menu));
-    }
-
-    private static InventorySummary stock(StockKeeperRequestMenu menu)
+    private InventorySummary stock()
     {
         return menu.contentHolder.getLastClientsideStockSnapshotAsSummary();
     }
-
-    private StockKeeperStock() {}
 }

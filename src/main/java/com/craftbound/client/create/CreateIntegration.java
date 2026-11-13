@@ -16,30 +16,41 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 // Everything the book knows about Create beyond what Create tells JEI: the heat a basin recipe needs,
-// the stock keeper's order and stock, and Ponder's view of what the player has found.
+// and the stock keeper's order and stock.
 public final class CreateIntegration implements BookIntegration
 {
+    private final IntegrationGuard guard;
+
     public CreateIntegration(IntegrationGuard guard)
     {
-        PonderVisibility.guardedBy(guard);
-        CraftboundPonderPlugin.register();
+        this.guard = guard;
     }
 
     // A basin's heat source is painted by the category rather than declared as a slot.
     @Override
     public List<InputSlot> hiddenRequirements(Object recipe)
     {
-        if (recipe instanceof RecipeHolder<?> holder && holder.value() instanceof ProcessingRecipe<?, ?> processing)
-            return HeatRequirement.slotsFor(processing.getRequiredHeat().name());
-        return List.of();
+        return HeatRequirement.slotsFor(guard.call(() -> heatOf(recipe), () -> HeatRequirement.NONE));
+    }
+
+    private static String heatOf(Object recipe)
+    {
+        return recipe instanceof RecipeHolder<?> holder && holder.value() instanceof ProcessingRecipe<?, ?> processing
+                ? processing.getRequiredHeat().name()
+                : HeatRequirement.NONE;
     }
 
     @Override
     public Optional<MenuBinding> bind(AbstractContainerMenu menu, RecipePlacer transfer)
     {
-        if (!(menu instanceof StockKeeperRequestMenu keeper))
+        StockKeeperRequestMenu keeper = guard.call(() -> menu instanceof StockKeeperRequestMenu stockKeeper
+                ? stockKeeper
+                : null, () -> null);
+        if (keeper == null)
             return Optional.empty();
-        return Optional.of(new MenuBinding(new StockKeeperPlacer(transfer, keeper),
-                () -> StockKeeperStock.craftable(keeper), () -> StockKeeperStock.version(keeper)));
+
+        StockKeeperStock stock = new StockKeeperStock(guard, keeper);
+        return Optional.of(new MenuBinding(new StockKeeperPlacer(guard, transfer, keeper), stock::craftable,
+                stock::version));
     }
 }

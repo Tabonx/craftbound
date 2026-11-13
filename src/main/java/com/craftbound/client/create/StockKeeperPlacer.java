@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.craftbound.client.IntegrationGuard;
 import com.craftbound.client.RecipePlacer;
 import com.craftbound.client.jei.RecipeGroup;
 import com.simibubi.create.content.logistics.stockTicker.CraftableBigItemStack;
@@ -21,11 +22,13 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 // that. Placing it again raises the amount instead, as scrolling over the ordered recipe does.
 final class StockKeeperPlacer implements RecipePlacer
 {
+    private final IntegrationGuard guard;
     private final RecipePlacer transfer;
     private final StockKeeperRequestMenu menu;
 
-    StockKeeperPlacer(RecipePlacer transfer, StockKeeperRequestMenu menu)
+    StockKeeperPlacer(IntegrationGuard guard, RecipePlacer transfer, StockKeeperRequestMenu menu)
     {
+        this.guard = guard;
         this.transfer = transfer;
         this.menu = menu;
     }
@@ -49,8 +52,14 @@ final class StockKeeperPlacer implements RecipePlacer
         Optional<CraftableBigItemStack> ordered = ordered(layout);
         if (ordered.isEmpty())
             transfer.place(layout, placeAll);
-        else if (menu.screenReference instanceof StockKeeperRequestScreen screen)
-            screen.requestCraftable(ordered.get(), placeAll ? ordered.get().stack.getMaxStackSize() : 1);
+        else
+            guard.run(() -> requestMore(ordered.get(), placeAll));
+    }
+
+    private void requestMore(CraftableBigItemStack ordered, boolean placeAll)
+    {
+        if (menu.screenReference instanceof StockKeeperRequestScreen screen)
+            screen.requestCraftable(ordered, placeAll ? ordered.stack.getMaxStackSize() : 1);
     }
 
     @Override
@@ -77,7 +86,13 @@ final class StockKeeperPlacer implements RecipePlacer
         return transfer.menuGroup(groups);
     }
 
+    // Empty once the integration is off, which leaves every recipe to Create's own transfer handler.
     private Optional<CraftableBigItemStack> ordered(IRecipeLayoutDrawable<?> layout)
+    {
+        return guard.call(() -> findOrdered(layout), Optional::empty);
+    }
+
+    private Optional<CraftableBigItemStack> findOrdered(IRecipeLayoutDrawable<?> layout)
     {
         if (!(menu.screenReference instanceof StockKeeperRequestScreen screen)
                 || !(layout.getRecipe() instanceof RecipeHolder<?> holder))

@@ -7,7 +7,8 @@ import com.craftbound.progression.InputSlot;
 
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
-// What another mod adds to the book beyond what it already tells JEI. Integrations lists them.
+// What another mod adds to the book beyond what it already tells JEI. Integrations lists them. Each
+// is handed its own IntegrationGuard, and wraps its calls into the other mod's classes in it.
 public interface BookIntegration
 {
     // Requirements a recipe carries that its JEI category never puts in a slot, so the generic slot

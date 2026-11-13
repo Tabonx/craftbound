@@ -1,5 +1,6 @@
 package com.craftbound.client;
 
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import com.mojang.logging.LogUtils;
@@ -7,18 +8,31 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 // Other mods are optional and their version ranges have no upper bound, so their classes can move
-// under us. The first call that fails switches the whole integration off, and every later call gets
-// the answer the book would give without that mod.
+// under us. An integration wraps each call into the other mod's own classes in its guard, and only
+// those: the first one that fails switches the integration off, and every later call gets the answer
+// the book would give without that mod. A failing call is never repeated.
 public final class IntegrationGuard
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final String name;
+    private final BiConsumer<String, Throwable> log;
     private volatile boolean enabled = true;
 
     public IntegrationGuard(String name)
     {
+        this(name, (message, error) -> LOGGER.error(message, error));
+    }
+
+    IntegrationGuard(String name, BiConsumer<String, Throwable> log)
+    {
         this.name = name;
+        this.log = log;
+    }
+
+    public boolean enabled()
+    {
+        return enabled;
     }
 
     public <T> T call(Supplier<T> call, Supplier<T> whenDisabled)
@@ -32,19 +46,19 @@ public final class IntegrationGuard
             catch (LinkageError | RuntimeException e)
             {
                 enabled = false;
-                LOGGER.error("Craftbound: {} integration disabled, this version of {} no longer fits it", name, name, e);
+                log.accept("Craftbound: " + name + " integration disabled, this version of " + name
+                        + " no longer fits it", e);
             }
         }
         return whenDisabled.get();
     }
 
-    // Whether the call went through.
-    public boolean run(Runnable call)
+    public void run(Runnable call)
     {
-        return call(() ->
+        call(() ->
         {
             call.run();
-            return true;
-        }, () -> false);
+            return null;
+        }, () -> null);
     }
 }
