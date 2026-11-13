@@ -30,8 +30,7 @@ split.
 - **Height follows the screen beside it.** The book is never shorter than vanilla's (166) and
   grows a grid row at a time to match a taller screen, such as a stock keeper or a storage
   terminal that sizes itself to the window. In the browse state the width stays at the vanilla book
-  width. In the recipe state the panel **grows left to fit the shown recipe** (revised from the
-  original "never widen" rule): JEI's category drawables have fixed horizontal layouts, so wide
+  width. In the recipe state the panel **grows left to fit the shown recipe**: JEI's category drawables have fixed horizontal layouts, so wide
   multi-step recipes (e.g. Create sequenced assembly) would otherwise scale down to be unreadable.
   The right edge stays anchored beside the inventory; growth is clamped so the left edge and the
   protruding tab rail stay on-screen. A recipe still wider than the clamped width scales down.
@@ -47,7 +46,14 @@ The book is a single vanilla-width column with two swappable states:
 The book keeps what it shows, the tab, the page and an open recipe, for as long as its screen stays
 open, through every time that screen is laid out again: toggling the book, resizing the window,
 making room for a mod's side panel. A screen opened anew starts from the grid's first page, like
-vanilla's, and a recipe built before JEI reloaded is closed rather than shown on. Whether the book is open, and whether it lists only what can be made, lasts the whole game.
+vanilla's, and a recipe built before JEI reloaded is closed rather than shown on. Whether the book
+is open, and whether it lists only what can be made, lasts the whole game.
+
+In code, `RecipeBookWidget` is the shell: it lays out the page and pager both states share and
+routes input. `BrowsePanel` and `RecipePanel` are the two states, both `BookPanel`s with their own
+rail and paging, and `PlaceControl` owns the place button in the recipe state. `BookState` is what
+one screen shows and lives in the client session through `ScreenScoped`; `BookSession` holds the
+two game-long switches.
 
 There is **one predictable behavior**: click → show the recipe. Nothing is ever filled into the
 open screen unless the player asks for it with the place button (see below).
@@ -78,9 +84,8 @@ would place.
 Every recipe kind, vanilla crafting and Create/machine alike, is rendered the same way: by
 hosting the recipe's **JEI `IRecipeCategory` drawable** inside the body rect (reusing JEI's and
 Create's registered renderers rather than reimplementing them). The drawable is scaled to fit the
-body; the panel first grows wider (see framing) so wide recipes need little or no shrinking. This
-replaces the earlier plan of a native crafting grid plus a hand-rolled vertical Create layout.
-One uniform path is simpler and covers every category, including fluids.
+body; the panel first grows wider (see framing) so wide recipes need little or no shrinking. One
+path covers every category, including fluids.
 
 ## Why JEI
 JEI is a required dependency. It is what knows every mod's recipes: any mod with JEI support shows
@@ -106,7 +111,8 @@ It takes three pieces, ordered by how well each survives a JEI update:
   buttons whenever the screen is valid, outside the check for whether its lists have room, so no
   amount of denying it space will hide them. `JeiOverlayMixin` cancels the single call that draws
   everything JEI puts on a screen, and `JeiInputMixin` turns away the clicks that would otherwise
-  land on buttons that are no longer drawn.
+  land on buttons that are no longer drawn. `ShapelessIconMixin`, `CandidatesBadgeMixin` and
+  `MissingSlotMixin` adjust how a recipe draws inside the book (see below).
 
 `craftbound.jei.mixins.json` is deliberately not `required`. A JEI that renamed these should bring
 its own interface back, never stop the game from loading.
@@ -128,15 +134,15 @@ One internal is still unavoidable. JEI's shapeless marker has no api to suppress
 and hides it only while `BookRecipeRender` says the book is the one drawing, leaving JEI's own
 screens as JEI drew them.
 
-Craftbound used to vendor JEI's source instead, which let it run without JEI installed at the cost
-of carrying a copy of JEI per Minecraft version. Depending on JEI trades that standalone operation
-for JEI's own multi-version, multi-loader support.
-
 ## Obtained items (already implemented)
 `ObtainedItemsTracker` records every item the player has ever held into the synced
 `OBTAINED_ITEMS` attachment (`ObtainedItems` / `CraftboundAttachments`). An item counts as obtained
 however it was acquired, whether mined, looted or traded, not just crafted. This one set backs both the
 progression tint and progressive unlocking below.
+
+Craftbound is optional on the server. Without it nothing syncs, so `ClientObtainedItems` sweeps the
+inventory on the client at the same interval and stores the result per world in
+`config/craftbound-obtained.json`.
 
 Once the book carries the Bookbinder's Lens, the browse grid marks an item when obtaining it would
 unlock recipes the book still hides. The mark is the slot sprite: `craftbound:recipe_book/slot_*`,
@@ -275,7 +281,7 @@ book and the toast tick, compares that against the last version it acted on, so 
 change away from the other. `client/jei` never asks progression directly: it takes a `RecipeGate`,
 which the cache implements.
 
-`client/ClientSession` holds everything the client keeps for one connection: the obtained and
+`client/session/ClientSession` holds everything the client keeps for one connection: the obtained and
 held-variant tracking, the book upgrade, the stores in the config folder, the progression cache, the
 book's catalogue and what the book shows on the open screen, which is dropped as that screen closes.
 It begins at login and is dropped at logout, so no state carries from one world into the next.
@@ -293,10 +299,15 @@ the smelting family for a furnace/smoker/blast furnace, for a recipe that fits t
 and is greyed out while the ingredients are missing. Gating on the *category* and not just on the
 recipe matters: Create lists ordinary shaped recipes again under its own "Automatic Shaped
 Crafting" tab, where the recipe is meant for a mechanical crafter, so that tab offers no button
-even though the same recipe does under Crafting. Clicking sends `PlaceRecipePayload`; the server hands the recipe to
-`RecipeBookMenu.handlePlacement`, i.e. exactly the vanilla fill (shift = as many as possible).
-Because vanilla placement refuses recipes its own book has not unlocked, the handler first marks
-the recipe as known: Craftbound offers every recipe, so placing one counts as learning it.
+even though the same recipe does under Crafting.
+
+Clicking sends `PlaceRecipePayload`, and `PlaceRecipeHandler` hands the recipe to
+`RecipeBookMenu.handlePlacement`, the vanilla fill (shift places as many as possible). The player's
+vanilla recipe book is left as it was: on 1.21.1, where the menu checks that book, a recipe the
+player has not learned is added for the placement alone and removed after it (`PlacementAccess`).
+Under `doLimitedCrafting` an unlearned recipe is not placed at all. A server without Craftbound gets
+vanilla's own placement packet instead, which only covers recipes the vanilla book holds, and the
+button greys out for the rest.
 
 ## Bookmarks (already implemented)
 The left rail carries recipe categories while a recipe is open and **bookmarks while browsing**,
@@ -311,7 +322,7 @@ the grid between everything and the bookmarked items. The bookmarked items are t
 exactly like any others: same slots, same tints, same paging, same click-to-open, with search and
 the craftable filter still applying on top. Bookmarking itself is the ribbon button in the recipe
 view's strip, left of the place button; the same button clears one. Storage is
-`config/craftbound-bookmarks.json`, keyed per world (save name) and per server (address), and never
+`config/craftbound-bookmarks.json`, keyed per save (its folder) and per server (its address), and never
 touches the server: bookmarks are a client convenience.
 
 ## Placement beside any screen
@@ -362,13 +373,8 @@ Implemented and in use:
   (forces `RecipeBookComponent.isVisible()` false). The Craftbound book replaces it everywhere
   the vanilla one appeared, including crafting tables and the furnace family.
 - Recipes render through JEI's own category drawables inside the docked panel, via
-  `IRecipeManager.createRecipeLayoutDrawableOrShowError` + `IRecipeLayoutDrawable`. The design
-  spike this started as is gone.
+  `IRecipeManager.createRecipeLayoutDrawableOrShowError` + `IRecipeLayoutDrawable`.
 - Browse grid with search, item category ribbons, bookmarks, the craftable-only filter and the
   place button, all described above.
 - Progression, unlock toasts and the Create heat requirement, all described above.
 - Ponder scenes hide items the player has not discovered (`client/create`).
-
-## Reference
-Interactive layout mock (throwaway, not in-repo) built during design, demonstrated on **brass**
-(3 methods) and **iron** (7 methods, to exercise rail paging).
