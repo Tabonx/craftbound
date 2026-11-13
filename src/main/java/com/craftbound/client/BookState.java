@@ -10,10 +10,8 @@ import com.craftbound.client.progression.Progression;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 
-import net.minecraft.world.item.Item;
-
 // What the book shows on one screen: the ribbon, page and grid while browsing, the recipe it has
-// open, what the screen can make, and the highlights still swelling.
+// open, and the highlights still swelling.
 final class BookState
 {
     // A ribbon's recipes for the focused item come ranked, the ones the player can make first.
@@ -25,7 +23,6 @@ final class BookState
             group -> BookRecipes.allIn(group, Progression.gate()));
     final GridPager pager = new GridPager();
     final UnlockHighlights highlights = new UnlockHighlights();
-    final CraftableTracker<Item> craftable = new CraftableTracker<>();
     BrowseTab tab = BrowseTab.ALL;
     List<List<BookIngredient>> entries = List.of();
     int catalogRevision = -1;

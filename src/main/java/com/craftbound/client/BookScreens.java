@@ -103,6 +103,7 @@ public final class BookScreens
 
     public static void closing(Screen screen)
     {
+        ClientSession.screenClosed(screen);
         if (on(screen).isPresent())
             host = null;
     }

@@ -276,7 +276,8 @@ change away from the other. `client/jei` never asks progression directly: it tak
 which the cache implements.
 
 `client/ClientSession` holds everything the client keeps for one connection: the obtained and
-held-variant tracking, the book upgrade, the stores in the config folder and the progression cache.
+held-variant tracking, the book upgrade, the stores in the config folder, the progression cache, the
+book's catalogue and what the book shows on the open screen, which is dropped as that screen closes.
 It begins at login and is dropped at logout, so no state carries from one world into the next.
 `client/jei/JeiSession` holds the JEI runtime, and its generation moves on every start and stop,
 which is how the index, the search cache and the book know to rebuild after a JEI reload.

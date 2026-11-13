@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
 
 // The browsing state: a search field, the craftable filter, the ribbons choosing what fills the grid,
@@ -35,6 +36,7 @@ final class BrowsePanel implements BookPanel
 
     private final BookSession session;
     private final BookState state;
+    private final CraftableTracker<Item> craftable;
     private final BookCatalog catalog;
     private final ObjIntConsumer<BookIngredient> open;
     private final EditBox search;
@@ -45,10 +47,12 @@ final class BrowsePanel implements BookPanel
     private PendingTooltip tooltip = PendingTooltip.NONE;
 
     // `open` is told which item was clicked, and with which button.
-    BrowsePanel(BookSession session, BookState state, BookCatalog catalog, ObjIntConsumer<BookIngredient> open)
+    BrowsePanel(BookSession session, BookState state, CraftableTracker<Item> craftable, BookCatalog catalog,
+            ObjIntConsumer<BookIngredient> open)
     {
         this.session = session;
         this.state = state;
+        this.craftable = craftable;
         this.catalog = catalog;
         this.open = open;
         search = new EditBox(Minecraft.getInstance().font, 0, 0, BookGeometry.SEARCH_W, BookGeometry.SEARCH_H,
@@ -96,7 +100,7 @@ final class BrowsePanel implements BookPanel
             syncTabs();
         }
         state.unlocksVersion = Progression.version();
-        if (!variants.isOpen() && state.craftable.refresh() && filtering())
+        if (!variants.isOpen() && craftable.refresh() && filtering())
             stale = true;
         if (stale)
             refilter();
@@ -120,21 +124,21 @@ final class BrowsePanel implements BookPanel
     private void refilter()
     {
         BrowseQuery query = new BrowseQuery(state.tab, search.getValue(), filtering());
-        state.entries = query.entries(catalog, item -> item.item().map(state.craftable::contains).orElse(false));
+        state.entries = query.entries(catalog, item -> item.item().map(craftable::contains).orElse(false));
         state.pager.fill(state.entries.size(), query);
         variants.close();
     }
 
     private boolean filtering()
     {
-        return state.craftable.bound() && session.isFiltering();
+        return craftable.bound() && session.isFiltering();
     }
 
     private void toggleFilter()
     {
         session.toggleFiltering();
         if (filtering())
-            state.craftable.reload();
+            craftable.reload();
         refilter();
     }
 
@@ -194,7 +198,7 @@ final class BrowsePanel implements BookPanel
         tooltip = PendingTooltip.NONE;
 
         Rect filter = geometry.filter();
-        if (state.craftable.bound())
+        if (craftable.bound())
         {
             boolean over = filter.contains(mouseX, mouseY);
             boolean on = session.isFiltering();
@@ -277,9 +281,9 @@ final class BrowsePanel implements BookPanel
     // With nothing to check against, no entry is marked as one the player cannot make.
     private ResourceLocation slotFor(List<BookIngredient> entry)
     {
-        boolean craftable = !state.craftable.bound()
-                || entry.stream().anyMatch(item -> item.item().map(state.craftable::contains).orElse(false));
-        return SlotSprites.of(entry.size() > 1, entry.stream().anyMatch(Progression::unlocksMore), craftable);
+        boolean canMake = !craftable.bound()
+                || entry.stream().anyMatch(item -> item.item().map(craftable::contains).orElse(false));
+        return SlotSprites.of(entry.size() > 1, entry.stream().anyMatch(Progression::unlocksMore), canMake);
     }
 
     // Like vanilla's overlay, an open variants panel takes the click wherever it lands and closes.
@@ -309,7 +313,7 @@ final class BrowsePanel implements BookPanel
             return true;
         }
 
-        if (state.craftable.bound() && geometry.filter().contains(mouseX, mouseY))
+        if (craftable.bound() && geometry.filter().contains(mouseX, mouseY))
         {
             BookSounds.click();
             toggleFilter();

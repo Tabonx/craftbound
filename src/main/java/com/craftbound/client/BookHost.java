@@ -55,8 +55,8 @@ final class BookHost
                 bounds.x(), bounds.y(), bounds.width(), bounds.height(), sides.gap(screen), sides.of(screen).floor());
         boolean overlay = open && placement.overlay();
 
-        RecipeBookWidget book = new RecipeBookWidget(session, session.stateFor(screen),
-                ClientSession.current().bookCatalog());
+        ClientSession client = ClientSession.current();
+        RecipeBookWidget book = new RecipeBookWidget(session, client.bookState(screen), client.bookCatalog());
         book.visible = open;
         book.bind(Integrations.bind(screen.getMenu()));
         book.anchor(placement.bookRight(), placement.bookTop(), placement.bookHeight());

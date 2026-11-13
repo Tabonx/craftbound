@@ -16,6 +16,7 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.resources.ResourceLocation;
 
 // The recipe book as a real screen widget, so it renders in order and receives clicks, scroll and
@@ -37,6 +38,7 @@ public final class RecipeBookWidget extends LooseWidget
     private static final int STRETCH_Y = 80;
 
     private final BookState state;
+    private final CraftableTracker<Item> craftable = new CraftableTracker<>();
     private final PlaceControl place = new PlaceControl();
     private final BrowsePanel browse;
     private final RecipePanel recipe;
@@ -52,7 +54,7 @@ public final class RecipeBookWidget extends LooseWidget
     {
         super(0, 0, BookGeometry.WIDTH, BookGeometry.HEIGHT, Component.translatable("craftbound.recipebook.title"));
         this.state = state;
-        browse = new BrowsePanel(session, state, catalog, this::open);
+        browse = new BrowsePanel(session, state, craftable, catalog, this::open);
         recipe = new RecipePanel(state.recipes, catalog, place, this::showRecipes, this::closeRecipe);
         backButton = new ImageButton(0, 0, BookGeometry.ARROW_W, BookGeometry.ARROW_H, BACKWARD_SPRITES,
                 b -> panel().step(-1));
@@ -74,7 +76,7 @@ public final class RecipeBookWidget extends LooseWidget
     public void bind(MenuBinding binding)
     {
         place.bind(binding.placer());
-        state.craftable.bind(binding.craftable(), binding.version());
+        craftable.bind(binding.craftable(), binding.version());
     }
 
     public void carry(AbstractWidget toggle)
