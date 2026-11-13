@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.craftbound.PlayerItems;
 import com.craftbound.client.jei.RecipeGroup;
 import com.craftbound.placement.PlaceRecipePayload;
 import com.craftbound.placement.RecipePlacement;
@@ -73,7 +74,7 @@ public final class GridPlacer implements RecipePlacer
                         view.getItemStacks().map(ItemStack::getItem).distinct().toList(),
                         view.getItemStacks().findFirst().map(ItemStack::getCount).orElse(1)))
                 .toList();
-        return MissingInputs.of(slots, OwnedItems.of(player)).stream()
+        return MissingInputs.of(slots, PlayerItems.counts(PlayerItems.craftingPool(player, menu))).stream()
                 .map(inputs::get)
                 .collect(Collectors.toSet());
     }

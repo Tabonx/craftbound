@@ -5,24 +5,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.craftbound.client.jei.BookIngredient;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.BookIngredients;
+import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
-import com.craftbound.client.storage.WorldScopedStore;
 import com.mojang.serialization.JsonOps;
 
 // The bookmarks of the world the player is in. Bookmarks are a client convenience, so nothing here
 // talks to the server.
 public final class BookmarkStore
 {
-    private static final Supplier<WorldScopedStore<Bookmarks>> STORE =
-            ClientStores.lazy("craftbound-bookmarks.json", Bookmarks.CODEC, Bookmarks::new);
-
-    // contains runs every frame the bookmark button shows, and naming an entry decodes it.
+    // contains runs every frame the bookmark button shows, and naming an entry decodes it. Session
+    // uids last as long as JEI's run does.
     private static Bookmarks uidsSource = null;
+    private static int uidsGeneration = -1;
     private static Set<String> uids = Set.of();
 
     public static List<BookIngredient> resolve(List<BookIngredient> browsable)
@@ -42,13 +40,14 @@ public final class BookmarkStore
     public static boolean contains(BookIngredient ingredient)
     {
         Bookmarks bookmarks = bookmarks();
-        if (bookmarks != uidsSource)
+        if (bookmarks != uidsSource || uidsGeneration != JeiSession.generation())
         {
             Optional<BookmarkKeys<BookIngredient>> keys = keys();
             if (keys.isEmpty())
                 return false;
             uids = bookmarks.sessionUids(keys.get());
             uidsSource = bookmarks;
+            uidsGeneration = JeiSession.generation();
         }
         return uids.contains(ingredient.sessionUid());
     }
@@ -64,18 +63,18 @@ public final class BookmarkStore
 
     private static void changed()
     {
-        STORE.get().markDirty();
+        ClientSession.current().bookmarks().markDirty();
         uidsSource = null;
     }
 
     private static Bookmarks bookmarks()
     {
-        return STORE.get().open(WorldKey.current(), JsonOps.INSTANCE);
+        return ClientSession.current().bookmarks().open(WorldKey.current(), JsonOps.INSTANCE);
     }
 
     private static Optional<BookmarkKeys<BookIngredient>> keys()
     {
-        return CraftboundJeiPlugin.bookmarkKeys(ClientStores.registryOps());
+        return BookIngredients.bookmarkKeys(ClientStores.registryOps());
     }
 
     private BookmarkStore() {}

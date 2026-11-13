@@ -28,6 +28,21 @@
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 - On Minecraft 1.21.4 and newer, a recipe that asks for an item with particular contents, such as
   one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
+- A recipe now counts as one you can make, for listing it first and for the place button alike,
+  from the same items: your main inventory and the crafting grid. Worn armor, the offhand and the
+  item on the cursor no longer move a recipe to the front that the place button then refuses.
+- An item whose only recipe comes from a mod the book cannot fully read now shows in the book
+  from the start, instead of staying hidden for good.
+- The book picks up recipes again after JEI reloads them, such as after `/reload`, instead of
+  showing the old ones until the screen is opened anew.
+- Recipes you unlock while the book is open now show up in it at once. Before, the unlock toast
+  could notice the change first and leave the open book on its old list.
+- Joining a world no longer announces every recipe you had already unlocked when the server's
+  record of your items arrives a moment after the recipes.
+- Unlocks are worked out afresh in each world you join, even when two worlds have seen the same
+  number of items.
+- A search using JEI's syntax, such as `@create`, now also finds items a mod adds while the game
+  runs.
 - On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
   tab instead of Miscellaneous, as they do on 1.21.1.
 - A Create update that no longer fits the book now switches off only the book's Create features,

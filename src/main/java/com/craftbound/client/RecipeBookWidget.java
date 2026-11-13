@@ -16,9 +16,14 @@ import java.util.stream.Collectors;
 import com.craftbound.Craftbound;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipeRender;
-import com.craftbound.client.jei.CraftboundJeiPlugin;
+import com.craftbound.client.jei.BookIngredients;
+import com.craftbound.client.jei.BookRecipes;
+import com.craftbound.client.jei.JeiSearch;
+import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.JeiCompat;
 import com.craftbound.client.jei.RecipeGroup;
+import com.craftbound.client.jei.RecipeIndexBuilder;
+import com.craftbound.client.jei.RecipeIndexSnapshot;
 import com.craftbound.client.progression.Progression;
 
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -36,7 +41,6 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.CommonComponents;
@@ -174,7 +178,8 @@ public final class RecipeBookWidget extends LooseWidget
     private final VariantsOverlay variants = new VariantsOverlay();
     private int ticks = 0;
     private int page = 0;
-    private boolean loaded = false;
+    private int loadedGeneration = -1;
+    private int unlocksVersion = -1;
     private BookIngredient hovered = null;
     // The hovered recipe slot's tooltip, drawn with the rest of them once the screen is done.
     private List<Component> slotTooltip = List.of();
@@ -246,7 +251,7 @@ public final class RecipeBookWidget extends LooseWidget
                 Component.translatable("itemGroup.search"));
         this.search.setMaxLength(50);
         this.search.setHint(Component.translatable("gui.recipebook.search_hint"));
-        this.search.setValue(CraftboundJeiPlugin.searchText());
+        this.search.setValue(JeiSearch.query());
         this.search.setResponder(this::onSearchChanged);
 
         this.backButton = new ImageButton(0, 0, ARROW_W, ARROW_H, BACKWARD_SPRITES, b -> stepBack());
@@ -319,7 +324,7 @@ public final class RecipeBookWidget extends LooseWidget
             return;
         ticks++;
         // Another search synced with JEI, such as the stock keeper's, may have changed it meanwhile.
-        String shared = CraftboundJeiPlugin.searchText();
+        String shared = JeiSearch.query();
         if (!search.isFocused() && !shared.equals(search.getValue()))
             search.setValue(shared);
         if (inRecipeMode())
@@ -338,7 +343,7 @@ public final class RecipeBookWidget extends LooseWidget
             return false;
 
         Optional<IRecipeLayoutDrawable<?>> recipe =
-                placer.firstPlaceable(CraftboundJeiPlugin.recipeGroupsFor(ingredient, RecipeIngredientRole.OUTPUT));
+                placer.firstPlaceable(BookRecipes.groupsFor(ingredient, RecipeIngredientRole.OUTPUT, Progression.gate()));
         recipe.ifPresent(found ->
         {
             playClickSound();
@@ -368,7 +373,7 @@ public final class RecipeBookWidget extends LooseWidget
     // OUTPUT shows how the ingredient is made; INPUT shows where it is used (right-click).
     private boolean showRecipes(BookIngredient ingredient, RecipeIngredientRole role)
     {
-        List<RecipeGroup> groups = CraftboundJeiPlugin.recipeGroupsFor(ingredient, role);
+        List<RecipeGroup> groups = BookRecipes.groupsFor(ingredient, role, Progression.gate());
         if (groups.isEmpty())
             return false;
         recipeGroups = groups;
@@ -404,7 +409,7 @@ public final class RecipeBookWidget extends LooseWidget
         Optional<BookIngredient> clicked = currentRecipe().getSlotUnderMouse(localX, localY)
                 .map(RecipeSlotUnderMouse::slot)
                 .flatMap(IRecipeSlotView::getDisplayedIngredient)
-                .flatMap(CraftboundJeiPlugin::toBookIngredient);
+                .flatMap(BookIngredients::of);
 
         if (clicked.isPresent() && showRecipes(clicked.get(), role))
         {
@@ -429,7 +434,7 @@ public final class RecipeBookWidget extends LooseWidget
     {
         int previous = groupIndex;
         setActiveTab(target);
-        List<Supplier<IRecipeLayoutDrawable<?>>> all = CraftboundJeiPlugin.allRecipesFor(currentGroup());
+        List<Supplier<IRecipeLayoutDrawable<?>>> all = BookRecipes.allIn(currentGroup(), Progression.gate());
         if (all.isEmpty())
             setActiveTab(previous);
         else
@@ -461,16 +466,20 @@ public final class RecipeBookWidget extends LooseWidget
         return built.stream().<Supplier<IRecipeLayoutDrawable<?>>>map(drawable -> () -> drawable).toList();
     }
 
+    // Loaded again whenever JEI restarts, since every ingredient and recipe came from the one before.
     private void ensureLoaded()
     {
-        if (loaded || !CraftboundJeiPlugin.hasRuntime())
+        if (loadedGeneration == JeiSession.generation())
             return;
-        searchable = CraftboundJeiPlugin.getAllIngredients();
+        Optional<RecipeIndexSnapshot> recipes = RecipeIndexBuilder.current();
+        if (recipes.isEmpty())
+            return;
+        searchable = BookIngredients.all();
         allItems.clear();
-        allItems.addAll(CraftboundJeiPlugin.producible(searchable));
+        allItems.addAll(recipes.get().producible(searchable));
         categories = ItemCategories.fromClientRecipes();
         refreshBookmarks(); // also applies the filter, so the grid is ready
-        loaded = true;
+        loadedGeneration = JeiSession.generation();
     }
 
     // The rail's last ribbon shows these, once there are any.
@@ -502,7 +511,7 @@ public final class RecipeBookWidget extends LooseWidget
         return currentRecipe().getRecipeSlotsView().getSlotViews(RecipeIngredientRole.OUTPUT).stream()
                 .map(IRecipeSlotView::getDisplayedIngredient)
                 .flatMap(Optional::stream)
-                .map(CraftboundJeiPlugin::toBookIngredient)
+                .map(BookIngredients::of)
                 .flatMap(Optional::stream)
                 .toList();
     }
@@ -517,7 +526,7 @@ public final class RecipeBookWidget extends LooseWidget
 
     private void onSearchChanged(String value)
     {
-        CraftboundJeiPlugin.setSearchText(value);
+        JeiSearch.setQuery(value);
         applyFilter();
     }
 
@@ -575,7 +584,7 @@ public final class RecipeBookWidget extends LooseWidget
 
     private static Predicate<BookIngredient> jeiMatches(String text)
     {
-        Set<String> found = CraftboundJeiPlugin.searchMatches(text);
+        Set<String> found = JeiSearch.matches(text);
         return item -> found.contains(item.sessionUid());
     }
 
@@ -588,8 +597,11 @@ public final class RecipeBookWidget extends LooseWidget
     // obtained set grows rather than waiting for the book to be reopened.
     private void refreshUnlocksIfStale()
     {
-        if (Progression.refresh())
-            applyFilter();
+        Progression.refresh();
+        if (unlocksVersion == Progression.version())
+            return;
+        unlocksVersion = Progression.version();
+        applyFilter();
     }
 
     // Rebuild the craftable set when the inventory changes, then update an active filter.
@@ -999,7 +1011,7 @@ public final class RecipeBookWidget extends LooseWidget
     // under the cursor. The mod name itself is never in here, since JEI only adds that as it draws.
     private static List<Component> slotTooltip(IRecipeSlotDrawable slot)
     {
-        List<Component> lines = CraftboundJeiPlugin.tooltip(slot);
+        List<Component> lines = BookIngredients.tooltip(slot);
         List<Component> kept = new ArrayList<>(lines.size());
         for (int i = 0; i < lines.size(); i++)
         {

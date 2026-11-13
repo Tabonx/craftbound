@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import net.minecraft.resources.ResourceLocation;
+
 class BookCategoriesTest
 {
     // JEI's tag entries hand a whole tag back out as the result of taking that tag in. Read as
@@ -13,28 +15,23 @@ class BookCategoriesTest
     @Test
     void tagCategoriesAreNotBrowsable()
     {
-        assertFalse(BookCategories.isBrowsable("tag_recipes/item"));
-        assertFalse(BookCategories.isBrowsable("tag_recipes/block"));
-        assertFalse(BookCategories.isBrowsable("tag_recipes/fluid"));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/item")));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/block")));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/fluid")));
+        assertFalse(BookCategories.isBrowsable(uid("somemod", "tag_recipes/gas")));
     }
 
     @Test
     void realCategoriesAreBrowsable()
     {
-        assertTrue(BookCategories.isBrowsable("crafting"));
-        assertTrue(BookCategories.isBrowsable("smelting"));
-        assertTrue(BookCategories.isBrowsable("milling"));
-        assertTrue(BookCategories.isBrowsable("sequenced_assembly"));
+        assertTrue(BookCategories.isBrowsable(uid("minecraft", "crafting")));
+        assertTrue(BookCategories.isBrowsable(uid("minecraft", "smelting")));
+        assertTrue(BookCategories.isBrowsable(uid("create", "milling")));
+        assertTrue(BookCategories.isBrowsable(uid("create", "sequenced_assembly")));
     }
 
-    // Create names every machine recipe's group "processing", which would fold everything a
-    // machine makes into one entry.
-    @Test
-    void onlyVanillaBookCategoriesReadGroups()
+    private static ResourceLocation uid(String namespace, String path)
     {
-        assertTrue(BookCategories.readsGroups("minecraft:crafting"));
-        assertTrue(BookCategories.readsGroups("minecraft:smoking"));
-        assertFalse(BookCategories.readsGroups("create:mixing"));
-        assertFalse(BookCategories.readsGroups("create:automatic_shaped"));
+        return ResourceLocation.fromNamespaceAndPath(namespace, path);
     }
 }

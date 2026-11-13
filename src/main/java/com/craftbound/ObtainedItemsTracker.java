@@ -30,7 +30,7 @@ public class ObtainedItemsTracker
         if (result.isEmpty())
             return;
 
-        record(player, List.of(HeldItems.idOf(result)));
+        record(player, List.of(PlayerItems.idOf(result)));
     }
 
     // There is no single event for every way an item can reach a player, so sweep the inventory
@@ -38,10 +38,10 @@ public class ObtainedItemsTracker
     @SubscribeEvent
     public static void onPlayerTick(final PlayerTickEvent.Post event)
     {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % HeldItems.SCAN_INTERVAL_TICKS != 0)
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0)
             return;
 
-        record(player, HeldItems.of(player));
+        record(player, PlayerItems.ids(PlayerItems.carried(player)));
     }
 
     private static void record(ServerPlayer player, Collection<ResourceLocation> ids)

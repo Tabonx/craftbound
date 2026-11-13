@@ -1,9 +1,10 @@
 package com.craftbound.client;
 
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.craftbound.PlayerItems;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -12,7 +13,6 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -51,21 +51,13 @@ public final class RecipeOrder
         return options.isEmpty() || options.stream().anyMatch(stack -> held.contains(stack.getItem()));
     }
 
+    // The same stacks the place button counts, so a recipe ranked first is one it would place.
     private static Set<Item> heldItems()
     {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null)
             return Set.of();
-
-        Set<Item> held = new HashSet<>();
-        Inventory inventory = player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++)
-        {
-            ItemStack stack = inventory.getItem(slot);
-            if (!stack.isEmpty())
-                held.add(stack.getItem());
-        }
-        return held;
+        return PlayerItems.counts(PlayerItems.craftingPool(player, player.containerMenu)).keySet();
     }
 
     private RecipeOrder() {}
