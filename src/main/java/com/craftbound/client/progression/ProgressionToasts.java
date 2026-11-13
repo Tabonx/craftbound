@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.craftbound.Craftbound;
-import com.craftbound.HeldItems;
+import com.craftbound.PlayerItems;
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 
@@ -26,7 +26,7 @@ public final class ProgressionToasts
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || !CraftboundJeiPlugin.hasRuntime())
             return;
-        if (minecraft.player.tickCount % HeldItems.SCAN_INTERVAL_TICKS != 0)
+        if (minecraft.player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0)
             return;
 
         Progression.refresh();

@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
-import com.craftbound.HeldItems;
+import com.craftbound.PlayerItems;
 import com.craftbound.ObtainedItems;
 import com.craftbound.client.ServerSupport;
 import com.craftbound.client.storage.ClientStores;
@@ -54,10 +54,10 @@ public final class ClientObtainedItems
     public static void onClientTick(final ClientTickEvent.Post event)
     {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || player.tickCount % HeldItems.SCAN_INTERVAL_TICKS != 0 || ServerSupport.installed())
+        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || ServerSupport.installed())
             return;
 
-        if (ObtainedItems.recordAll(tracked(), HeldItems.of(player)))
+        if (ObtainedItems.recordAll(tracked(), PlayerItems.ids(PlayerItems.carried(player))))
             STORE.get().markDirty();
     }
 

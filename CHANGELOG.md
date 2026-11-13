@@ -28,6 +28,9 @@
   the original as a `.corrupt-` copy instead of being overwritten with what could be read.
 - On Minecraft 1.21.4 and newer, a recipe that asks for an item with particular contents, such as
   one kind of potion, now asks for that exact item before it unlocks, as it already did on 1.21.1.
+- A recipe now counts as one you can make, for listing it first and for the place button alike,
+  from the same items: your main inventory and the crafting grid. Worn armor, the offhand and the
+  item on the cursor no longer move a recipe to the front that the place button then refuses.
 - On Minecraft 1.21.4 and newer, blocks made in a blast furnace now show on the Building Blocks
   tab instead of Miscellaneous, as they do on 1.21.1.
 - A Create update that no longer fits the book now switches off only the book's Create features,

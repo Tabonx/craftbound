@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.craftbound.Craftbound;
-import com.craftbound.HeldItems;
+import com.craftbound.PlayerItems;
 import com.craftbound.client.jei.CraftboundJeiPlugin;
 import com.craftbound.client.storage.ClientStores;
 import com.craftbound.client.storage.WorldKey;
@@ -20,7 +20,6 @@ import com.mojang.serialization.Dynamic;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -65,11 +64,11 @@ public final class ClientHeldVariants
     public static void onClientTick(final ClientTickEvent.Post event)
     {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || player.tickCount % HeldItems.SCAN_INTERVAL_TICKS != 0 || !CraftboundJeiPlugin.hasRuntime())
+        if (player == null || player.tickCount % PlayerItems.SCAN_INTERVAL_TICKS != 0 || !CraftboundJeiPlugin.hasRuntime())
             return;
 
         Set<String> known = current();
-        for (ItemStack stack : held(player))
+        for (ItemStack stack : PlayerItems.carried(player))
         {
             Optional<String> key = variantKey(stack);
             if (key.isPresent() && known.add(key.get()))
@@ -78,16 +77,6 @@ public final class ClientHeldVariants
                 STORE.get().markDirty();
             }
         }
-    }
-
-    private static List<ItemStack> held(LocalPlayer player)
-    {
-        List<ItemStack> held = new ArrayList<>();
-        Inventory inventory = player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++)
-            held.add(inventory.getItem(slot));
-        held.add(player.containerMenu.getCarried());
-        return held;
     }
 
     // Present only for stacks JEI tells apart from the rest of their item.
