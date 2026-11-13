@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.craftbound.client.jei.TransferHandlers;
 import com.craftbound.client.mixin.ContainerScreenAccessor;
+import com.craftbound.client.mixin.ImageButtonAccessor;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.world.inventory.RecipeBookMenu;
 
 // Puts the book on every screen that takes recipes. A recipe-book screen (player inventory,
@@ -80,12 +82,13 @@ public final class BookScreens
         return BookHost.attach(screen, widgets, SIDES, vanillaToggle);
     }
 
-    // The recipe-book toggle is the only 20x18 ImageButton these screens add.
+    // Known by its sprites, which no other button on these screens wears.
     private static ImageButton findRecipeButton(BookHost.Widgets widgets)
     {
         for (GuiEventListener listener : widgets.listeners())
         {
-            if (listener instanceof ImageButton button && button.getWidth() == 20 && button.getHeight() == 18)
+            if (listener instanceof ImageButton button && RecipeBookComponent.RECIPE_BUTTON_SPRITES
+                    .equals(((ImageButtonAccessor) button).craftbound$getSprites()))
                 return button;
         }
         return null;

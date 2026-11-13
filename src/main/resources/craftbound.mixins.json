@@ -7,7 +7,8 @@
     "RecipeBookComponentMixin",
     "RecipeToastMixin",
     "ContainerScreenAccessor",
-    "ContainerScreenLayoutMixin"
+    "ContainerScreenLayoutMixin",
+    "ImageButtonAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
