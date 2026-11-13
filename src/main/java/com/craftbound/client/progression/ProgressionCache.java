@@ -177,7 +177,7 @@ public final class ProgressionCache implements RecipeGate
     {
         if (!rules.enabled() || index.isEmpty())
             return true;
-        return Unlocks.discovered(unlockedRegistryKeys, obtained.value(), itemId);
+        return Unlocks.discovered(unlockedRegistryKeys, obtainedNow(), itemId);
     }
 
     // Whether Ponder may show this item's scenes, which is a narrower question than isDiscovered:
@@ -185,7 +185,7 @@ public final class ProgressionCache implements RecipeGate
     // until they have held one.
     public boolean canPonder(ResourceLocation itemId)
     {
-        return !rules.enabled() || obtained.value().contains(itemId);
+        return !rules.enabled() || obtainedNow().contains(itemId);
     }
 
     public boolean isUnlocked(String unlockKey)
@@ -203,7 +203,7 @@ public final class ProgressionCache implements RecipeGate
         if (!rules.enabled())
             return true;
         RecipeNode node = index.node(categoryUid, recipe);
-        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtained.value(), available);
+        return node == null || Unlocks.recipeUnlocked(rules, index, node, obtainedNow(), available);
     }
 
     @Override
@@ -211,7 +211,7 @@ public final class ProgressionCache implements RecipeGate
     {
         if (!rules.enabled())
             return true;
-        return Unlocks.categoryUnlocked(rules, categoryUid, index.catalystsFor(categoryUid), obtained.value());
+        return Unlocks.categoryUnlocked(rules, categoryUid, index.catalystsFor(categoryUid), obtainedNow());
     }
 
     @Override
@@ -228,7 +228,7 @@ public final class ProgressionCache implements RecipeGate
         if (itemId.isEmpty())
             return true;
         return unlockKey.equals(UnlockKey.withoutSubtype(unlockKey))
-                ? obtained.value().contains(itemId.get())
+                ? obtainedNow().contains(itemId.get())
                 : available.contains(unlockKey);
     }
 
@@ -240,7 +240,14 @@ public final class ProgressionCache implements RecipeGate
 
     public Set<String> outputsUsing(Set<String> inputKeys)
     {
-        return Unlocks.outputsUsing(rules, index, inputKeys, obtained.value(), available);
+        return Unlocks.outputsUsing(rules, index, inputKeys, obtainedNow(), available);
+    }
+
+    // Questions read the obtained set live, so an item picked up since the last refresh already
+    // counts, and Ponder gets an answer before JEI has started.
+    private Set<ResourceLocation> obtainedNow()
+    {
+        return obtainedSource.get().orElse(Set.of());
     }
 
     // A set some source hands out, which it may replace or grow in place. Checking the reference and

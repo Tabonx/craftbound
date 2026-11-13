@@ -182,6 +182,18 @@ class ProgressionCacheTest
         assertTrue(cache.takeHighlight(STICK));
     }
 
+    // Ponder asks before JEI has started, when nothing has refreshed yet.
+    @Test
+    void ponderReadsTheObtainedSetLive()
+    {
+        ProgressionCache gated = new ProgressionCache(() -> obtained, Set::of, () -> RULES, () -> index);
+        gated.refresh();
+        obtained = Optional.of(Set.of(id("oak_log")));
+
+        assertTrue(gated.canPonder(id("oak_log")));
+        assertFalse(gated.canPonder(id("dirt")));
+    }
+
     private static ResourceLocation id(String path)
     {
         return ResourceLocation.withDefaultNamespace(path);
