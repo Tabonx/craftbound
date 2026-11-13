@@ -196,7 +196,8 @@ public final class RecipeBookScreenTweaks
                 left(screen), top(screen), imageWidth(screen), imageHeight(screen), gap, sides(screen).floor());
         boolean overlay = open && placement.overlay();
 
-        RecipeBookWidget book = new RecipeBookWidget(session, session.stateFor(screen), ClientSession.current().bookCatalog());
+        RecipeBookWidget book = new RecipeBookWidget(session, session.stateFor(screen),
+                ClientSession.current().bookCatalog());
         book.visible = open;
         bind(book, screen);
         book.anchor(placement.bookRight(), placement.bookTop(), placement.bookHeight());
