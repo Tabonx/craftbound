@@ -1,9 +1,6 @@
 package com.craftbound.client;
 
 import java.util.List;
-import java.util.Set;
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
 
 import com.craftbound.client.jei.BookIngredient;
 import com.craftbound.client.jei.BookRecipes;
@@ -20,7 +17,6 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 
 // The recipe book as a real screen widget, so it renders in order and receives clicks, scroll and
 // typed characters. A shell over its two states, browsing and reading a recipe: it lays them out,
@@ -75,16 +71,10 @@ public final class RecipeBookWidget extends LooseWidget
         browse.search().setFocused(false);
     }
 
-    // Supplies the set of items craftable right now, bound by the host to the open menu, and a
-    // number that changes whenever that set may have.
-    public void setCraftableSource(Supplier<Set<Item>> source, IntSupplier version)
+    public void bind(MenuBinding binding)
     {
-        state.craftable.bind(source, version);
-    }
-
-    public void setPlacer(RecipePlacer placer)
-    {
-        place.bind(placer);
+        place.bind(binding.placer());
+        state.craftable.bind(binding.craftable(), binding.version());
     }
 
     public void carry(AbstractWidget toggle)

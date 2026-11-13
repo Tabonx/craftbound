@@ -2,6 +2,7 @@ package com.craftbound.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,29 +73,44 @@ class IntegrationsTest
     {
         MenuBinding binding = new MenuBinding(null, Set::of, () -> 0);
         integrations.add(guard("A"), guard -> new BookIntegration() {});
-        integrations.add(guard("B"), guard -> new BookIntegration()
+        integrations.add(guard("B"), guard -> binding(binding));
+
+        assertSame(binding, integrations.binding(null, null));
+    }
+
+    @Test
+    void aScreenNoIntegrationOwnsOnlyPlacesThroughJei()
+    {
+        integrations.add(guard("A"), guard -> new BookIntegration() {});
+
+        assertNull(integrations.binding(null, null).craftable());
+    }
+
+    @Test
+    void aBuiltInIntegrationBindsBeforeAnyMod()
+    {
+        MenuBinding vanilla = new MenuBinding(null, Set::of, () -> 0);
+        Integrations withVanilla = new Integrations(binding(vanilla));
+        withVanilla.add(guard("A"), guard -> binding(new MenuBinding(null, Set::of, () -> 1)));
+
+        assertSame(vanilla, withVanilla.binding(null, null));
+    }
+
+    private IntegrationGuard guard(String name)
+    {
+        return new IntegrationGuard(name, (message, error) -> logged.add(message));
+    }
+
+    private static BookIntegration binding(MenuBinding binding)
+    {
+        return new BookIntegration()
         {
             @Override
             public Optional<MenuBinding> bind(AbstractContainerMenu menu, RecipePlacer transfer)
             {
                 return Optional.of(binding);
             }
-        });
-
-        assertSame(binding, integrations.binding(null, null).orElseThrow());
-    }
-
-    @Test
-    void aScreenNoIntegrationOwnsIsLeftToTheBook()
-    {
-        integrations.add(guard("A"), guard -> new BookIntegration() {});
-
-        assertTrue(integrations.binding(null, null).isEmpty());
-    }
-
-    private IntegrationGuard guard(String name)
-    {
-        return new IntegrationGuard(name, (message, error) -> logged.add(message));
+        };
     }
 
     private static BookIntegration requiring(IntegrationGuard guard, InputSlot slot)

@@ -10,7 +10,6 @@ import com.craftbound.client.RecipeBookLayout.Placement;
 import com.craftbound.client.jei.JeiSession;
 import com.craftbound.client.jei.ScreenAreas;
 import com.craftbound.client.jei.TransferHandlers;
-import com.craftbound.client.jei.TransferPlacer;
 import com.craftbound.client.mixin.ContainerScreenAccessor;
 
 import net.minecraft.client.Minecraft;
@@ -199,7 +198,7 @@ public final class RecipeBookScreenTweaks
         RecipeBookWidget book = new RecipeBookWidget(session, session.stateFor(screen),
                 ClientSession.current().bookCatalog());
         book.visible = open;
-        bind(book, screen);
+        book.bind(Integrations.bind(screen.getMenu()));
         book.anchor(placement.bookRight(), placement.bookTop(), placement.bookHeight());
 
         RecipeBookToggleButton toggle = new RecipeBookToggleButton(0, 0, b ->
@@ -220,20 +219,6 @@ public final class RecipeBookScreenTweaks
         event.addListener(book);
         event.addListener(toggle);
         attached = new Attached(screen, book, toggle, placement, overlay);
-    }
-
-    private static void bind(RecipeBookWidget book, AbstractContainerScreen<?> screen)
-    {
-        if (screen.getMenu() instanceof RecipeBookMenu menu)
-        {
-            book.setCraftableSource(() -> CraftableItems.craftableIn(menu), RecipeBookScreenTweaks::inventoryVersion);
-            book.setPlacer(new GridPlacer(menu));
-            return;
-        }
-        RecipePlacer transfer = new TransferPlacer(screen.getMenu());
-        Optional<MenuBinding> binding = Integrations.bind(screen.getMenu(), transfer);
-        book.setPlacer(binding.map(MenuBinding::placer).orElse(transfer));
-        binding.ifPresent(bound -> book.setCraftableSource(bound.craftable(), bound.version()));
     }
 
     private static Optional<Attached> attached(Screen screen)
@@ -405,12 +390,6 @@ public final class RecipeBookScreenTweaks
     private static Optional<RecipeBookWidget> searchingBook(Screen screen)
     {
         return attached(screen).map(host -> host.book).filter(RecipeBookWidget::isSearchFocused);
-    }
-
-    private static int inventoryVersion()
-    {
-        var player = Minecraft.getInstance().player;
-        return player == null ? -1 : player.getInventory().getTimesChanged();
     }
 
     private static int left(AbstractContainerScreen<?> screen)
