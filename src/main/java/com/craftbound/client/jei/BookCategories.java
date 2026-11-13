@@ -2,7 +2,6 @@ package com.craftbound.client.jei;
 
 import java.util.Set;
 
-import mezz.jei.api.constants.ModIds;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 
@@ -27,10 +26,11 @@ public final class BookCategories
         return isBrowsable(category.getRecipeType().getUid());
     }
 
+    // JEI names a tag category after the registry the tag belongs to, minecraft:tag_recipes/item and
+    // the like, so only the path is JEI's.
     public static boolean isBrowsable(ResourceLocation recipeTypeUid)
     {
-        return !(recipeTypeUid.getNamespace().equals(ModIds.JEI_ID)
-                && recipeTypeUid.getPath().startsWith(TAG_RECIPE_PATH_PREFIX));
+        return !recipeTypeUid.getPath().startsWith(TAG_RECIPE_PATH_PREFIX);
     }
 
     // A recipe group means "variants of one recipe" only where vanilla's book reads it. Elsewhere a

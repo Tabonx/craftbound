@@ -15,9 +15,10 @@ class BookCategoriesTest
     @Test
     void tagCategoriesAreNotBrowsable()
     {
-        assertFalse(BookCategories.isBrowsable(uid("jei", "tag_recipes/item")));
-        assertFalse(BookCategories.isBrowsable(uid("jei", "tag_recipes/block")));
-        assertFalse(BookCategories.isBrowsable(uid("jei", "tag_recipes/fluid")));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/item")));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/block")));
+        assertFalse(BookCategories.isBrowsable(uid("minecraft", "tag_recipes/fluid")));
+        assertFalse(BookCategories.isBrowsable(uid("somemod", "tag_recipes/gas")));
     }
 
     @Test
@@ -27,13 +28,6 @@ class BookCategoriesTest
         assertTrue(BookCategories.isBrowsable(uid("minecraft", "smelting")));
         assertTrue(BookCategories.isBrowsable(uid("create", "milling")));
         assertTrue(BookCategories.isBrowsable(uid("create", "sequenced_assembly")));
-    }
-
-    // Only JEI's own tag entries are left out; another mod is free to name a real category this way.
-    @Test
-    void anotherModsTagPathIsBrowsable()
-    {
-        assertTrue(BookCategories.isBrowsable(uid("somemod", "tag_recipes/item")));
     }
 
     private static ResourceLocation uid(String namespace, String path)
